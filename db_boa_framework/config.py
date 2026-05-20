@@ -16,11 +16,14 @@ BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(BASE_DIR, "results")
 DATA_DIR    = os.path.join(BASE_DIR, "data")
 
+# ULB Credit Card Fraud dataset (Kaggle, Lopez-Rojas et al. 2016)
+# 284,807 rows, 0.17% fraud, 28 PCA features + Amount + Time
+DATASET_PATH = os.path.join(os.path.dirname(BASE_DIR), "datasets", "creditcard.csv")
+
 # ─── Dataset Configuration ───────────────────────────────────────────────────
 DATA_CONFIG = {
-    "n_samples"       : 20_000,   # total transactions to simulate
-    "fraud_rate"      : 0.05,     # 5 % fraud (realistic for demo speed)
-    "n_features"      : 30,       # V1-V28 + Amount + Time  (like CC-Fraud dataset)
+    "dataset_path"    : DATASET_PATH,
+    "n_features"      : 30,       # V1-V28 + Amount + Time
     "sequence_length" : 10,       # look-back window for temporal context
     "test_size"       : 0.20,     # 80/20 train-test split
     "val_size"        : 0.10,     # 10 % of training set for validation
@@ -149,6 +152,9 @@ FEDERATION_CONFIG = {
     'db_boa_fed_pop'       : 12,                    # DB-BOA population for weight search
     'db_boa_fed_iter'      : 20,                    # DB-BOA iterations for weight search
     'random_state'         : 42,
+    # Krum Byzantine-robust aggregation (Blanchard et al., NeurIPS 2017)
+    'use_krum'             : True,                  # replace weighted average with Krum
+    'byzantine_f'          : 1,                     # assumed max Byzantine orgs (f < n/2)
 }
 
 ORG_DATA_SPLITS = {

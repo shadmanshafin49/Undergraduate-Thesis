@@ -1,19 +1,24 @@
 """
 models/federation_manager.py
 =============================
-FederationManager — DB-BOA Job 3: federated aggregation weight optimisation.
-
-This is the novel contribution of the thesis system.
+FederationManager — DB-BOA Job 3 + Krum Byzantine-robust aggregation.
 
 FederationManager orchestrates federated rounds:
   1. Reads each org's model weights and performance metrics.
-  2. Runs DB-BOA Job 3 to find the optimal aggregation weight vector.
-  3. Computes the weighted average of all model weights.
-  4. Returns the global model weights and full metadata for the ledger.
+  2. Krum (Blanchard et al., NeurIPS 2017): scores each org's weight
+     vector by proximity to its n-f-2 nearest neighbours; selects the
+     org with the minimum score as the Byzantine-robust global model.
+  3. Runs DB-BOA Job 3 to find the optimal aggregation weight vector
+     (used for contribution tracking and fallback weighted average).
+  4. Returns global model weights + full metadata for the ledger.
 
-The aggregation weight vector [w1, w2, w3] is optimised to maximise
-the global model's Obf2 on a shared anonymised validation set, subject
-to  sum(w_i) = 1  and  0.05 <= w_i <= 0.70  for each org.
+Krum guarantees that a single Byzantine org cannot corrupt the global
+model before the token-penalty mechanism fires.
+
+References
+----------
+Blanchard et al., "Machine Learning with Adversaries: Byzantine Tolerant
+Gradient Descent", NeurIPS 2017.
 """
 
 import copy
@@ -56,23 +61,37 @@ class FederationManager:
         """
         Full federation round:
           1. Extract weights from all org models.
-          2. DB-BOA Job 3: find optimal weight vector.
-          3. Compute weighted average global model.
+          2. Krum: score each org, select Byzantine-robust global model.
+          3. DB-BOA Job 3: find optimal aggregation weight vector.
           4. Return global weights + aggregation metadata.
         """
+        org_names = list(org_models.keys())
+
         if verbose:
             print(f"[FED]  Round {round_num} — extracting model weights from "
-                  f"{list(org_models.keys())} …", flush=True)
+                  f"{org_names} …", flush=True)
 
         # 1. Extract weights from every org model
         org_weights_list = [m.extract_weights() for m in org_models.values()]
+
+        # 2. Krum Byzantine-robust selection
+        use_krum = self.cfg.get("use_krum", True)
+        krum_weights, krum_idx, krum_scores = self._krum_aggregate(org_weights_list)
+        krum_selected_org = org_names[krum_idx]
+
+        if verbose:
+            score_str = "  ".join(
+                f"{name}={krum_scores[i]:.4f}" for i, name in enumerate(org_names)
+            )
+            print(f"[FED]  Krum scores      : {score_str}", flush=True)
+            print(f"[FED]  Krum selected    : {krum_selected_org}", flush=True)
 
         if verbose:
             print(f"[FED]  Running DB-BOA Job 3 "
                   f"(pop={self.cfg['db_boa_fed_pop']}, "
                   f"iter={self.cfg['db_boa_fed_iter']}) …", flush=True)
 
-        # 2. Build objective and run DB-BOA Job 3
+        # 3. DB-BOA Job 3: optimise aggregation weights (contribution tracking)
         objective_fn = self._build_fed_objective(
             org_models, org_weights_list, X_val, y_val
         )
@@ -80,40 +99,87 @@ class FederationManager:
             objective_fn, round_num=round_num, verbose=verbose
         )
 
-        # 3. Compute weighted average global model
-        global_weights = []
-        n_arrays = len(org_weights_list[0])
-        for arr_idx in range(n_arrays):
-            agg = sum(
-                w[i] * org_weights_list[i][arr_idx]
-                for i in range(self.n_orgs)
-            )
-            global_weights.append(agg)
+        # 4. Choose aggregation: Krum (Byzantine-robust) or weighted average
+        if use_krum:
+            # Krum: global model = single most trustworthy org's weights
+            global_weights = krum_weights
+            if verbose:
+                print(f"[FED]  Aggregation : Krum → {krum_selected_org}", flush=True)
+        else:
+            # Fallback: DB-BOA-weighted average (original behaviour)
+            n_arrays = len(org_weights_list[0])
+            global_weights = [
+                sum(w[i] * org_weights_list[i][arr_idx] for i in range(self.n_orgs))
+                for arr_idx in range(n_arrays)
+            ]
+            if verbose:
+                print(f"[FED]  Aggregation : weighted avg "
+                      + "  ".join(
+                          f"{name}={w[i]:.3f}" for i, name in enumerate(org_names)
+                      ), flush=True)
 
         if verbose:
-            print(f"[FED]  Aggregation weights: "
-                  + "  ".join(
-                      f"{name}={w[i]:.3f}"
-                      for i, name in enumerate(org_models.keys())
-                  ), flush=True)
             print(f"[FED]  Best fitness (–Obf2): {best_fit:.6f}", flush=True)
 
-        # 4. Build result dict (matches ledger schema)
+        # 5. Build result dict (matches ledger schema)
         result = {
             "round_num"          : round_num,
             "aggregation_weights": w.tolist(),
-            "global_weights"     : global_weights,   # list of np.arrays
+            "global_weights"     : global_weights,
             "best_fitness"       : float(best_fit),
             "db_boa_history"     : history["best"],
             "db_boa_stats"       : stats,
             "org_contributions"  : {
-                name: float(w[i])
-                for i, name in enumerate(org_models.keys())
+                name: float(w[i]) for i, name in enumerate(org_names)
             },
+            "krum_scores"        : {
+                name: float(krum_scores[i]) for i, name in enumerate(org_names)
+            },
+            "krum_selected_org"  : krum_selected_org,
             "timestamp"          : datetime.utcnow().isoformat(),
         }
         self.round_history.append(result)
         return result
+
+    # ── Krum aggregation ─────────────────────────────────────────────────────
+
+    def _krum_aggregate(self, org_weights_list: list) -> tuple:
+        """
+        Krum Byzantine-robust aggregation (Blanchard et al., NeurIPS 2017).
+
+        Each org i receives a score = sum of squared L2 distances to its
+        k = max(1, n-f-2) nearest neighbours.  The org with the minimum
+        score is the most consensus-aligned and is selected as the global
+        model, preventing any single Byzantine org from corrupting the
+        aggregate before the token-penalty mechanism fires.
+
+        Returns
+        -------
+        selected_weights : list[np.ndarray]  — Krum-selected global model
+        selected_idx     : int               — index of selected org
+        scores           : np.ndarray        — Krum score per org
+        """
+        n = len(org_weights_list)
+        f = self.cfg.get("byzantine_f", 0)
+        # Number of nearest neighbours used in the score (at least 1)
+        k = max(1, n - f - 2)
+
+        # Flatten each org's weight list into one vector for distance calc
+        flat = [
+            np.concatenate([w.flatten() for w in wl])
+            for wl in org_weights_list
+        ]
+
+        scores = np.zeros(n)
+        for i in range(n):
+            dists = sorted(
+                float(np.sum((flat[i] - flat[j]) ** 2))
+                for j in range(n) if j != i
+            )
+            scores[i] = sum(dists[:k])
+
+        selected_idx = int(np.argmin(scores))
+        return org_weights_list[selected_idx], selected_idx, scores
 
     # ── DB-BOA Job 3 internals ────────────────────────────────────────────────
 

@@ -1,0 +1,107 @@
+\section{Preliminaries}
+This thesis examines how permissioned blockchain can be integrated with Federated Learning (FL) and deep learning to strengthen security, privacy, and fraud detection in financial systems. Centralized approaches to financial fraud detection suffer from single points of failure, data transparency gaps, and long settlement times. Blockchain reinforces data integrity and enables trusted collaboration across competing financial institutions, while Federated Learning allows those institutions to train a shared detection model without exposing raw transaction data. The resulting framework combines these technologies with the Dynamic Butterfly-Billiards Optimization Algorithm (DB-BOA) and Adaptive Deep Temporal Context Networks (ADTCN) to deliver a secure, incentive-driven, and scalable financial fraud detection system for consortium banking environments.
+
+\subsection{Federated Learning}
+
+Federated Learning (FL), introduced by McMahan et al.~\cite{mcmahan2017}, is a distributed machine learning paradigm in which model training occurs across multiple participants without centralising raw data. Each participant trains a local model on its private data and shares only model parameters — gradients or weight vectors — with a central aggregator, which produces a global model via weighted averaging. The canonical aggregation algorithm, Federated Averaging (FedAvg), weights each participant's contribution proportionally to its dataset size \cite{mcmahan2017}.
+
+FL has been applied to financial services in a range of contexts. Zhang et al.~\cite{zhang2019} demonstrated that federated models can detect financial anomalies across distributed nodes without data exposure. Li et al.~\cite{li2022fdia} applied FL with transformer architectures to detect False Data Injection Attacks in smart grids, validating FL's applicability to sensitive financial and infrastructure data under privacy constraints. Despite its promise, FL is not without challenges: trust in model updates, susceptibility to poisoning attacks from dishonest participants, and the absence of verifiable contribution records remain open problems \cite{yang2024}. This thesis addresses all three through blockchain integration and the DB-BOA incentive mechanism.
+
+\subsection{Non-IID Data Heterogeneity}
+
+A critical challenge in practical FL deployments is data heterogeneity. Real-world institutional data is typically non-Independent and non-Identically Distributed (non-IID): different banks hold different proportions of fraud cases, reflecting their customer demographics and market exposure. McMahan et al.~\cite{mcmahan2017} noted that FedAvg performance degrades significantly under non-IID conditions. Li et al.~\cite{li2020fedprox} introduced FedProx, a proximal regularisation technique that constrains local updates to remain close to the global model, stabilising convergence under non-IID conditions. This thesis employs both stratified sampling and FedProx regularisation to address non-IID heterogeneity across the three-bank consortium, as detailed in Chapter~\ref{ch:methodology}.
+
+\section{Blockchain for Financial Security}
+
+\subsection{Consortium Blockchain Architecture}
+
+Abdallah et al.~\cite{abdallah2020} proposed a consortium blockchain architecture for a decentralised stock exchange, demonstrating that permissioned networks reduce settlement inefficiency while preserving trading logic integrity. Their work established that consortium blockchains are well-suited to financial environments where participants are known and access must be controlled — a principle directly adopted in this thesis.
+
+Tsoulias et al.~\cite{tsoulias2020} extended this direction by designing a graph-model-based blockchain with a Casper-like consensus mechanism capable of monitoring and detecting adversarial activity such as dynamic validator attacks. Their contribution motivated the reputation-based leader selection mechanism in this framework.
+
+\subsection{Hyperledger Fabric for Enterprise Finance}
+
+Li et al.~\cite{li2023} designed Fabric-SCF, a Hyperledger Fabric-based secure storage and access control scheme using distributed consensus and attribute-based access control, demonstrating high throughput and dynamic fine-grained access in supply chain finance scenarios. Their use of Fabric's permissioned architecture and chaincode-enforced rules directly informs this thesis's deployment environment.
+
+Wang et al.~\cite{wang2022} demonstrated that blockchain-IoT data sharing combined with edge computing can monitor fraudulent financial transactions, identifying intensive computation handling as a remaining challenge — one this thesis addresses through off-chain DB-BOA execution with on-chain result recording.
+
+The choice of Hyperledger Fabric over other blockchain platforms in this thesis is architecturally motivated. Fabric is a permissioned blockchain: only enrolled organisations with valid X.509 certificates issued by a Fabric Certificate Authority can participate. This is a hard requirement in regulated financial environments. Unlike Ethereum's public network, which allows anonymous participation, Fabric's consortium model aligns with banking compliance requirements. Furthermore, Fabric does not use energy-intensive proof-of-work; its Raft-based ordering service provides deterministic, low-latency consensus, critical for financial settlement. Fabric's CouchDB world state supports the complex JSON queries required for the audit and reporting features of this system.
+
+\subsection{Smart Contract Enforcement}
+
+The role of smart contracts in enforcing financial security rules without relying on trusted intermediaries has been a recurring theme in the literature. Ying et al.~\cite{ying2025} demonstrated in BIT-FL that blockchain-enabled smart contracts can enforce verifiable FL incentive rules, though their implementation used a simulated environment rather than a real Fabric network. Truong et al.~\cite{truong2024} further validated that smart-contract-backed trust mechanisms are essential for AI-generated content trading in decentralised environments, supporting the use of Fabric chaincode for incentive enforcement in this thesis.
+
+\section{Blockchain-Integrated Federated Learning}
+
+\subsection{Security and Trust in Blockchain-FL Systems}
+
+Yang et al.~\cite{yang2024} proposed on-chain model aggregation and incentive mechanisms for industrial IoT federated learning, demonstrating that blockchain can verify global model updates and detect malicious alterations. Their work validates the architectural principle adopted here: computation off-chain, verification on-chain. Hussin Chowdhury et al.~\cite{hussain2024} demonstrated that integrating federated machine learning in a blockchain crowdfunding ecosystem increases both security and transparency, supporting the adoption of FL for financial consortium settings.
+
+Saveetha et al.~\cite{saveetha2024} proposed an integrated FL and blockchain framework with optimal miner selection for DDoS attack detection, using metaheuristic optimisation for miner selection — a conceptual predecessor to this thesis's DB-BOA-based leader selection. Their system, however, does not address federated aggregation weight optimisation or couple economic incentives to algorithm output.
+
+\subsection{Incentive Mechanisms}
+
+Blockchain-based incentive mechanisms, including token-based reward systems, have been introduced to optimise node participation by rewarding reliable and resource-efficient contributors \cite{zhao2024}. Zhao et al.~\cite{zhao2024} introduced the Long-Term Proof-of-Contribution algorithm for blockchain-enabled federated learning, demonstrating that incentive structures can sustain honest participation across many rounds. Ahamad et al.~\cite{ahamad2022} showed that blockchain enables trust and harmony in peer-to-peer financial transactions without intermediaries.
+
+These works share a critical limitation: their incentive rules are heuristic — fixed percentages, manual allocation, or simple accuracy ratios. In this thesis, federation reward distribution is the direct mathematical output of DB-BOA Job~3, creating a qualitatively different coupling between optimisation and economics.
+
+\section{Leader Selection and Consensus Optimisation}
+
+Leader block selection and consensus efficiency are central concerns in permissioned blockchain systems for high-frequency financial transactions. Zhuang et al.~\cite{zhuang2019} proposed Proof of Reputation as a consensus protocol in which high-reputation nodes are selected as block leaders, increasing throughput while maintaining security. This directly informs the DB-BOA-based leader selection in this framework, where a reputation discount factor is applied to the DB-BOA objective function, making previously reliable nodes more competitive.
+
+Nourmohammadi and Zhang~\cite{nourmohammadi2022} proposed an on-chain governance model based on Particle Swarm Optimisation for reducing blockchain forks, establishing a precedent for metaheuristic-based consensus management. Their work used a single optimisation role, whereas this thesis extends the concept to three coupled roles under a single algorithm.
+
+Machhale et al.~\cite{machhale2024} demonstrated that combining blockchain with machine learning enhances data security and privacy, but like most works in this area, treated the consensus layer and the application layer as independent concerns — missing the optimisation opportunity that DB-BOA's triple-role deployment exploits.
+
+\section{Metaheuristic Optimisation in Blockchain-AI Systems}
+
+\subsection{Butterfly Optimisation Algorithm}
+
+The Butterfly Optimisation Algorithm (BOA), introduced by Arora and Singh~\cite{arora2019}, models the foraging behaviour of butterflies. Each candidate solution emits a "fragrance" proportional to its fitness, attracting other solutions toward high-fitness regions. BOA demonstrates strong exploration capacity but is prone to premature convergence when population diversity is lost.
+
+\subsection{Dynamic Butterfly Optimisation Algorithm}
+
+The Dynamic Butterfly Optimisation Algorithm (DBOA) extends BOA with Local Search Adaptive Mutation (LSAM), a perturbation mechanism that restores diversity when the population converges prematurely. LSAM applies Lévy flight-inspired mutations to the best solution, creating offspring that explore the neighbourhood while preserving fitness. DBOA achieves better exploitation than standard BOA but can be slow to converge on high-dimensional problems.
+
+\subsection{DB-BOA: The Hybrid Algorithm}
+
+Prabanand and Thanabal~\cite{prabanand2025} introduced DB-BOA, which combines DBOA and BOA through an adaptive switching criterion. At each iteration $t$, a uniform random variable $\text{rand} \sim \mathcal{U}[0,1]$ is compared to the ratio $\text{bestfit}_t / \text{worstfit}_t$, where $\text{bestfit}_t$ and $\text{worstfit}_t$ are the best and worst objective values in the current population. When the ratio approaches 1 (population converging), DBOA's exploitation dominates. When the ratio is small (population diverse), BOA's exploration dominates. This adaptive mechanism balances exploration and exploitation without requiring manual schedule tuning.
+
+In their base paper, Prabanand and Thanabal applied DB-BOA to two tasks on a simulated PEC-BC: hyperparameter tuning of ADTCN (achieving 95.45\% accuracy, 4.45\% FPR) and leader node selection (reducing consensus latency by approximately 30\% relative to random selection). This thesis extends DB-BOA to a third task — federated aggregation weight determination — and implements the full system on real Hyperledger Fabric infrastructure.
+
+\section{Summary of Related Work and Research Gap}
+
+Table~\ref{tab:related_work_gap} summarises the prior work landscape and the specific gap that this research fills.
+
+\begin{table}[!htbp]
+\centering
+\caption{Summary of Related Work and Identified Research Gap}
+\label{tab:related_work_gap}
+\begin{tabular}{p{3.8cm}p{4cm}p{6.2cm}}
+\toprule
+\textbf{Prior Work Category} & \textbf{What It Achieves} & \textbf{What It Misses} \\
+\midrule
+Centralised fraud detection with ML & High accuracy, fast training & Privacy loss, single point of failure, no multi-party collaboration \\
+\midrule
+Federated learning for fraud detection & Privacy-preserving collaboration & No incentive mechanism; FedAvg ignores model quality; no blockchain audit trail \\
+\midrule
+Blockchain for financial data sharing & Transparency and immutability & Consensus layer and application layer treated independently; no ML; no FL \\
+\midrule
+Blockchain with incentive mechanisms & Economic participation incentives & Incentives are heuristic add-ons; not coupled to consensus efficiency or model quality \\
+\midrule
+Metaheuristic optimisation for blockchain & Improved consensus efficiency & Applied to one objective only; not combined with fraud detection or FL \\
+\midrule
+DB-BOA base paper (Prabanand \& Thanabal, 2025) \cite{prabanand2025} & DB-BOA for hyperparameter tuning and leader selection in simulated PEC-BC & No federated learning; no multi-org incentive system; no Hyperledger Fabric implementation; no real consortium network \\
+\midrule
+\textbf{This thesis (FL-ADTCN)} & \textbf{All of the above combined} & \textbf{None — fills all identified gaps} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The specific gap that this research fills is: \textit{no prior system couples the quality of fraud detection models, the efficiency of blockchain consensus, and the economics of participation into a single self-reinforcing feedback loop governed by one algorithm, implemented on real Hyperledger Fabric infrastructure, with economic incentives mathematically derived from algorithm output}.
+
+
+\section{Summary of Key Findings}
+
+The reviewed literature collectively highlights three pillars that underpin blockchain-integrated financial security systems. First, \textbf{permissioned consortium blockchains} — exemplified by Hyperledger Fabric and Ethereum consortium networks — provide the access control, immutability, and smart contract capabilities needed to enforce financial rules without intermediaries, as demonstrated by Abdallah et al. \cite{abdallah2020}, Li et al. \cite{li2023}, and Prabanand and Thanabal \cite{prabanand2025}. Second, \textbf{Federated Learning} enables multiple financial institutions to collaboratively train fraud detection models without sharing raw data, though trust enforcement and adversarial robustness require an external verification layer such as a blockchain ledger \cite{li2022fdia, 10701002}. Third, \textbf{optimization and incentive alignment} are essential for practical deployment: metaheuristic algorithms such as DB-BOA efficiently solve leader block selection and model hyperparameter tuning, while token-based on-chain incentive mechanisms sustain honest participation across consortium rounds \cite{prabanand2025, 10529180}. This thesis synthesizes these three pillars into a single implemented framework, validating the DB-BOA-ADTCN approach on Hyperledger Fabric with a federated three-bank consortium and adversarial simulation.
+

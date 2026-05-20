@@ -1,0 +1,75 @@
+\section{Background}
+The rapid proliferation of digital financial services has created an environment in which fraudulent activity can spread across institutional boundaries faster than any single organisation can detect it. The Association of Certified Fraud Examiners reports that organisations lose approximately five percent of their revenue to fraud each year, with global losses exceeding USD 4.7 trillion annually\cite{acfe2022}. In the banking sector specifically, card-not-present fraud, account takeover, and synthetic identity fraud are no longer isolated events — they are coordinated campaigns conducted by actors who exploit the silos between competing financial institutions\cite{acfe2022}.
+
+The fundamental problem is architectural. Each bank trains its fraud detection model on its own transaction data. A fraudster detected by Bank A immediately redirects to Bank B, which has no knowledge of the prior incident. This institutional blindness is not a failure of technology; it is a consequence of rational competitive behaviour reinforced by regulatory constraint. Data protection laws such as the GDPR in the European Union and the Bangladesh Bank Data Governance Policy prohibit the transfer of raw customer transaction records to third parties without explicit consent — a standard that cannot practically be met in a real-time fraud detection pipeline.
+
+Three distinct barriers have historically prevented banks from building collaborative fraud detection systems. The first is \textbf{privacy}: raw transaction data contains personally identifiable information that cannot legally or ethically cross institutional boundaries. The second is \textbf{trust}: in a competitive market, no institution is willing to grant a competitor administrative control over a shared detection system, as that competitor could manipulate outcomes, selectively apply rewards, or gain proprietary intelligence from the arrangement. The third is \textbf{incentive alignment}: even if the technical and trust barriers were resolved, a profit-maximising institution has no rational reason to invest in improving a fraud detection model whose benefits flow primarily to competitors. Free-riding — contributing a deliberately poor model while benefiting from better models contributed by others — is the Nash equilibrium of any naïve federated system.
+
+This thesis proposes a framework that resolves all three barriers simultaneously through the integration of three technologies: \textbf{Federated Learning} (privacy), \textbf{Hyperledger Fabric permissioned consortium blockchain} (trust), and a mathematically coupled \textbf{token-based incentive mechanism} (incentive alignment). The framework is called \textbf{FL-ADTCN} — Federated Adaptive Deep Temporal Context Network — and its central algorithmic novelty is the use of the \textbf{Dynamic Butterfly-Billiards Optimisation Algorithm (DB-BOA)} in three coupled roles that have never previously been combined in a single system.
+
+\section{Rationale of the Study}
+Prabanand and Thanabal \cite{prabanand2025} published the DB-BOA-ADTCN framework in February 2025, demonstrating that DB-BOA can simultaneously optimise ADTCN hyperparameters and select consensus leader nodes on a simulated Private Ethereum Consortium Blockchain (PEC-BC), achieving 95.45\% fraud detection accuracy. Their work established the theoretical and algorithmic foundation on which this thesis builds.
+
+However, the base paper leaves three critical gaps. First, it does not implement federated learning: a single institution's model is optimised and deployed, rather than a globally aggregated model trained collaboratively across multiple organisations. Second, it uses a simulated blockchain environment (MATLAB-based PEC-BC) rather than a real, production-grade blockchain network, leaving its practical deployability unvalidated. Third, it applies DB-BOA to two optimisation roles (hyperparameter tuning and leader selection) but does not extend it to a third role — the determination of federated aggregation weights — which this thesis identifies as the key missing piece for incentive alignment.
+
+This study is motivated by the need to bridge these gaps and produce the first complete, real-world-implementable system in which a single algorithm governs model quality, consensus efficiency, and economic incentives in a unified, mathematically coupled loop.
+
+
+\section{Problem Statement}
+Financial fraud imposes substantial costs on institutions and erodes customer trust. Centralised fraud detection systems require banks to share raw transaction data with a single processing entity, creating privacy risks and single points of failure. Federated Learning resolves the data-sharing problem but introduces new challenges: without a trust enforcement layer, participants may submit inaccurate local model updates, and there is no objective mechanism for selecting which node should lead the consensus process or for distributing rewards fairly.
+
+Existing blockchain-FL integrations often rely on permissionless or simulated blockchain environments that lack the access control and deterministic execution guarantees required in regulated banking contexts. Furthermore, no prior work addresses the compounded challenge of simultaneously optimising leader node selection, model hyperparameters, and federated aggregation weights under a single unified optimisation strategy, with economic incentives mathematically derived from that strategy's outputs.
+
+This study addresses these gaps by implementing a DB-BOA-ADTCN framework on Hyperledger Fabric that:
+\begin{enumerate}
+  \item Uses DB-BOA to optimally select leader nodes by minimising computation time, communication cost, and memory size (Equation~\ref{eq:obf1}).
+  \item Uses DB-BOA to tune ADTCN hyperparameters (hidden neurons, epoch count, steps per epoch) to maximise fraud detection performance (Equation~\ref{eq:obf2}).
+  \item Uses DB-BOA — for the first time in the literature — to compute per-organisation federated aggregation weights, replacing naive equal weighting (FedAvg) with mathematically optimised contribution weights.
+  \item Enforces a token-based incentive structure via Hyperledger Fabric chaincode that distributes rewards proportionally to the DB-BOA-computed aggregation weights, creating a direct mathematical link between model quality and economic reward.
+  \item Demonstrates adversarial resilience by showing that the incentive mechanism automatically penalises Byzantine participants without human intervention.
+\end{enumerate}
+
+\section{Objective}
+The specific objectives of this study are:
+
+\begin{enumerate}
+  \item To deploy a Hyperledger Fabric permissioned consortium blockchain with \texttt{DBBOAContract} chaincode that enforces consensus rules, incentive distribution, and ledger immutability for a three-bank financial fraud detection consortium (BankA, BankB, BankC).
+  \item To implement DB-BOA for leader node selection among consortium peers, minimising the composite resource objective $\text{Obf}_1 = \text{CT} + \text{CC} + \text{MS}$ augmented with a reputation discount factor.
+  \item To implement DB-BOA for ADTCN hyperparameter optimisation, tuning hidden neuron count ($H_{nD}$), epoch count ($E_{pD}$), and steps per epoch ($S_{eD}$) to maximise the multi-objective fitness function $\text{Obf}_2$.
+  \item To implement and evaluate a federated learning pipeline across the three-bank consortium, with DB-BOA computing per-organisation aggregation weights — the primary novel contribution of this work.
+  \item To implement and evaluate a token-based on-chain incentive mechanism that rewards accurate, low-latency consensus participation and penalises dishonest behaviour, with federation rewards mathematically derived from DB-BOA's weight outputs.
+  \item To assess the framework's resilience to Byzantine attack by simulating a scenario in which one organisation consistently misreports fraud verdicts and demonstrating that the incentive mechanism automatically isolates the attacker.
+\end{enumerate}
+
+
+\section{Methodology in Brief}
+The research follows a structured six-phase pipeline. Financial transaction data was synthetically generated to replicate the Credit Card Fraud dataset structure (20,000 samples, 30 features,5\% fraud rate), distributed heterogeneously across three simulated banks (BankA 50\%, BankB 30\%, BankC 20\%)\cite{ulb2018}.
+
+
+
+\textbf{Phase 1 — Leader Node Selection:} DB-BOA optimized over a 10-node consortium blockchain to select the leader node by minimizing a composite objective of computation time, communication cost, and memory size.
+
+\textbf{Phase 2 — Hyperparameter Optimization:} DB-BOA searched the hyperparameter space (hidden neurons: 5–255, epochs: 5–50, steps per epoch: 50–250) to maximize ADTCN fraud detection performance on a validation subset.
+
+\textbf{Phase 3 — ADTCN Training:} The ADTCN model — comprising Multi-modal Joint Embedding (MJE), Temporal Context Learning (TCL), and Multiple Time-scale Temporal Attention (MTTA) — was trained using the DB-BOA-optimal hyperparameters on each organization's local data.
+
+\textbf{Phase 4 — Federated Aggregation:} At regular federation intervals, DB-BOA computed per-organization contribution weights, and a globally aggregated model was produced across BankA, BankB, and BankC.
+
+\textbf{Phase 5 — Blockchain Integration:} A Hyperledger Fabric network with three organizations recorded all transactions, leader elections, consensus rounds, federation rounds, and token balances via the \texttt{DBBOAContract} chaincode. Incentive rules (fraud consensus: +10 tokens, latency bonus: +15 tokens, leader success: +10 tokens, penalty: −2 tokens, federation pool: +20 tokens) were enforced deterministically on-chain.
+
+\textbf{Phase 6 — Evaluation:} The framework was evaluated against baselines from the base paper (MBO-ADTCN, WSA-ADTCN, DBOA-ADTCN, BOA-ADTCN, EfficientNet, ResNet, DenseNet, DTCN) using accuracy, precision, sensitivity, specificity, NPV, FPR, FNR, FDR, F1-score, and MCC. An adversarial simulation tested resilience when BankC consistently reported fraudulent verdicts.
+
+\section{Scopes and Challenges}
+This study focuses on financial fraud detection in a consortium banking environment, extending the DB-BOA-ADTCN framework of Prabanand and Thanabal \cite{prabanand2025} to a Hyperledger Fabric deployment with Federated Learning. The scope covers leader node selection, model hyperparameter optimization, federated aggregation weight optimization, on-chain incentive enforcement, and adversarial resilience — all within a three-organization simulation.
+
+Key challenges addressed include:
+
+\begin{itemize}
+\item \textbf{Computational overhead:} DB-BOA's population-based search is applied across three distinct optimization tasks per training run. Population sizes and iteration counts were reduced (population: 15–20, iterations: 20–30) relative to the base paper to maintain practical runtimes while preserving solution quality.
+\item \textbf{Data heterogeneity:} The three banks hold different proportions of training data (50/30/20 split), creating non-IID conditions that the DB-BOA-weighted federated aggregation must compensate for.
+\item \textbf{Adversarial participation:} A Byzantine attack scenario — where BankC always reports fraud — was simulated to test whether the token-penalty mechanism and reputation system can isolate and down-weight dishonest participants over successive rounds.
+\item \textbf{Blockchain determinism:} Hyperledger Fabric requires all chaincode logic to be fully deterministic. All DB-BOA optimization and randomness was confined to the off-chain Python layer; only finalized results (leader ID, token deltas, aggregation weights, model accuracy) were written to the ledger.
+\item \textbf{Scalability:} The framework was designed to support additional organizations beyond the three simulated banks, with federation and consensus mechanisms parameterized to scale with consortium size.
+\end{itemize}
+
+Future directions include extending the framework to live Hyperledger Fabric deployments across real banking nodes, incorporating differential privacy into the local training phase, and investigating quantum-resistant cryptographic primitives for long-term ledger integrity.

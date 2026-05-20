@@ -1,0 +1,93 @@
+\section{Final Specifications and Requirements}
+This project implements the DB-BOA-ADTCN financial security framework, extending the work of Prabanand and Thanabal \cite{prabanand2025} onto a Hyperledger Fabric permissioned consortium blockchain with a full Federated Learning pipeline across a three-bank consortium (BankA, BankB, BankC).
+
+\subsubsection*{Technical and Methodological Requirements}
+
+The framework adopts Federated Learning (FL) to enable decentralized fraud detection model training where raw transaction data remains local to each participating bank, preventing centralized data exposure.
+
+A Hyperledger Fabric permissioned consortium blockchain provides immutability, auditability, and controlled participation, with access restricted to authenticated consortium members through Fabric's certificate authority (CA) infrastructure.
+
+Fabric's built-in ordering service (RAFT-based) provides deterministic, low-latency consensus suited to high-frequency financial transaction environments, avoiding the computational waste of public blockchain consensus mechanisms.
+
+Fabric chaincode (smart contracts written in Node.js) manages leader election records, fraud verdict logging, consensus round tracking, federation round aggregation, and token-based incentive allocation across all consortium nodes.
+
+The Dynamic Butterfly-Billiards Optimization Algorithm (DB-BOA) is applied across three distinct roles: (1) leader block selection among consortium nodes, minimizing computation time, communication cost, and memory size; (2) ADTCN hyperparameter optimization, tuning hidden neuron count, epoch count, and steps per epoch; and (3) per-organization aggregation weight computation for federated rounds.
+
+Adaptive Deep Temporal Context Networks (ADTCN) — comprising Multi-modal Joint Embedding (MJE), Temporal Context Learning (TCL), and Multiple Time-scale Temporal Attention (MTTA) — serve as the core fraud detection model, capturing both periodic and non-periodic temporal patterns in financial transaction sequences.
+
+A token-based incentive structure enforced on-chain rewards accurate fraud verdicts (+10 tokens), low-latency consensus (+15 tokens), and successful leader rounds (+10 tokens), while penalizing incorrect verdicts and failed rounds (−2 tokens each) and distributing a federation participation pool (+20 tokens shared by DB-BOA weight).
+
+\subsubsection*{Software and Resource Requirements}
+
+\begin{itemize}
+\item \textbf{Machine Learning Implementation:} Python with TensorFlow/Keras used to develop the \textbf{ADTCN} model and the \textbf{DB-BOA} optimization algorithm across all three optimization tasks.
+\item \textbf{Blockchain Infrastructure:} \textbf{Hyperledger Fabric} (via the official Fabric samples and Docker-based network) for the permissioned consortium blockchain, with the Fabric Node.js SDK for application-layer interaction.
+\item \textbf{Smart Contract Logic:} \textbf{Node.js chaincode} (\texttt{DBBOAContract}) deployed on Fabric peers, implementing all on-chain state management, incentive enforcement, and ledger operations deterministically.
+\item \textbf{Incentive and Security Mechanism:} Token-based scoring system enforced via chaincode, with reputation deltas applied on-chain per consensus round outcome.
+\item \textbf{Dataset:} Synthetically generated financial transaction data modelled after the Credit Card Fraud dataset structure (20,000 samples, 30 features — V1–V28, Amount, Time — with a 5% fraud rate), distributed heterogeneously across the three consortium banks.
+\item \textbf{Development Environment:} Local workstation utilizing \textbf{Python 3}, \textbf{Node.js}, and \textbf{Docker} for Fabric network deployment; no specialized mining hardware required.
+\end{itemize}
+
+\section{Societal Impact}
+The framework improves financial security and trust for individuals and SMEs through Hyperledger Fabric's consortium consensus, federated learning for privacy-preserving fraud detection, and on-chain incentives for honest validator participation. By keeping raw transaction data local to each bank and enforcing verdict rules through tamper-evident chaincode, it enables robust fraud detection without requiring institutions to surrender data sovereignty or rely on centralized intermediaries. Widespread adoption across banking consortia could lower systemic fraud risk — reducing the blast radius of any single compromised node — and promote economic inclusion in emerging markets such as Bangladesh by making enterprise-grade fraud detection accessible without prohibitive infrastructure costs. The framework's permissioned architecture also aligns naturally with financial data protection regulations, as consortium membership and data access are cryptographically controlled.
+
+\section{Environmental Impact}
+The framework maintains a low environmental footprint by running entirely on existing commodity hardware within a permissioned Hyperledger Fabric network, avoiding the energy-intensive proof-of-work mining of public blockchains. Fabric's RAFT-based ordering service and deterministic chaincode execution require minimal computational resources per transaction. DB-BOA's efficient metaheuristic search reduces unnecessary model evaluations during optimization, and federated learning performs gradient updates locally at each bank, eliminating large-scale data transfers to cloud servers. The token penalty mechanism discourages wasteful re-proposals and failed consensus rounds, further reducing redundant computation. Overall, the framework maximizes the utility of existing banking infrastructure, extends device lifecycles through software-based security enhancement, and promotes sustainable computing practices in the financial sector.
+
+\section{Ethical Issues}
+The framework prioritizes ethical data handling throughout its design. Hyperledger Fabric's permissioned architecture restricts network participation to authenticated consortium members (BankA, BankB, BankC), ensuring that transaction records and model outputs remain confidential and inaccessible to unauthorized parties. Federated learning preserves each bank's data sovereignty by keeping raw transaction records local — only DB-BOA-weighted model parameters are shared across organizations. The chaincode enforces incentive and penalty rules transparently and without discretion, providing an auditable on-chain record of all consensus decisions and token allocations that any consortium member can verify. The reputation system promotes fair and honest participation without exploiting resource-constrained members, as penalties are proportional and bounded. All processing and ledger state remain within the consortium's controlled infrastructure, aligning with privacy-by-design principles and giving participants full oversight of how their contributions are recorded and rewarded — balancing strong fraud detection capability with respect for privacy, transparency, and institutional accountability.
+
+\section{Standards}
+The proposed framework adheres to established best practices and emerging standards in permissioned blockchain and privacy-preserving machine learning. The Hyperledger Fabric network follows the Hyperledger Foundation's recommended patterns for enterprise consortium deployments, including certificate authority-based identity management, channel-level data isolation, and deterministic chaincode execution requirements. Chaincode implementation follows Fabric's determinism rules — no \texttt{Math.random()} or \texttt{new Date()} in state-mutating functions; timestamps are read from \texttt{ctx.stub.getTxTimestamp()} to ensure identical execution across all endorsing peers. The federated learning pipeline complies with privacy principles in IEEE 2986-2023 (Recommended Practice for Privacy and Security in Federated Machine Learning), ensuring local data processing and minimal parameter sharing. The DB-BOA optimization and ADTCN training pipeline follows the methodology established in Prabanand and Thanabal \cite{prabanand2025}, providing a reproducible baseline for comparative evaluation. Open-source tools (Hyperledger Fabric, Python, Node.js) promote reproducibility and community-vetted development standards.
+
+\section{Project Management Plan}
+The project follows a structured, phase-driven execution plan to ensure timely delivery and systematic validation of the proposed framework.
+
+\subsubsection*{Schedule}
+
+\begin{itemize}
+\item \textbf{Literature Review & Problem Analysis} \
+Review of the base paper \cite{prabanand2025} and related blockchain-FL financial security literature; identification of gaps addressed by migrating to Hyperledger Fabric and adding a federated learning pipeline.
+
+
+\item \textbf{Framework Design \& Architecture Development} \\
+Design of the DB-BOA-ADTCN architecture on Hyperledger Fabric, including the three-bank consortium topology, chaincode data model, and DB-BOA role decomposition (leader selection, hyperparameter tuning, federation weights).
+
+\item \textbf{Model Development \& Integration} \\
+Implementation of the ADTCN model in Python, the DB-BOA optimizer, the Fabric chaincode (\texttt{DBBOAContract}), and the Node.js API server bridging the Python simulation layer with the on-chain ledger.
+
+\item \textbf{Optimization \& Security Enhancement} \\
+Integration of the three DB-BOA optimization phases, the token-based on-chain incentive mechanism, and the adversarial resilience simulation (Byzantine BankC attack scenario).
+
+\item \textbf{Experimental Evaluation \& Analysis} \\
+Performance evaluation against baselines from the base paper (MBO-ADTCN, WSA-ADTCN, DBOA-ADTCN, BOA-ADTCN, EfficientNet, ResNet, DenseNet, DTCN) using accuracy, MCC, FPR, NPV, sensitivity, specificity, F1-score, and throughput/latency metrics.
+
+\item \textbf{Documentation \& Thesis Preparation} \\
+Result interpretation, comparison with base paper findings, discussion of Fabric-specific implementation decisions, identification of limitations, and formulation of future work directions.
+\end{itemize}
+
+\subsubsection*{Budget Considerations}
+
+\begin{itemize}
+\item No licensing costs are incurred due to the use of open-source frameworks (Hyperledger Fabric, Python, Node.js, Docker).
+\item No additional hardware expenditure is required; the Fabric network and all experiments are conducted on standard computing resources via Docker containers.
+\item Overall cost is kept minimal, making the framework suitable for small and medium financial institutions and emerging economies.
+\end{itemize}
+
+\subsubsection*{Resource Management}
+
+\begin{itemize}
+\item Development effort is distributed across blockchain network configuration, Python-based ML and optimization implementation, Node.js chaincode development, and experimental evaluation tasks.
+\item Modular code organization (separate \texttt{models/}, \texttt{algorithms/}, \texttt{blockchain/}, \texttt{utils/} packages) and a shared configuration file (\texttt{config.py}) ensure consistent parameterization and smooth integration across all subsystems.
+\end{itemize}
+
+\section{Risk Management}
+Several technical and operational risks were identified during the development of the DB-BOA-ADTCN framework on Hyperledger Fabric. Corresponding mitigation strategies were incorporated into the system design to ensure robustness, security, and scalability. Table~\ref{tab:risk_management} summarizes the key risks, their potential impacts, and the adopted mitigation measures.
+
+
+
+Overall, the risk mitigation mechanisms are embedded directly into the system architecture — through on-chain chaincode enforcement, off-chain optimization constraints, and deterministic Fabric deployment practices — ensuring that security, privacy, and performance are core design principles rather than post-deployment considerations.
+
+\section{Economic Analysis}
+The framework offers clear economic advantages for financial institutions and consortium members by automating fraud detection and consensus enforcement through Fabric chaincode, eliminating the need for expensive third-party verification intermediaries and reducing per-transaction settlement costs. The token-based incentive structure lowers participation barriers — organizations earn rewards proportional to their contribution quality rather than requiring large capital stakes. Federated learning eliminates the data-transfer and cloud-processing costs associated with centralized fraud detection services, as model training occurs locally on each bank's existing infrastructure. Development relies entirely on open-source tools (Hyperledger Fabric, Python, Node.js, Docker) running on commodity hardware, resulting in minimal upfront and ongoing maintenance costs. For SMEs and financial institutions in emerging economies, the combination of fraud prevention, reduced intermediary fees, and infrastructure reuse provides strong cost-benefit returns — making enterprise-grade, privacy-preserving fraud detection accessible without prohibitive investment.
+

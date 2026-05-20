@@ -1,13 +1,12 @@
 """
 data/data_loader.py
 ===================
-Synthetic financial transaction dataset generator.
+Real financial transaction dataset loader.
 
-Simulates a credit-card-style fraud dataset with:
-  - 30 features  (V1-V28 PCA-like components + Amount + Time)
-  - Configurable fraud rate
-  - Temporal structure (intra-day patterns, burst fraud episodes)
-  - Temporal context features for TCL (PTC + NTC) layer
+Loads the ULB Credit Card Fraud Detection dataset (Lopez-Rojas et al., 2016):
+  - 284,807 rows, 0.17 % fraud rate
+  - 30 features: V1-V28 (PCA components) + Amount + Time
+  - Temporal context features added via ADTCN TCL (PTC + NTC) layer
 
 Usage
 -----
@@ -35,14 +34,13 @@ def _print(msg: str):
 
 class FinancialDataLoader:
     """
-    Generates a synthetic financial transaction dataset that mirrors
-    the statistical properties of the UCI Credit Card Fraud dataset
-    used in the base paper.
+    Loads the ULB Credit Card Fraud Detection benchmark dataset
+    (Kaggle, Lopez-Rojas et al., 2016) and prepares it for ADTCN training.
     """
 
     def __init__(self, cfg: dict = None):
-        self.cfg   = cfg or DATA_CONFIG
-        self.rng   = np.random.RandomState(self.cfg["random_state"])
+        self.cfg    = cfg or DATA_CONFIG
+        self.rng    = np.random.RandomState(self.cfg["random_state"])
         self.scaler = StandardScaler()
 
     # ── public API ────────────────────────────────────────────────────────────
@@ -55,9 +53,9 @@ class FinancialDataLoader:
         y_train, y_val, y_test : np.ndarray   (n_samples,)  binary labels
         """
         if verbose:
-            _print("Generating synthetic financial transaction dataset …")
+            _print("Loading ULB Credit Card Fraud dataset …")
 
-        X_raw, y = self._generate_raw_transactions()
+        X_raw, y = self._load_real_transactions()
 
         if verbose:
             n_fraud  = y.sum()
@@ -117,55 +115,22 @@ class FinancialDataLoader:
 
     # ── private helpers ───────────────────────────────────────────────────────
 
-    def _generate_raw_transactions(self):
-        """Generate raw 30-feature transaction data with class structure."""
-        n      = self.cfg["n_samples"]
-        n_feat = self.cfg["n_features"]
-        p_fraud = self.cfg["fraud_rate"]
-        n_fraud = int(n * p_fraud)
-        n_norm  = n - n_fraud
+    def _load_real_transactions(self):
+        """
+        Load the ULB Credit Card Fraud CSV and return (X_raw, y).
 
-        # ── normal transactions ───────────────────────────────────────────────
-        # PCA-like components: mean~0, varying std
-        stds_normal = self.rng.uniform(0.5, 2.5, size=n_feat - 2)
-        V_normal    = self.rng.randn(n_norm, n_feat - 2) * stds_normal
+        Columns reordered to V1-V28 (indices 0-27), Amount (28), Time (29)
+        so that downstream temporal feature engineering is unchanged.
+        """
+        path = self.cfg["dataset_path"]
+        df = pd.read_csv(path)
 
-        # Amount: log-normal, typical small purchases
-        amount_normal = np.abs(self.rng.lognormal(mean=3.5, sigma=1.2, size=n_norm))
-        amount_normal = np.clip(amount_normal, 0.5, 2000.0)
-
-        # Time: uniformly spread over 48-hour window (in seconds)
-        time_normal = self.rng.uniform(0, 172800, size=n_norm)
-
-        # ── fraudulent transactions ───────────────────────────────────────────
-        # Fraud has shifted distribution + higher amounts
-        stds_fraud   = self.rng.uniform(1.5, 4.0, size=n_feat - 2)
-        mean_shift   = self.rng.uniform(-2.0, 2.0, size=n_feat - 2)
-        V_fraud      = (self.rng.randn(n_fraud, n_feat - 2) * stds_fraud + mean_shift)
-
-        # Fraud amounts: skewed toward higher values
-        amount_fraud = np.abs(self.rng.lognormal(mean=5.0, sigma=1.5, size=n_fraud))
-        amount_fraud = np.clip(amount_fraud, 1.0, 25000.0)
-
-        # Fraud tends to cluster in time (burst attacks)
-        burst_centres = self.rng.choice(np.arange(0, 172800, 3600), size=5, replace=False)
-        time_fraud    = np.array([
-            c + self.rng.randn() * 600
-            for c in self.rng.choice(burst_centres, size=n_fraud)
-        ])
-        time_fraud = np.clip(time_fraud, 0, 172800)
-
-        # ── assemble ─────────────────────────────────────────────────────────
-        X_normal = np.column_stack([V_normal, amount_normal, time_normal])
-        X_fraud  = np.column_stack([V_fraud,  amount_fraud,  time_fraud])
-
-        X = np.vstack([X_normal, X_fraud])
-        y = np.concatenate([np.zeros(n_norm, dtype=int),
-                            np.ones(n_fraud,  dtype=int)])
-
-        # Shuffle
-        idx = self.rng.permutation(len(y))
-        return X[idx], y[idx]
+        # Feature order expected by _engineer_temporal_features:
+        # indices 0-27 → PCA components, 28 → Amount, 29 → Time
+        feature_cols = [f"V{i}" for i in range(1, 29)] + ["Amount", "Time"]
+        X_raw = df[feature_cols].values.astype(np.float32)
+        y = df["Class"].values.astype(int)
+        return X_raw, y
 
     def _engineer_temporal_features(self, X_raw, y):
         """
