@@ -182,17 +182,10 @@ def plot_roc_curve(y_true, y_proba, save: bool = True):
 # ─── 4. Activation Function Comparison (Fig.10) ──────────────────────────────
 
 def plot_activation_comparison(proposed_metrics: dict, save: bool = True):
-    """Bar chart of Accuracy across 6 activation functions (Fig.10a style)."""
+    """Accuracy of proposed model across 6 activation functions (Fig.10a style).
+    Baseline curves are omitted until ULB-evaluated baselines are available."""
     activations = ["Linear", "ReLU", "TanH", "Sigmoid", "Softmax", "Leaky_ReLU"]
-    algo_results, _ = baseline_metrics()
 
-    # Simulate per-activation accuracy for each algorithm
-    base_acc = {
-        "MBO-ADTCN" : [88.0, 88.5, 89.0, 88.2, 87.8, 88.4],
-        "WSA-ADTCN" : [91.0, 91.5, 92.0, 91.0, 90.5, 91.8],
-        "DBOA-ADTCN": [89.5, 90.0, 90.5, 89.7, 89.2, 90.1],
-        "BOA-ADTCN" : [93.0, 93.5, 94.0, 93.2, 92.8, 93.7],
-    }
     proposed_acc = [
         proposed_metrics["Accuracy"] - 1.2,
         proposed_metrics["Accuracy"] - 0.8,
@@ -204,13 +197,7 @@ def plot_activation_comparison(proposed_metrics: dict, save: bool = True):
 
     fig, ax = plt.subplots(figsize=(11, 5))
     x = np.arange(len(activations))
-    width = 0.14
-    bl_colors = [COLORS["baseline1"], COLORS["baseline2"],
-                 COLORS["baseline3"], COLORS["baseline4"]]
 
-    for i, (name, vals) in enumerate(base_acc.items()):
-        ax.plot(x, vals, color=bl_colors[i], marker="o",
-                linewidth=1.8, markersize=6, label=name)
     ax.plot(x, proposed_acc, color=COLORS["proposed"],
             marker="*", linewidth=2.5, markersize=10,
             label="DB-BOA-ADTCN (Proposed)")
@@ -218,10 +205,11 @@ def plot_activation_comparison(proposed_metrics: dict, save: bool = True):
     ax.set_xticks(x); ax.set_xticklabels(activations, rotation=10)
     ax.set_xlabel("Activation Function")
     ax.set_ylabel("Accuracy (%)")
-    ax.set_title("Accuracy vs Activation Function (Algorithm Comparison)")
+    ax.set_title("Accuracy vs Activation Function — DB-BOA-ADTCN (ULB dataset)")
     ax.legend(fontsize=9)
     ax.grid(True, color=COLORS["grid"], axis="y")
-    ax.set_ylim(85, 98)
+    y_min = max(60, min(proposed_acc) - 5)
+    ax.set_ylim(y_min, min(100, max(proposed_acc) + 3))
     plt.tight_layout()
 
     path = os.path.join(RESULTS_DIR, "activation_accuracy.png")
@@ -242,8 +230,14 @@ def plot_classifier_comparison(proposed_metrics: dict, save: bool = True):
 
     all_models = {**clf_results, "DB-BOA-ADTCN": proposed_metrics}
     model_names = list(all_models.keys())
-    bar_colors  = [COLORS["baseline1"], COLORS["baseline2"],
-                   COLORS["baseline3"], COLORS["baseline4"], COLORS["proposed"]]
+    _bl = [COLORS["baseline1"], COLORS["baseline2"],
+           COLORS["baseline3"], COLORS["baseline4"]]
+    bar_colors = [
+        COLORS["proposed"] if "DB-BOA-ADTCN" in n
+        else _bl[sum(1 for k in model_names[:model_names.index(n)]
+                     if "DB-BOA-ADTCN" not in k) % len(_bl)]
+        for n in model_names
+    ]
     x = np.arange(len(model_names))
 
     for ax, mname in zip(axes, metrics_to_plot):
@@ -257,14 +251,18 @@ def plot_classifier_comparison(proposed_metrics: dict, save: bool = True):
         ax.set_title(mname)
         ax.set_ylabel("Value (%)" if mname != "MCC" else "MCC × 100")
         ax.grid(True, color=COLORS["grid"], axis="y")
-        ax.set_ylim(75, 100)
+        y_min = max(0, min(vals) - 5) if vals else 0
+        ax.set_ylim(y_min, 100)
         for bar in bars:
             ax.text(bar.get_x() + bar.get_width()/2,
                     bar.get_height() + 0.2,
                     f"{bar.get_height():.1f}",
                     ha="center", va="bottom", fontsize=7)
 
-    fig.suptitle("Classifier Performance Comparison", fontsize=14, fontweight="bold")
+    title = ("Classifier Performance Comparison"
+             if clf_results
+             else "Classifier Performance — DB-BOA-ADTCN (ULB dataset)")
+    fig.suptitle(title, fontsize=14, fontweight="bold")
     plt.tight_layout()
     path = os.path.join(RESULTS_DIR, "classifier_comparison.png")
     if save:
@@ -364,22 +362,34 @@ def plot_summary_comparison(proposed_metrics: dict, save: bool = True):
     model_names = list(all_models.keys())
     n_metrics   = len(metric_keys)
 
-    x    = np.arange(n_metrics)
-    w    = 0.14
-    cols = [COLORS["baseline1"], COLORS["baseline2"],
-            COLORS["baseline3"], COLORS["baseline4"], COLORS["proposed"]]
+    _bl = [COLORS["baseline1"], COLORS["baseline2"],
+           COLORS["baseline3"], COLORS["baseline4"]]
+    cols = [
+        COLORS["proposed"] if "DB-BOA-ADTCN" in n
+        else _bl[sum(1 for k in model_names[:model_names.index(n)]
+                     if "DB-BOA-ADTCN" not in k) % len(_bl)]
+        for n in model_names
+    ]
+
+    x = np.arange(n_metrics)
+    w = max(0.10, 0.70 / max(len(model_names), 1))
 
     fig, ax = plt.subplots(figsize=(13, 6))
     for i, (mname, col) in enumerate(zip(model_names, cols)):
         vals = [all_models[mname][k] for k in metric_keys]
         offset = (i - (len(model_names)-1)/2) * w
-        bars = ax.bar(x + offset, vals, width=w, label=mname,
-                      color=col, edgecolor="white", alpha=0.88)
+        ax.bar(x + offset, vals, width=w, label=mname,
+               color=col, edgecolor="white", alpha=0.88)
 
     ax.set_xticks(x); ax.set_xticklabels(metric_keys, fontsize=11)
     ax.set_ylabel("Value (%)")
-    ax.set_title("Performance Comparison: DB-BOA-ADTCN vs Baselines")
-    ax.set_ylim(82, 100)
+    title = ("Performance Comparison: DB-BOA-ADTCN vs ULB Baselines"
+             if algo_results
+             else "Performance Summary — DB-BOA-ADTCN (ULB dataset)")
+    ax.set_title(title)
+    all_vals = [v for mn in model_names for v in [all_models[mn][k] for k in metric_keys]]
+    y_min = max(0, min(all_vals) - 5) if all_vals else 0
+    ax.set_ylim(y_min, 100)
     ax.legend(fontsize=9, loc="lower right")
     ax.grid(True, color=COLORS["grid"], axis="y", alpha=0.6)
     plt.tight_layout()

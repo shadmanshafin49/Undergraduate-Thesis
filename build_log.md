@@ -70,6 +70,95 @@ All changes applied to strengthen the thesis novelty and research defensibility.
 
 ---
 
+## ✅ Fix 1 — Krum byzantine_f corrected (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/config.py` — `byzantine_f` changed from 1 to 0
+
+**What changed**: Krum requires n ≥ 2f+3.  With n=3 orgs, f=1 fails (3 < 5).
+Setting f=0 satisfies the constraint (3 ≥ 3) and is mathematically honest:
+Krum selects the most consensus-aligned org assuming no Byzantine adversary.
+Added an inline comment explaining the n≥2f+3 requirement.
+
+**Verified**: Krum still runs and selects an org; the formal guarantee now holds.
+
+---
+
+## ✅ Fix 2 — Shapley docstring false claim removed (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/models/federation_manager.py` — module docstring line 19;
+  `coalition_value` inline docstring
+
+**What changed**: Removed the false claim "no shared labels needed for
+computation".  Added an honest note that `coalition_value()` requires a shared
+labelled validation set at the aggregator (trusted-aggregator assumption) and
+cited Hsieh et al. (2020) for the federated-evaluation trade-off discussion.
+
+---
+
+## ✅ Fix 3 — Graph features honestly renamed (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/data/graph_features.py` — full rewrite of docstring and variable names
+- `db_boa_framework/data/data_loader.py` — updated comments
+- `db_boa_framework/config.py` — updated comment on `use_graph_features`
+
+**What changed**: Renamed features to reflect what they actually compute on the
+ULB dataset (which has no account IDs):
+  - `in_degree_norm`  → `amount_recurrence_before`
+  - `out_degree_norm` → `amount_recurrence_after`
+  - `pagerank_norm`   → `degree_ratio`
+Module docstring now accurately describes these as temporal-amount recurrence
+features, not graph features.  Liu et al. (WWW 2021) citation retained with a
+disclaimer that the ULB substrate differs from the account-graph setting in that
+paper.
+
+---
+
+## ✅ Fix 4 — DB-BOA surrogate replaced with CNN (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — `_ADTCNObjective` class rewritten;
+  `SGDClassifier` import removed; `hidden_neurons_bounds` → `filter_count_bounds`
+- `db_boa_framework/config.py` — `hidden_neurons_bounds` → `filter_count_bounds`
+
+**What changed**: `_ADTCNObjective` now trains a `_Conv1dClassifier` surrogate
+(same architecture as the final model) on a 2,000-row stratified subsample for
+up to 5 epochs per DB-BOA evaluation.  DB-BOA now genuinely searches CNN filter
+count, not MLP neuron count.  The hyperparameter key in `DB_BOA_CONFIG` renamed
+from `hidden_neurons_bounds` to `filter_count_bounds` to match.
+
+---
+
+## ✅ Fix 5 — Dataset path guard added (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/data/data_loader.py` — `_load_real_transactions()`
+
+**What changed**: Added `os.path.exists()` guard before `pd.read_csv()`.  If
+`creditcard.csv` is absent the pipeline now raises a clear `FileNotFoundError`
+with the exact path and the Kaggle download URL instead of a cryptic pandas error.
+
+---
+
+## ✅ Fix 6 — Synthetic baselines removed (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/utils/metrics.py` — `baseline_metrics()` body replaced
+- `db_boa_framework/utils/visualizer.py` — `plot_activation_comparison`,
+  `plot_classifier_comparison`, `plot_summary_comparison` updated
+
+**What changed**: Hardcoded baseline numbers (MBO-ADTCN, WSA-ADTCN, etc.) that
+were produced on synthetic data removed from `baseline_metrics()`.  The function
+now returns empty dicts with a docstring explaining that ULB-compatible baselines
+(FedAvg, FedAvg+Krum, FedAvg+DP) must be computed by running the pipeline.
+Visualizer plots gracefully handle empty baseline dicts (show proposed model only)
+and use `COLORS["proposed"]` for the proposed model regardless of its position in
+the dict.
+
+---
+
 ## ✅ Tip 6 — Transaction graph features (2026-05-20)
 
 **Files changed**

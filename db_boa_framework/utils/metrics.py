@@ -131,53 +131,22 @@ def print_metrics_table(metrics: dict, model_name: str = "DB-BOA-ADTCN"):
 
 def baseline_metrics():
     """
-    Reference values from Table 3 & 4 of the paper for comparison.
-    Used in visualiser to draw comparison bars.
+    Baseline metrics for comparison with DB-BOA-ADTCN on the ULB dataset.
+
+    The original paper's hardcoded numbers (MBO-ADTCN, WSA-ADTCN, etc.) were
+    produced on synthetic data and cannot be validly compared against ULB results.
+    They have been removed.
+
+    Populate these dicts by running the following configurations on the ULB
+    dataset and recording their test-set metrics:
+      algo_results — FedAvg (McMahan et al., AISTATS 2017);
+                     FedAvg + Krum (use_krum=True, use_dp=False);
+                     FedAvg + DP   (use_krum=False, use_dp=True)
+      clf_results  — same models with different classifier architectures
+
+    Until those runs are complete, comparison plots will show only the proposed
+    model.
     """
-    # Table 3: algorithm comparison
-    algo_results = {
-        "MBO-ADTCN" : {
-            "Accuracy":88.4, "Precision":88.35, "Sensitivity":88.17,
-            "Specificity":88.63,"NPV":88.63,"FPR":11.37,"FNR":11.83,
-            "FDR":11.65,"F1_Score":88.26,"MCC":0.768
-        },
-        "WSA-ADTCN" : {
-            "Accuracy":91.85,"Precision":91.47,"Sensitivity":92.11,
-            "Specificity":91.59,"NPV":91.59,"FPR":8.41,"FNR":7.89,
-            "FDR":8.53,"F1_Score":91.79,"MCC":0.837
-        },
-        "DBOA-ADTCN": {
-            "Accuracy":90.0, "Precision":90.0, "Sensitivity":89.79,
-            "Specificity":90.21,"NPV":90.21,"FPR":9.79,"FNR":10.21,
-            "FDR":10.03,"F1_Score":89.88,"MCC":0.800
-        },
-        "BOA-ADTCN" : {
-            "Accuracy":93.8, "Precision":93.47,"Sensitivity":94.03,
-            "Specificity":93.57,"NPV":93.57,"FPR":6.43,"FNR":5.97,
-            "FDR":6.53,"F1_Score":93.75,"MCC":0.876
-        },
-    }
-    # Table 4: classifier comparison
-    clf_results = {
-        "EfficientNet": {
-            "Accuracy":89.05,"Precision":88.89,"Sensitivity":88.98,
-            "Specificity":89.12,"NPV":89.12,"FPR":10.88,"FNR":11.02,
-            "FDR":11.11,"F1_Score":88.93,"MCC":0.781
-        },
-        "ResNet"      : {
-            "Accuracy":92.55,"Precision":92.34,"Sensitivity":92.62,
-            "Specificity":92.48,"NPV":92.48,"FPR":7.52,"FNR":7.38,
-            "FDR":7.66,"F1_Score":92.48,"MCC":0.851
-        },
-        "DenseNet"    : {
-            "Accuracy":90.65,"Precision":90.51,"Sensitivity":90.60,
-            "Specificity":90.70,"NPV":90.70,"FPR":9.30,"FNR":9.40,
-            "FDR":9.49,"F1_Score":90.55,"MCC":0.813
-        },
-        "DTCN"        : {
-            "Accuracy":94.8, "Precision":94.74,"Sensitivity":94.74,
-            "Specificity":94.86,"NPV":94.86,"FPR":5.14,"FNR":5.26,
-            "FDR":5.26,"F1_Score":94.74,"MCC":0.896
-        },
-    }
+    algo_results: dict = {}   # populate with ULB-evaluated algorithm baselines
+    clf_results:  dict = {}   # populate with ULB-evaluated classifier baselines
     return algo_results, clf_results

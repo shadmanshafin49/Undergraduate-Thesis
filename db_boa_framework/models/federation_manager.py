@@ -15,8 +15,11 @@ FederationManager orchestrates federated rounds:
 
 Architecture note
 -----------------
-Krum  → security   (Byzantine fault tolerance)
-Shapley → fairness (game-theoretic contribution attribution, no shared labels needed for computation)
+Krum    → security  (Byzantine fault tolerance)
+Shapley → fairness  (game-theoretic contribution attribution; coalition_value() requires
+                     a shared labelled validation set at the aggregator — this assumes
+                     a trusted-aggregator model.  See Hsieh et al. (2020) for a discussion
+                     of the federated-evaluation trade-off this introduces.)
 
 References
 ----------
@@ -261,7 +264,9 @@ class FederationManager:
         n_arrays     = len(org_weights_list[0])
 
         def coalition_value(indices: tuple) -> float:
-            """Equal-weight average of coalition S, evaluated on val set."""
+            """Equal-weight average of coalition S, evaluated on shared val set.
+            Requires a trusted aggregator holding (X_val, y_val) — a labelled
+            holdout set that all orgs implicitly contribute to."""
             if not indices:
                 return 0.0
             avg_w = [

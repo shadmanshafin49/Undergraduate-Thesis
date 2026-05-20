@@ -29,8 +29,11 @@ DATA_CONFIG = {
     "val_size"          : 0.10,     # 10 % of training set for validation
     "random_state"      : 42,
     "eval_subset"       : 3_000,    # samples used for fast DB-BOA fitness eval
-    # Transaction graph features (Liu et al., WWW 2021)
-    "use_graph_features": True,     # append in_degree, out_degree, pagerank to raw features
+    # Temporal-amount recurrence features (inspired by Liu et al., WWW 2021)
+    # NOTE: ULB has no account IDs, so these are sliding-window frequency
+    # features (amount_recurrence_before, amount_recurrence_after, degree_ratio),
+    # not true graph features.
+    "use_graph_features": True,     # append 3 recurrence features to raw features
     "graph_n_bins"      : 50,       # Amount discretisation buckets
     "graph_window"      : 100,      # rolling window size for edge construction
 }
@@ -42,7 +45,7 @@ DB_BOA_CONFIG = {
     "max_iterations"  : 30,
 
     # Hyperparameter search bounds for ADTCN  (Paper Table / Eq. 11)
-    "hidden_neurons_bounds"  : (5,   255),   # HnD
+    "filter_count_bounds"    : (5,   255),   # CNN n_filters (HnD in paper)
     "epoch_count_bounds"     : (5,   50),    # EpD
     "steps_per_epoch_bounds" : (50,  250),   # SeD
 
@@ -157,8 +160,11 @@ FEDERATION_CONFIG = {
     'db_boa_fed_iter'      : 20,                    # DB-BOA iterations for weight search
     'random_state'         : 42,
     # Krum Byzantine-robust aggregation (Blanchard et al., NeurIPS 2017)
+    # Krum requires n ≥ 2f+3.  With n=3 orgs: f=0 is the largest value that
+    # satisfies this (3 ≥ 2×0+3 = 3).  f=0 means no Byzantine adversary is
+    # assumed; Krum still selects the most consensus-aligned org each round.
     'use_krum'             : True,                  # replace weighted average with Krum
-    'byzantine_f'          : 1,                     # assumed max Byzantine orgs (f < n/2)
+    'byzantine_f'          : 0,                     # max Byzantine orgs; 0 is correct for n=3
     # Differential privacy for weight sharing (Dwork et al., 2006)
     'use_dp'               : True,                  # add Gaussian noise before sharing weights
     'dp_epsilon'           : 1.0,                   # privacy budget ε (lower = more private)

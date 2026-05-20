@@ -31,8 +31,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-from sklearn.linear_model import SGDClassifier
-from sklearn.utils         import resample
+from sklearn.utils import resample
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -93,47 +92,91 @@ class _ADTCNObjective:
     """
     Wraps ADTCN evaluation as a callable fitness function for DB-BOA.
 
-    Uses a fast SGD surrogate on raw features for the hundreds of
-    DB-BOA evaluations; the full CNN is only trained once at the end.
+    Uses the same _Conv1dClassifier architecture as the final model, trained on
+    a 2,000-row stratified subsample for up to _SURROGATE_EPOCHS epochs.  This
+    makes DB-BOA actually optimise CNN filter count, not MLP neuron count.
     DB-BOA minimises, so we return −Obf2.
 
     Hyperparameter mapping
     ----------------------
-    params[0]  →  n_filters   (Conv1d channel count)
+    params[0]  →  n_filters          (Conv1d channel count)
     params[1]  →  epochs
-    params[2]  →  steps_per_epoch  (controls batch_size)
+    params[2]  →  steps_per_epoch    (controls batch_size)
     """
 
+    _SURROGATE_ROWS   = 2_000   # rows per evaluation (speed vs. fidelity trade-off)
+    _SURROGATE_EPOCHS = 5       # hard cap on surrogate training epochs
+
     def __init__(self, X_opt, y_opt, random_state: int = 42):
-        self.X   = X_opt[:, :N_RAW_FEATURES]   # raw 30 features for speed
-        self.y   = y_opt
-        self.rng = np.random.RandomState(random_state)
+        rng   = np.random.RandomState(random_state)
+        n_raw = min(X_opt.shape[1], N_RAW_FEATURES + 3)
+        self._n_raw = n_raw
+
+        # Stratified subsample for speed
+        fraud_idx  = np.where(y_opt == 1)[0]
+        normal_idx = np.where(y_opt == 0)[0]
+        n_f = min(len(fraud_idx),  self._SURROGATE_ROWS // 2)
+        n_n = min(len(normal_idx), self._SURROGATE_ROWS - n_f)
+        idx = np.concatenate([
+            rng.choice(fraud_idx,  n_f, replace=False),
+            rng.choice(normal_idx, n_n, replace=False),
+        ])
+        rng.shuffle(idx)
+        X_sub = X_opt[idx, :n_raw].astype(np.float32)
+        y_sub = y_opt[idx]
+
+        # Pre-build sequences once so __call__ only trains the CNN
+        pad   = np.repeat(X_sub[:1], SEQ_LEN - 1, axis=0)
+        X_pad = np.vstack([pad, X_sub])
+        self.X_seq = np.stack(
+            [X_pad[i : i + SEQ_LEN] for i in range(len(X_sub))], axis=0
+        ).astype(np.float32)   # (n_sub, SEQ_LEN, n_raw)
+        self.y   = y_sub
+        self.rng = rng
         self._call_count = 0
 
     def __call__(self, params: np.ndarray) -> float:
         if np.any(np.isnan(params)) or np.any(np.isinf(params)):
             return 10.0
 
-        epoch_count = max(3, int(round(float(params[1]))))
+        n_filters = max(8,  int(round(float(params[0]))))
+        n_ep      = min(self._SURROGATE_EPOCHS, max(2, int(round(float(params[1])))))
+        spe       = max(10, int(round(float(params[2]))))
 
-        model = SGDClassifier(
-            loss         = "modified_huber",
-            max_iter     = epoch_count,
-            class_weight = "balanced",
-            random_state = 42,
-            n_jobs       = 1,
-        )
+        n       = len(self.X_seq)
+        n_train = int(0.7 * n)
+        idx     = self.rng.permutation(n)
 
-        n_train       = int(0.7 * len(self.X))
-        idx           = self.rng.permutation(len(self.X))
-        X_tr, y_tr    = self.X[idx[:n_train]], self.y[idx[:n_train]]
-        X_vl, y_vl    = self.X[idx[n_train:]], self.y[idx[n_train:]]
+        X_tr_t = torch.tensor(self.X_seq[idx[:n_train]], dtype=torch.float32)
+        y_tr_t = torch.tensor(self.y[idx[:n_train]],    dtype=torch.long)
+        X_vl_t = torch.tensor(self.X_seq[idx[n_train:]], dtype=torch.float32)
+        y_vl   = self.y[idx[n_train:]]
+
+        batch_size = max(32, n_train // spe)
+
+        n_fraud  = int(y_tr_t.numpy().sum())
+        n_normal = len(y_tr_t) - n_fraud
+        w_fraud  = n_normal / max(n_fraud, 1)
+        cw       = torch.tensor([1.0, w_fraud], dtype=torch.float32)
 
         try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                model.fit(X_tr, y_tr)
-                y_pred = model.predict(X_vl)
+            torch.manual_seed(int(self.rng.randint(0, 2 ** 31)))
+            net       = _Conv1dClassifier(n_features=self._n_raw, n_filters=n_filters)
+            criterion = nn.CrossEntropyLoss(weight=cw)
+            optimizer = optim.Adam(net.parameters(), lr=1e-3)
+            loader    = DataLoader(
+                TensorDataset(X_tr_t, y_tr_t),
+                batch_size=batch_size, shuffle=True,
+            )
+            net.train()
+            for _ in range(n_ep):
+                for Xb, yb in loader:
+                    optimizer.zero_grad()
+                    criterion(net(Xb), yb).backward()
+                    optimizer.step()
+            net.eval()
+            with torch.no_grad():
+                y_pred = net(X_vl_t).argmax(dim=1).numpy()
         except Exception:
             return 10.0
 
@@ -179,7 +222,7 @@ class ADTCN:
         """Run DB-BOA to find optimal (n_filters, epochs, steps/epoch)."""
         if verbose:
             _print("Starting DB-BOA hyperparameter search …")
-            _print(f"Search space: filters∈{DB_BOA_CONFIG['hidden_neurons_bounds']}  "
+            _print(f"Search space: filters∈{DB_BOA_CONFIG['filter_count_bounds']}  "
                    f"EpD∈{DB_BOA_CONFIG['epoch_count_bounds']}  "
                    f"SeD∈{DB_BOA_CONFIG['steps_per_epoch_bounds']}")
             _sep()
@@ -187,10 +230,10 @@ class ADTCN:
         objective = _ADTCNObjective(X_opt, y_opt,
                                     random_state=self.cfg["random_state"])
 
-        lb = np.array([DB_BOA_CONFIG["hidden_neurons_bounds"][0],
+        lb = np.array([DB_BOA_CONFIG["filter_count_bounds"][0],
                        DB_BOA_CONFIG["epoch_count_bounds"][0],
                        DB_BOA_CONFIG["steps_per_epoch_bounds"][0]], dtype=float)
-        ub = np.array([DB_BOA_CONFIG["hidden_neurons_bounds"][1],
+        ub = np.array([DB_BOA_CONFIG["filter_count_bounds"][1],
                        DB_BOA_CONFIG["epoch_count_bounds"][1],
                        DB_BOA_CONFIG["steps_per_epoch_bounds"][1]], dtype=float)
 

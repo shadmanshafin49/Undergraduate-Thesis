@@ -64,7 +64,8 @@ class FinancialDataLoader:
             _print(f"Normal        : {n_normal:,}  ({100*n_normal/len(y):.2f} %)")
             _print(f"Fraud         : {n_fraud:,}   ({100*n_fraud/len(y):.2f} %)")
 
-        # ── Transaction graph features (in_degree, out_degree, pagerank) ──────
+        # ── Temporal-amount recurrence features ──────────────────────────────
+        # (amount_recurrence_before, amount_recurrence_after, degree_ratio)
         if self.cfg.get("use_graph_features", False):
             from data.graph_features import extract_graph_features
             # Amount is column index 28 (V1-V28=0-27, Amount=28, Time=29)
@@ -74,9 +75,9 @@ class FinancialDataLoader:
                 window_size = self.cfg.get("graph_window", 100),
                 verbose     = verbose,
             )
-            X_raw = np.hstack([X_raw, G])   # (n, 33): raw 30 + 3 graph features
+            X_raw = np.hstack([X_raw, G])   # (n, 33): raw 30 + 3 recurrence features
             if verbose:
-                _print(f"Raw features after graph augmentation : {X_raw.shape[1]}")
+                _print(f"Raw features after recurrence augmentation : {X_raw.shape[1]}")
 
         if verbose:
             _print("Engineering temporal context features (PTC + NTC) …")
@@ -137,6 +138,12 @@ class FinancialDataLoader:
         so that downstream temporal feature engineering is unchanged.
         """
         path = self.cfg["dataset_path"]
+        if not os.path.exists(path):
+            raise FileNotFoundError(
+                f"ULB Credit Card Fraud dataset not found at:\n  {path}\n"
+                "Download from https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud\n"
+                "and place creditcard.csv in the datasets/ folder."
+            )
         df = pd.read_csv(path)
 
         # Feature order expected by _engineer_temporal_features:
@@ -226,7 +233,7 @@ class FinancialDataLoader:
         """
         n_raw = self.cfg["n_features"]
         if self.cfg.get("use_graph_features", False):
-            n_raw += 3          # in_degree, out_degree, pagerank
+            n_raw += 3          # amount_recurrence_before, amount_recurrence_after, degree_ratio
         ptc  = len(ADTCN_CONFIG["ptc_windows"]) * 2 * n_raw
         ntc  = len(ADTCN_CONFIG["ntc_diff_orders"]) * n_raw
         mje  = 4
