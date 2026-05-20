@@ -64,6 +64,20 @@ class FinancialDataLoader:
             _print(f"Normal        : {n_normal:,}  ({100*n_normal/len(y):.2f} %)")
             _print(f"Fraud         : {n_fraud:,}   ({100*n_fraud/len(y):.2f} %)")
 
+        # ── Transaction graph features (in_degree, out_degree, pagerank) ──────
+        if self.cfg.get("use_graph_features", False):
+            from data.graph_features import extract_graph_features
+            # Amount is column index 28 (V1-V28=0-27, Amount=28, Time=29)
+            G = extract_graph_features(
+                amounts     = X_raw[:, 28],
+                n_bins      = self.cfg.get("graph_n_bins",  50),
+                window_size = self.cfg.get("graph_window", 100),
+                verbose     = verbose,
+            )
+            X_raw = np.hstack([X_raw, G])   # (n, 33): raw 30 + 3 graph features
+            if verbose:
+                _print(f"Raw features after graph augmentation : {X_raw.shape[1]}")
+
         if verbose:
             _print("Engineering temporal context features (PTC + NTC) …")
 
@@ -210,8 +224,10 @@ class FinancialDataLoader:
         How many features the engineered matrix will have —
         useful for ADTCN input-dim calculation.
         """
-        n    = self.cfg["n_features"]
-        ptc  = len(ADTCN_CONFIG["ptc_windows"]) * 2 * n   # mean + std per window
-        ntc  = len(ADTCN_CONFIG["ntc_diff_orders"]) * n
+        n_raw = self.cfg["n_features"]
+        if self.cfg.get("use_graph_features", False):
+            n_raw += 3          # in_degree, out_degree, pagerank
+        ptc  = len(ADTCN_CONFIG["ptc_windows"]) * 2 * n_raw
+        ntc  = len(ADTCN_CONFIG["ntc_diff_orders"]) * n_raw
         mje  = 4
-        return n + ptc + ntc + mje
+        return n_raw + ptc + ntc + mje

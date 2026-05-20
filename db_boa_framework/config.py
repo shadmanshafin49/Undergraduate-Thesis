@@ -4,9 +4,9 @@ config.py
 Central configuration for DB-BOA Financial Security Framework.
 All hyperparameters, paths, and constants are defined here.
 
-Reference: "Advanced financial security system using smart contract in
-private ethereum consortium blockchain with hybrid optimization strategy"
-Prabanand & Thanabal, Scientific Reports, 2025.
+Reference: Prabanand & Thanabal (2025), "Advanced financial security system
+using smart contract in private ethereum consortium blockchain with hybrid
+optimization strategy", Scientific Reports 15, 6764.
 """
 
 import os
@@ -22,13 +22,17 @@ DATASET_PATH = os.path.join(os.path.dirname(BASE_DIR), "datasets", "creditcard.c
 
 # ─── Dataset Configuration ───────────────────────────────────────────────────
 DATA_CONFIG = {
-    "dataset_path"    : DATASET_PATH,
-    "n_features"      : 30,       # V1-V28 + Amount + Time
-    "sequence_length" : 10,       # look-back window for temporal context
-    "test_size"       : 0.20,     # 80/20 train-test split
-    "val_size"        : 0.10,     # 10 % of training set for validation
-    "random_state"    : 42,
-    "eval_subset"     : 3_000,    # samples used for fast DB-BOA fitness eval
+    "dataset_path"      : DATASET_PATH,
+    "n_features"        : 30,       # V1-V28 + Amount + Time (base raw features)
+    "sequence_length"   : 10,       # look-back window for temporal context
+    "test_size"         : 0.20,     # 80/20 train-test split
+    "val_size"          : 0.10,     # 10 % of training set for validation
+    "random_state"      : 42,
+    "eval_subset"       : 3_000,    # samples used for fast DB-BOA fitness eval
+    # Transaction graph features (Liu et al., WWW 2021)
+    "use_graph_features": True,     # append in_degree, out_degree, pagerank to raw features
+    "graph_n_bins"      : 50,       # Amount discretisation buckets
+    "graph_window"      : 100,      # rolling window size for edge construction
 }
 
 # ─── DB-BOA Optimizer Configuration ──────────────────────────────────────────
@@ -155,6 +159,12 @@ FEDERATION_CONFIG = {
     # Krum Byzantine-robust aggregation (Blanchard et al., NeurIPS 2017)
     'use_krum'             : True,                  # replace weighted average with Krum
     'byzantine_f'          : 1,                     # assumed max Byzantine orgs (f < n/2)
+    # Differential privacy for weight sharing (Dwork et al., 2006)
+    'use_dp'               : True,                  # add Gaussian noise before sharing weights
+    'dp_epsilon'           : 1.0,                   # privacy budget ε (lower = more private)
+    'dp_delta'             : 1e-5,                  # failure probability δ
+    # Shapley-value contribution weights (Wang et al., FedSV 2020)
+    'use_shapley'          : True,                  # replace DB-BOA Job 3 with exact Shapley
 }
 
 ORG_DATA_SPLITS = {

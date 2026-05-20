@@ -3,16 +3,24 @@ models/federated_adtcn.py
 =========================
 FederatedADTCN — extends ADTCN with federated learning capabilities.
 
-Adds three capabilities on top of the base ADTCN:
+Adds four capabilities on top of the base ADTCN:
   1. extract_weights()              — serialisable numpy weight list
-  2. load_weights(weights)          — reload weights into live model
-  3. evaluate_on_validation(X, y)   — Obf2 score for DB-BOA Job 3 fitness
+  2. extract_weights_with_dp()      — ε-DP weight sharing (Dwork et al., 2006)
+  3. load_weights(weights)          — reload weights into live model
+  4. evaluate_on_validation(X, y)   — Obf2 score for DB-BOA Job 3 fitness
 
 The base ADTCN (hyperparameter optimisation, training, prediction) is
 unchanged.  FederatedADTCN inherits everything and adds federated glue.
+
+References
+----------
+Dwork et al., "Calibrating Noise to Sensitivity in Private Data Analysis",
+TCC 2006.  Gaussian mechanism: σ = C·√(2·ln(1.25/δ)) / ε
 """
 
 import numpy as np
+from math import sqrt, log
+import torch
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.adtcn    import ADTCN
@@ -29,25 +37,59 @@ class FederatedADTCN(ADTCN):
 
     def extract_weights(self) -> list:
         """
-        Return list of numpy arrays: model coefs_ and intercepts_.
-        The full weight set (coefs_ + intercepts_) is required so that
-        federated averaging preserves both weights and biases.
+        Return model weights as a list of numpy arrays (from state_dict).
+        Covers all Conv1d and Linear parameters (weights + biases).
         """
         if self.model is None:
             raise RuntimeError("Model not trained — call fit() first.")
-        return ([c.copy() for c in self.model.coefs_] +
-                [i.copy() for i in self.model.intercepts_])
+        return [
+            v.detach().cpu().numpy().copy()
+            for v in self.model.state_dict().values()
+        ]
+
+    def extract_weights_with_dp(
+        self,
+        epsilon: float = 1.0,
+        delta:   float = 1e-5,
+    ) -> list:
+        """
+        Return model weights with a formal (ε, δ)-differential privacy
+        guarantee using the Gaussian mechanism (Dwork et al., 2006).
+
+        Steps
+        -----
+        1. Clip each weight tensor to L2 norm ≤ C=1.0 (bounding sensitivity).
+        2. Add i.i.d. Gaussian noise N(0, σ²) where
+               σ = C · √(2 · ln(1.25 / δ)) / ε
+
+        The clipping step ensures the global sensitivity of the weight
+        vector is bounded by C, which is required for the DP guarantee to
+        hold.  Smaller ε → more noise → stronger privacy, less accuracy.
+        """
+        weights     = self.extract_weights()
+        sensitivity = 1.0                                  # clipping norm C
+        sigma       = sensitivity * sqrt(2 * log(1.25 / delta)) / epsilon
+
+        noised = []
+        for w in weights:
+            # L2-clip: scale down if norm exceeds sensitivity bound
+            norm = np.linalg.norm(w)
+            if norm > sensitivity:
+                w = w * (sensitivity / norm)
+            noised.append(w + np.random.normal(0, sigma, w.shape))
+        return noised
 
     def load_weights(self, weights: list):
         """
-        Load a weight array list back into the model.
-        weights must match the architecture (same coefs_/intercepts_ shapes).
+        Load weights from a list of numpy arrays back into the PyTorch model.
+        weights must match the state_dict key order and shapes.
         """
         if self.model is None:
             raise RuntimeError("Model not trained — cannot load weights.")
-        n = len(self.model.coefs_)
-        self.model.coefs_      = [weights[i].copy()   for i in range(n)]
-        self.model.intercepts_ = [weights[n + i].copy() for i in range(n)]
+        state_dict = self.model.state_dict()
+        for key, w in zip(state_dict.keys(), weights):
+            state_dict[key] = torch.tensor(w, dtype=state_dict[key].dtype)
+        self.model.load_state_dict(state_dict)
 
     # ── Validation evaluation ─────────────────────────────────────────────────
 

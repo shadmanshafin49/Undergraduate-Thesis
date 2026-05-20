@@ -33,7 +33,7 @@ claim technically defensible with a peer-reviewed citation.
 
 ---
 
-### 3. Add differential privacy to weight sharing
+### ✅ 3. Add differential privacy to weight sharing — DONE
 
 **Why it matters**: The current federated setup requires a **shared labelled validation
 set at the aggregator** — this breaks the privacy premise entirely. DP fixes it.
@@ -56,7 +56,7 @@ areas in 2025–2026 research.
 
 ## Tier 2 — Medium effort, strong thesis differentiator
 
-### 4. Replace MLPClassifier with a real temporal model
+### ✅ 4. Replace MLPClassifier with a real temporal model — DONE
 
 **Why it matters**: Calling something "Temporal Context Learning" while using
 `sklearn.MLPClassifier` is indefensible. An MLP treats the 10-timestep sequence as a
@@ -75,7 +75,7 @@ becomes true.
 
 ---
 
-### 5. Replace DB-BOA Job 3 with Shapley-value contribution weights
+### ✅ 5. Replace DB-BOA Job 3 with Shapley-value contribution weights — DONE
 
 **Why it matters**: Using a population metaheuristic to optimise 3 scalars that sum to 1
 is overkill AND requires shared data. Shapley values solve the same problem — how much
@@ -92,7 +92,7 @@ research directions right now.
 
 ## Tier 3 — High effort, only if time allows
 
-### 6. Add transaction graph features
+### ✅ 6. Add transaction graph features — DONE
 
 Build a bipartite sender → receiver graph with NetworkX. Extract node-level features
 (in-degree, out-degree, PageRank) and append them to the existing 30 features. Graph-
@@ -104,8 +104,7 @@ graph features consistently beat tabular-only baselines.
 ## What NOT to do
 
 - Do not add more metaheuristics — the space is saturated and reviewers are fatigued by it.
-- Do not claim Ethereum compatibility while running Hyperledger Fabric — they are
-  fundamentally different systems. Pick one and be precise.
+- This system runs exclusively on Hyperledger Fabric — do not introduce references to other blockchain platforms.
 - Do not add more chaincode features. The chain is already doing little that is critical;
   more ledger entries will not strengthen the contribution.
 - Do not justify DB-BOA over Optuna or random search without a convergence speed

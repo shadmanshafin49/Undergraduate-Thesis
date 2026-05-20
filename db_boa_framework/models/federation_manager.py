@@ -1,29 +1,36 @@
 """
 models/federation_manager.py
 =============================
-FederationManager — DB-BOA Job 3 + Krum Byzantine-robust aggregation.
+FederationManager — Krum + Shapley-value federated aggregation.
 
 FederationManager orchestrates federated rounds:
-  1. Reads each org's model weights and performance metrics.
-  2. Krum (Blanchard et al., NeurIPS 2017): scores each org's weight
-     vector by proximity to its n-f-2 nearest neighbours; selects the
-     org with the minimum score as the Byzantine-robust global model.
-  3. Runs DB-BOA Job 3 to find the optimal aggregation weight vector
-     (used for contribution tracking and fallback weighted average).
+  1. Extracts org model weights (with optional DP noise).
+  2. Krum (Blanchard et al., NeurIPS 2017): selects the Byzantine-robust
+     global model from the most consensus-aligned org.
+  3. Shapley values (Wang et al., FedSV 2020): evaluates all 2^n-1
+     non-empty coalitions in 7 forward passes and computes each org's
+     exact marginal contribution.  These become the aggregation weights
+     and the on-chain incentive record — replacing DB-BOA Job 3 entirely.
   4. Returns global model weights + full metadata for the ledger.
 
-Krum guarantees that a single Byzantine org cannot corrupt the global
-model before the token-penalty mechanism fires.
+Architecture note
+-----------------
+Krum  → security   (Byzantine fault tolerance)
+Shapley → fairness (game-theoretic contribution attribution, no shared labels needed for computation)
 
 References
 ----------
 Blanchard et al., "Machine Learning with Adversaries: Byzantine Tolerant
 Gradient Descent", NeurIPS 2017.
+Wang et al., "Measure Contribution of Participants in Federated Learning",
+IEEE BigData 2020 (FedSV).
 """
 
 import copy
 import numpy as np
 from datetime import datetime
+from itertools import combinations
+from math import factorial
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import FEDERATION_CONFIG
@@ -31,8 +38,7 @@ from config import FEDERATION_CONFIG
 
 class FederationManager:
     """
-    Manages federated rounds for the consortium.
-    DB-BOA Job 3: optimise aggregation weight vector.
+    Manages federated rounds: DP extraction → Krum → Shapley weights.
 
     Parameters
     ----------
@@ -71,8 +77,21 @@ class FederationManager:
             print(f"[FED]  Round {round_num} — extracting model weights from "
                   f"{org_names} …", flush=True)
 
-        # 1. Extract weights from every org model
-        org_weights_list = [m.extract_weights() for m in org_models.values()]
+        # 1. Extract weights — with DP noise if enabled (Dwork et al., 2006)
+        use_dp    = self.cfg.get("use_dp", False)
+        dp_eps    = self.cfg.get("dp_epsilon", 1.0)
+        dp_delta  = self.cfg.get("dp_delta",   1e-5)
+
+        if use_dp:
+            org_weights_list = [
+                m.extract_weights_with_dp(epsilon=dp_eps, delta=dp_delta)
+                for m in org_models.values()
+            ]
+            if verbose:
+                print(f"[FED]  DP weight sharing  : ε={dp_eps}, δ={dp_delta:.0e}",
+                      flush=True)
+        else:
+            org_weights_list = [m.extract_weights() for m in org_models.values()]
 
         # 2. Krum Byzantine-robust selection
         use_krum = self.cfg.get("use_krum", True)
@@ -86,57 +105,80 @@ class FederationManager:
             print(f"[FED]  Krum scores      : {score_str}", flush=True)
             print(f"[FED]  Krum selected    : {krum_selected_org}", flush=True)
 
-        if verbose:
-            print(f"[FED]  Running DB-BOA Job 3 "
-                  f"(pop={self.cfg['db_boa_fed_pop']}, "
-                  f"iter={self.cfg['db_boa_fed_iter']}) …", flush=True)
+        # 3. Contribution attribution: Shapley values OR DB-BOA Job 3 (fallback)
+        use_shapley = self.cfg.get("use_shapley", True)
 
-        # 3. DB-BOA Job 3: optimise aggregation weights (contribution tracking)
-        objective_fn = self._build_fed_objective(
-            org_models, org_weights_list, X_val, y_val
-        )
-        w, best_fit, history, stats = self._run_db_boa_job3(
-            objective_fn, round_num=round_num, verbose=verbose
-        )
+        if use_shapley:
+            n_coalitions = 2 ** self.n_orgs - 1
+            if verbose:
+                print(f"[FED]  Shapley attribution  : {n_coalitions} coalitions …",
+                      flush=True)
+            w, shapley_vals, coalition_vals = self._shapley_weights(
+                org_models, org_weights_list, X_val, y_val, verbose=verbose
+            )
+            if verbose:
+                sv_str = "  ".join(
+                    f"{name}={shapley_vals[i]:.4f}"
+                    for i, name in enumerate(org_names)
+                )
+                wt_str = "  ".join(
+                    f"{name}={w[i]:.3f}" for i, name in enumerate(org_names)
+                )
+                print(f"[FED]  Shapley values      : {sv_str}", flush=True)
+                print(f"[FED]  Aggregation weights : {wt_str}", flush=True)
+        else:
+            # Fallback: DB-BOA Job 3 (original behaviour)
+            if verbose:
+                print(f"[FED]  Running DB-BOA Job 3 "
+                      f"(pop={self.cfg['db_boa_fed_pop']}, "
+                      f"iter={self.cfg['db_boa_fed_iter']}) …", flush=True)
+            objective_fn = self._build_fed_objective(
+                org_models, org_weights_list, X_val, y_val
+            )
+            w, _, _, _ = self._run_db_boa_job3(
+                objective_fn, round_num=round_num, verbose=verbose
+            )
+            shapley_vals   = None
+            coalition_vals = None
 
-        # 4. Choose aggregation: Krum (Byzantine-robust) or weighted average
+        # 4. Global model: Krum selection (security) or Shapley-weighted avg (fairness)
         if use_krum:
-            # Krum: global model = single most trustworthy org's weights
             global_weights = krum_weights
             if verbose:
                 print(f"[FED]  Aggregation : Krum → {krum_selected_org}", flush=True)
         else:
-            # Fallback: DB-BOA-weighted average (original behaviour)
             n_arrays = len(org_weights_list[0])
             global_weights = [
-                sum(w[i] * org_weights_list[i][arr_idx] for i in range(self.n_orgs))
-                for arr_idx in range(n_arrays)
+                sum(w[i] * org_weights_list[i][a] for i in range(self.n_orgs))
+                for a in range(n_arrays)
             ]
             if verbose:
-                print(f"[FED]  Aggregation : weighted avg "
+                print(f"[FED]  Aggregation : Shapley-weighted avg "
                       + "  ".join(
                           f"{name}={w[i]:.3f}" for i, name in enumerate(org_names)
                       ), flush=True)
 
-        if verbose:
-            print(f"[FED]  Best fitness (–Obf2): {best_fit:.6f}", flush=True)
-
         # 5. Build result dict (matches ledger schema)
         result = {
-            "round_num"          : round_num,
+            "round_num"         : round_num,
             "aggregation_weights": w.tolist(),
-            "global_weights"     : global_weights,
-            "best_fitness"       : float(best_fit),
-            "db_boa_history"     : history["best"],
-            "db_boa_stats"       : stats,
-            "org_contributions"  : {
+            "global_weights"    : global_weights,
+            "org_contributions" : {
                 name: float(w[i]) for i, name in enumerate(org_names)
             },
-            "krum_scores"        : {
+            "shapley_values"    : (
+                {name: float(shapley_vals[i]) for i, name in enumerate(org_names)}
+                if shapley_vals is not None else None
+            ),
+            "coalition_values"  : coalition_vals,
+            "krum_scores"       : {
                 name: float(krum_scores[i]) for i, name in enumerate(org_names)
             },
-            "krum_selected_org"  : krum_selected_org,
-            "timestamp"          : datetime.utcnow().isoformat(),
+            "krum_selected_org" : krum_selected_org,
+            "dp_enabled"        : use_dp,
+            "dp_epsilon"        : dp_eps   if use_dp else None,
+            "dp_delta"          : dp_delta if use_dp else None,
+            "timestamp"         : datetime.utcnow().isoformat(),
         }
         self.round_history.append(result)
         return result
@@ -181,7 +223,90 @@ class FederationManager:
         selected_idx = int(np.argmin(scores))
         return org_weights_list[selected_idx], selected_idx, scores
 
-    # ── DB-BOA Job 3 internals ────────────────────────────────────────────────
+    # ── Shapley-value contribution attribution ────────────────────────────────
+
+    def _shapley_weights(
+        self,
+        org_models:       dict,
+        org_weights_list: list,
+        X_val:            np.ndarray,
+        y_val:            np.ndarray,
+        verbose:          bool = True,
+    ) -> tuple:
+        """
+        Exact Shapley-value contribution weights (Wang et al., FedSV 2020).
+
+        For n orgs, evaluates all 2^n - 1 non-empty coalitions.
+        Coalition value v(S) = Obf2 of the equally-averaged model from
+        orgs in S on the validation set.
+
+        Shapley formula
+        ---------------
+            φ_i = Σ_{S ⊆ N\\{i}} [|S|!(n-|S|-1)!/n!] · [v(S∪{i}) - v(S)]
+
+        For n=3: 7 coalition evaluations, exact weights, O(2^n) complexity.
+
+        Aggregation weights: w_i = max(0, φ_i) / Σ max(0, φ_j)
+        Negative Shapley values (org hurts coalition) are clipped to zero.
+
+        Returns
+        -------
+        weights        : np.ndarray  — normalised aggregation weights (sum=1)
+        shapley_vals   : np.ndarray  — raw Shapley value per org
+        coalition_vals : dict        — v(S) for every coalition (ledger log)
+        """
+        n            = self.n_orgs
+        org_names    = list(org_models.keys())
+        template_key = org_names[0]
+        n_arrays     = len(org_weights_list[0])
+
+        def coalition_value(indices: tuple) -> float:
+            """Equal-weight average of coalition S, evaluated on val set."""
+            if not indices:
+                return 0.0
+            avg_w = [
+                np.mean([org_weights_list[i][a] for i in indices], axis=0)
+                for a in range(n_arrays)
+            ]
+            temp = copy.deepcopy(org_models[template_key])
+            temp.load_weights(avg_w)
+            return temp.evaluate_on_validation(X_val, y_val)
+
+        # v(S) for all non-empty coalitions
+        all_v: dict = {(): 0.0}
+        for size in range(1, n + 1):
+            for combo in combinations(range(n), size):
+                v = coalition_value(combo)
+                all_v[combo] = v
+                if verbose:
+                    labels = [org_names[i] for i in combo]
+                    print(f"[FED]    v({labels}) = {v:.6f}", flush=True)
+
+        # Exact Shapley values
+        shapley_vals = np.zeros(n)
+        for i in range(n):
+            others = [j for j in range(n) if j != i]
+            for size in range(len(others) + 1):
+                for S in combinations(others, size):
+                    coeff    = (factorial(len(S)) * factorial(n - len(S) - 1)
+                                / factorial(n))
+                    S_with_i = tuple(sorted(S + (i,)))
+                    marginal = all_v[S_with_i] - all_v[tuple(sorted(S))]
+                    shapley_vals[i] += coeff * marginal
+
+        # Clip negatives → normalise to sum = 1
+        w     = np.maximum(shapley_vals, 0.0)
+        total = w.sum()
+        w     = w / total if total > 1e-8 else np.ones(n) / n
+
+        # Format coalition keys for ledger (tuple → readable string)
+        coalition_vals = {
+            str([org_names[i] for i in k]): float(v)
+            for k, v in all_v.items()
+        }
+        return w, shapley_vals, coalition_vals
+
+    # ── DB-BOA Job 3 internals (fallback when use_shapley=False) ─────────────
 
     def _build_fed_objective(self, org_models, org_weights_list, X_val, y_val):
         """

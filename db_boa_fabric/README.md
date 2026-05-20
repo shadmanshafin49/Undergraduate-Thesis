@@ -1,6 +1,6 @@
 # DB-BOA Financial Security Framework
 
-**Replication of:** Prabanand & Thanabal (2025) — *"Advanced financial security system using smart contract in private ethereum consortium blockchain with hybrid optimization strategy"* — *Scientific Reports* 15:6764
+**Based on:** Prabanand & Thanabal (2025) — *"Advanced financial security system using smart contract in private ethereum consortium blockchain with hybrid optimization strategy"* — *Scientific Reports* 15:6764. This project implements the DB-BOA-ADTCN framework on **Hyperledger Fabric** (not Ethereum).
 
 ---
 
