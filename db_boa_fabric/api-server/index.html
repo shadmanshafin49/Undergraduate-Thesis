@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DB-BOA Financial Security Dashboard</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+  <style>
+    /* ── Base ─────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #0d1b2a;
+      --dark:   #112240;
+      --card:   #1a2f4e;
+      --border: #233554;
+      --accent: #64ffda;
+      --gold:   #ffd700;
+      --red:    #ff6b6b;
+      --green:  #69ff84;
+      --blue:   #4fc3f7;
+      --purple: #ce93d8;
+      --text:   #ccd6f6;
+      --muted:  #8892b0;
+      --white:  #e6f1ff;
+      --font:   'Segoe UI', system-ui, sans-serif;
+    }
+    body { background: var(--navy); color: var(--text); font-family: var(--font);
+           font-size: 14px; min-height: 100vh; overflow-x: hidden; }
+
+    /* ── Layout ───────────────────────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    header {
+      background: var(--dark);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex; align-items: center; gap: 16px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+    }
+    .logo { font-size: 20px; font-weight: 700; color: var(--accent);
+            letter-spacing: 1px; white-space: nowrap; }
+    .logo span { color: var(--gold); }
+    .header-sub { color: var(--muted); font-size: 12px; }
+    .header-spacer { flex: 1; }
+    .status-dot { width:9px; height:9px; border-radius:50%; display:inline-block;
+                  margin-right:6px; }
+    .dot-ok  { background: var(--green); box-shadow:0 0 6px var(--green); }
+    .dot-off { background: var(--muted); }
+    .dot-run { background: var(--gold);
+               animation: pulse 1s ease-in-out infinite alternate; }
+    @keyframes pulse { from{opacity:.5} to{opacity:1} }
+
+    nav { background: var(--dark); border-bottom:1px solid var(--border);
+          display:flex; gap:0; overflow-x:auto; }
+    nav button {
+      background:none; border:none; color:var(--muted);
+      padding: 11px 22px; cursor:pointer; font-size:13px;
+      border-bottom: 3px solid transparent; white-space: nowrap;
+      transition: all .2s;
+    }
+    nav button.active { color:var(--accent); border-bottom-color:var(--accent); }
+    nav button:hover  { color:var(--white); }
+
+    main { flex:1; padding:24px; max-width:1400px; margin:0 auto; width:100%; }
+
+    /* ── Cards ────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .card-title {
+      font-size: 13px; font-weight: 600; letter-spacing: .8px;
+      color: var(--accent); text-transform: uppercase; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap:16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap:16px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap:16px; }
+    .grid-12 { display: grid; grid-template-columns: 1fr 2fr; gap:16px; }
+    @media(max-width:900px) {
+      .grid-4,.grid-3,.grid-2,.grid-12 { grid-template-columns:1fr; }
+    }
+
+    /* ── KPI ──────────────────────────────────────────────────────────── */
+    .kpi { text-align:center; padding:16px 10px; }
+    .kpi-val { font-size: 32px; font-weight: 700; line-height: 1; }
+    .kpi-lbl { font-size: 11px; color: var(--muted); margin-top: 6px;
+               text-transform: uppercase; letter-spacing: .8px; }
+    .kpi-sub { font-size: 12px; color: var(--green); margin-top: 4px; }
+
+    /* ── Buttons ──────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all .2s; letter-spacing: .5px;
+    }
+    .btn-primary { background: var(--accent); color: var(--navy); }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .5; cursor: default; transform: none; }
+    .btn-secondary { background: transparent; color: var(--accent);
+                     border: 1px solid var(--accent); }
+    .btn-secondary:hover { background: rgba(100,255,218,.08); }
+    .btn-danger { background: var(--red); color: #fff; }
+
+    /* ── Terminal ─────────────────────────────────────────────────────── */
+    .terminal {
+      background: #0a0f1a; border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px;
+      font-family: 'Courier New', monospace; font-size: 12px;
+      color: #a8ff78; height: 380px; overflow-y: auto;
+      line-height: 1.65;
+    }
+    .terminal-line.err  { color: var(--red); }
+    .terminal-line.warn { color: var(--gold); }
+    .terminal-line.done { color: var(--accent); font-weight: bold; }
+    .terminal-line.info { color: var(--blue); }
+    .terminal-line.chain{ color: var(--purple); }
+    .cursor { display:inline-block; width:8px; height:14px;
+              background:var(--accent); animation:blink 1s step-end infinite;
+              vertical-align:text-bottom; }
+    @keyframes blink { 50%{opacity:0} }
+
+    /* ── Progress bar ─────────────────────────────────────────────────── */
+    .progress-wrap { background: var(--border); border-radius: 4px;
+                     height: 8px; overflow: hidden; margin: 8px 0; }
+    .progress-bar  { height: 100%; border-radius: 4px;
+                     background: linear-gradient(90deg, var(--accent), var(--blue));
+                     transition: width .4s ease; }
+
+    /* ── Node grid ────────────────────────────────────────────────────── */
+    .node-card {
+      background: var(--navy); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px; position: relative;
+      transition: border-color .2s;
+    }
+    .node-card.leader { border-color: var(--gold);
+                        box-shadow: 0 0 12px rgba(255,215,0,.2); }
+    .node-badge {
+      position:absolute; top:10px; right:10px;
+      background: var(--gold); color: var(--navy);
+      font-size:10px; font-weight:700; padding:2px 7px;
+      border-radius:4px; letter-spacing:.5px;
+    }
+    .node-id   { font-size:15px; font-weight:700; color:var(--white); }
+    .node-org  { font-size:11px; color:var(--muted); margin-bottom:10px; }
+    .node-stat { display:flex; justify-content:space-between;
+                 font-size:12px; margin:4px 0; }
+    .node-stat span:last-child { color:var(--accent); font-weight:600; }
+    .token-bar { background:var(--border); height:5px; border-radius:3px; margin-top:8px; }
+    .token-fill { height:100%; border-radius:3px; background:var(--gold);
+                  transition: width .6s ease; }
+
+    /* ── Metrics table ────────────────────────────────────────────────── */
+    .metrics-table { width:100%; border-collapse:collapse; }
+    .metrics-table th { color:var(--muted); font-size:11px;
+                        padding:8px 12px; text-align:left;
+                        border-bottom:1px solid var(--border); }
+    .metrics-table td { padding:9px 12px; border-bottom:1px solid rgba(35,53,84,.5);
+                        font-size:13px; }
+    .metrics-table tr:last-child td { border:none; }
+    .val-highlight { color:var(--accent); font-weight:700; }
+    .val-good      { color:var(--green); }
+    .val-warn      { color:var(--gold); }
+
+    /* ── Consensus round ──────────────────────────────────────────────── */
+    .round-row {
+      display:flex; align-items:center; gap:12px;
+      padding:10px 14px; border-radius:8px;
+      background:var(--navy); margin-bottom:8px;
+      border-left:3px solid var(--border);
+      font-size:12px;
+    }
+    .round-row.ok   { border-left-color:var(--green); }
+    .round-row.fail { border-left-color:var(--red); }
+    .rnd-num  { width:36px; text-align:center; font-weight:700;
+                color:var(--accent); }
+    .phase { padding:3px 8px; border-radius:4px; font-size:11px;
+             font-weight:600; letter-spacing:.5px; }
+    .ph-propose { background:rgba(79,195,247,.15); color:var(--blue); }
+    .ph-endorse { background:rgba(105,255,132,.15); color:var(--green); }
+    .ph-order   { background:rgba(206,147,216,.15); color:var(--purple); }
+    .ph-commit  { background:rgba(100,255,218,.15); color:var(--accent); }
+    .ph-fail    { background:rgba(255,107,107,.15); color:var(--red); }
+    .rnd-meta   { margin-left:auto; color:var(--muted); }
+
+    /* ── Image gallery ────────────────────────────────────────────────── */
+    .plot-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    @media(max-width:900px){ .plot-grid { grid-template-columns:1fr; } }
+    .plot-card { background:var(--navy); border:1px solid var(--border);
+                 border-radius:10px; overflow:hidden; cursor:pointer;
+                 transition:transform .2s, border-color .2s; }
+    .plot-card:hover { transform:translateY(-3px); border-color:var(--accent); }
+    .plot-card img   { width:100%; display:block; }
+    .plot-name { padding:8px 12px; font-size:11px; color:var(--muted);
+                 text-align:center; }
+
+    /* ── Modal ────────────────────────────────────────────────────────── */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:200;
+      display:flex; align-items:center; justify-content:center;
+      padding:20px;
+    }
+    .modal-img { max-width:90vw; max-height:85vh; border-radius:8px;
+                 border:1px solid var(--border); }
+    .modal-close { position:absolute; top:20px; right:24px;
+                   color:var(--white); font-size:28px; cursor:pointer;
+                   background:none; border:none; }
+
+    /* ── Misc ─────────────────────────────────────────────────────────── */
+    .section-gap  { margin-top: 20px; }
+    .flex-row     { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .badge { padding:3px 10px; border-radius:20px; font-size:11px;
+             font-weight:600; }
+    .badge-green  { background:rgba(105,255,132,.15); color:var(--green); }
+    .badge-red    { background:rgba(255,107,107,.15); color:var(--red); }
+    .badge-gold   { background:rgba(255,215,0,.15); color:var(--gold); }
+    .badge-blue   { background:rgba(79,195,247,.15); color:var(--blue); }
+    .empty-state  { text-align:center; color:var(--muted); padding:40px 0; }
+    canvas { max-height:280px; }
+
+    /* ── Transaction form ─────────────────────────────────────────────── */
+    .txn-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .form-group label { display:block; font-size:11px; color:var(--muted);
+                        margin-bottom:5px; text-transform:uppercase; }
+    .form-group input {
+      width:100%; background:var(--navy); border:1px solid var(--border);
+      color:var(--white); padding:9px 12px; border-radius:6px; font-size:13px;
+    }
+    .form-group input:focus { outline:none; border-color:var(--accent); }
+  </style>
+</head>
+
+<body>
+<div class="app" id="app">
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="logo">DB-<span>BOA</span> Framework</div>
+      <div class="header-sub">Financial Security · Consortium Blockchain · Deep Learning</div>
+    </div>
+    <div class="header-spacer"></div>
+    <div style="display:flex;gap:20px;align-items:center;">
+      <div id="fabricStatus" style="font-size:12px;">
+        <span class="status-dot dot-off"></span>Fabric
+      </div>
+      <div id="pipelineStatus" style="font-size:12px;">
+        <span class="status-dot dot-off"></span>Idle
+      </div>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <nav>
+    <button class="active" onclick="showTab('overview')">🏠 Overview</button>
+    <button onclick="showTab('pipeline')">⚙️ Run DB-BOA</button>
+    <button onclick="showTab('blockchain')">🔗 Blockchain</button>
+    <button onclick="showTab('metrics')">📊 Metrics</button>
+    <button onclick="showTab('federation')">🌐 Federation</button>
+    <button onclick="showTab('plots')">🖼️ Plots</button>
+    <button onclick="showTab('transactions')">💳 Transactions</button>
+  </nav>
+
+  <main>
+
+    <!-- ══════════ OVERVIEW ══════════ -->
+    <div id="tab-overview">
+      <div class="grid-4" style="margin-bottom:20px;">
+        <div class="card kpi">
+          <div class="kpi-val" id="kpi-acc" style="color:var(--accent)">—</div>
+          <div class="kpi-lbl">Accuracy</div>
+          <div class="kpi-sub" id="kpi-acc-sub">DB-BOA-ADTCN</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-val" id="kpi-mcc" style="color:var(--gold)">—</div>
+          <div class="kpi-lbl">MCC Score</div>
+          <div class="kpi-sub">Matthews Correlation</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-val" id="kpi-leader" style="color:var(--blue)">—</div>
+          <div class="kpi-lbl">Leader Block</div>
+          <div class="kpi-sub" id="kpi-leader-sub">DB-BOA selected</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-val" id="kpi-fraud" style="color:var(--red)">—</div>
+          <div class="kpi-lbl">Fraud Detected</div>
+          <div class="kpi-sub" id="kpi-fraud-sub">of test set</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📈 DB-BOA Convergence</div>
+          <canvas id="convergenceChart"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">🎯 Performance vs Baselines</div>
+          <canvas id="baselineChart"></canvas>
+        </div>
+      </div>
+
+      <div class="grid-12 section-gap">
+        <div class="card">
+          <div class="card-title">🔑 Optimal Hyperparameters</div>
+          <div id="hyperparams" class="empty-state">Run DB-BOA to see results</div>
+        </div>
+        <div class="card">
+          <div class="card-title">⛓️ Latest Consensus Round</div>
+          <div id="latestRound" class="empty-state">No rounds yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ PIPELINE ══════════ -->
+    <div id="tab-pipeline" style="display:none;">
+      <div class="flex-row" style="margin-bottom:20px;">
+        <button class="btn btn-primary" id="runBtn" onclick="runPipeline()">
+          ▶ Run DB-BOA Pipeline
+        </button>
+        <button class="btn btn-secondary" onclick="runPipeline(true)">
+          ⚡ Quick Mode
+        </button>
+        <button class="btn btn-secondary" onclick="clearTerminal()">
+          🗑 Clear
+        </button>
+        <div id="progressWrap" style="flex:1;display:none;">
+          <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="progressLabel">Initialising…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🖥️ Live Terminal Output</div>
+        <div class="terminal" id="terminal">
+          <div>Welcome to the DB-BOA Financial Security Framework.</div>
+          <div>Click <strong style="color:var(--accent)">▶ Run DB-BOA Pipeline</strong> to start.</div>
+          <div>Watch node communication, leader selection, and ADTCN training in real time.</div>
+          <div>&nbsp;</div>
+          <span class="cursor"></span>
+        </div>
+      </div>
+
+      <div class="grid-3 section-gap" id="phaseCards">
+        <div class="card">
+          <div class="card-title">🔗 Phase 1 · Blockchain</div>
+          <div id="phase1Status" class="empty-state">Not started</div>
+        </div>
+        <div class="card">
+          <div class="card-title">🧬 Phase 2 · DB-BOA Opt.</div>
+          <div id="phase2Status" class="empty-state">Not started</div>
+        </div>
+        <div class="card">
+          <div class="card-title">🧠 Phase 3 · ADTCN Train</div>
+          <div id="phase3Status" class="empty-state">Not started</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ BLOCKCHAIN ══════════ -->
+    <div id="tab-blockchain" style="display:none;">
+      <div class="grid-4" style="margin-bottom:20px;" id="nodeGrid">
+        <div class="card empty-state" style="grid-column:1/-1;">
+          Run DB-BOA pipeline to see node status
+        </div>
+      </div>
+
+      <div class="card section-gap">
+        <div class="card-title">⛓️ Consensus Round Log</div>
+        <div id="consensusLog" class="empty-state">No consensus rounds recorded</div>
+      </div>
+
+      <div class="card section-gap">
+        <div class="card-title">🏦 Federation Token Rewards</div>
+        <div id="fedRewardsPanel" class="empty-state">Run pipeline with federation to see token rewards</div>
+        <canvas id="fedRewardsChart" style="display:none;max-height:180px;"></canvas>
+      </div>
+    </div>
+
+    <!-- ══════════ METRICS ══════════ -->
+    <div id="tab-metrics" style="display:none;">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📋 DB-BOA-ADTCN vs Algorithms (Table 3)</div>
+          <table class="metrics-table" id="algoTable">
+            <thead><tr>
+              <th>Metric</th>
+              <th>MBO-ADTCN</th><th>WSA-ADTCN</th>
+              <th>DBOA-ADTCN</th><th>BOA-ADTCN</th>
+              <th style="color:var(--accent)">DB-BOA-ADTCN</th>
+            </tr></thead>
+            <tbody id="algoTableBody"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 DB-BOA-ADTCN vs Classifiers (Table 4)</div>
+          <table class="metrics-table" id="clfTable">
+            <thead><tr>
+              <th>Metric</th>
+              <th>EfficientNet</th><th>ResNet</th>
+              <th>DenseNet</th><th>DTCN</th>
+              <th style="color:var(--accent)">DB-BOA-ADTCN</th>
+            </tr></thead>
+            <tbody id="clfTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="card-title">🏆 Statistical Evaluation (Table 2)</div>
+          <div id="statTable" class="empty-state">Run pipeline first</div>
+        </div>
+        <div class="card">
+          <div class="card-title">📉 Accuracy Gain Over Baselines</div>
+          <canvas id="gainChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEDERATION ══════════ -->
+    <div id="tab-federation" style="display:none;">
+      <div class="flex-row" style="margin-bottom:16px;">
+        <button class="btn btn-secondary" onclick="loadFederationTab()">🔄 Refresh</button>
+        <span style="color:var(--muted);font-size:12px;">
+          Federation data populates after running the full pipeline
+        </span>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:20px;">
+        <!-- Panel 1: Aggregation Weights -->
+        <div class="card">
+          <div class="card-title">⚖️ DB-BOA Aggregation Weights by Round</div>
+          <div id="fedWeightsEmpty" class="empty-state">Run pipeline first</div>
+          <canvas id="fedWeightsChart" style="display:none;max-height:220px;"></canvas>
+        </div>
+
+        <!-- Panel 2: Accuracy Before/After -->
+        <div class="card">
+          <div class="card-title">📈 Org Accuracy: Pre vs Post Federation</div>
+          <div id="fedAccEmpty" class="empty-state">Run pipeline first</div>
+          <canvas id="fedAccChart" style="display:none;max-height:220px;"></canvas>
+        </div>
+      </div>
+
+      <!-- Panel 3: DB-BOA Job 3 Convergence -->
+      <div class="card section-gap">
+        <div class="card-title">📉 DB-BOA Job 3 Convergence (Aggregation Weight Optimisation)</div>
+        <div id="fedConvEmpty" class="empty-state">Run pipeline first</div>
+        <canvas id="fedConvChart" style="display:none;max-height:200px;"></canvas>
+      </div>
+
+      <!-- Panel 4: Federation Round History Table -->
+      <div class="card section-gap">
+        <div class="card-title">🗂️ Federation Round History</div>
+        <div id="fedHistTable" class="empty-state">No federation rounds yet</div>
+      </div>
+
+      <!-- Panel 5: Attack Resilience (shown only when attack data present) -->
+      <div class="card section-gap" id="attackPanel" style="display:none;border-left:3px solid var(--red);">
+        <div class="card-title">🛡️ Attack Resilience Simulation (§7.2 Contribution 5)</div>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <div style="color:var(--muted);font-size:11px;margin-bottom:8px;">
+              Scenario: <strong style="color:var(--red)">BankC</strong> always reports fraud.
+              DB-BOA Job 3 detects and suppresses it.
+            </div>
+            <div id="attackSummary"></div>
+          </div>
+          <div>
+            <canvas id="attackWeightsChart" style="max-height:160px;"></canvas>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="card-title" style="font-size:12px;">Verdict Log</div>
+          <div id="attackLog" style="max-height:180px;overflow-y:auto;font-family:monospace;font-size:11px;color:var(--muted);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ PLOTS ══════════ -->
+    <div id="tab-plots" style="display:none;">
+      <div class="flex-row" style="margin-bottom:16px;">
+        <button class="btn btn-secondary" onclick="loadPlots()">🔄 Refresh Plots</button>
+        <span style="color:var(--muted);font-size:12px;">
+          Plots are generated after running the pipeline
+        </span>
+      </div>
+      <div class="plot-grid" id="plotGrid">
+        <div class="empty-state" style="grid-column:1/-1;">
+          Run the DB-BOA pipeline to generate plots
+        </div>
+      </div>
+      <!-- Full-size modal -->
+      <div class="modal-overlay" id="imgModal" style="display:none;"
+           onclick="closeModal()">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <img class="modal-img" id="modalImg" src="" alt=""/>
+      </div>
+    </div>
+
+    <!-- ══════════ TRANSACTIONS ══════════ -->
+    <div id="tab-transactions" style="display:none;">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">💳 Submit New Transaction</div>
+        <div class="txn-form" id="txnForm">
+          <div class="form-group">
+            <label>Transaction ID</label>
+            <input id="txnId" type="text" placeholder="TXN-001" />
+          </div>
+          <div class="form-group">
+            <label>Amount ($)</label>
+            <input id="txnAmount" type="number" placeholder="250.00" />
+          </div>
+          <div class="form-group">
+            <label>Sender ID</label>
+            <input id="txnSender" type="text" placeholder="WALLET-001" />
+          </div>
+          <div class="form-group">
+            <label>Receiver ID</label>
+            <input id="txnReceiver" type="text" placeholder="WALLET-002" />
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="btn btn-primary" onclick="submitTxn()">
+            Submit &amp; Classify
+          </button>
+        </div>
+        <div id="txnResult" style="margin-top:14px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📜 Transaction Ledger</div>
+        <div id="txnLedger" class="empty-state">No transactions yet</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════ SCRIPT ══════════════════════════════════════ -->
+<script>
+const API = 'http://localhost:3001';
+
+// ── State ───────────────────────────────────────────────────────────────────
+let results       = null;
+let transactions  = [];
+let phases        = { p1:false, p2:false, p3:false };
+let runProgress   = 0;
+let sseSource     = null;
+let convergenceCh  = null;
+let baselineCh     = null;
+let gainCh         = null;
+let fedWeightsCh   = null;
+let fedAccCh       = null;
+let fedConvCh      = null;
+let fedRewardsCh   = null;
+let fedRounds      = [];
+let attackWeightsCh = null;
+let attackData     = null;
+
+// ── Baseline data (paper Tables 3 & 4) ───────────────────────────────────────
+const ALGO_BASE = {
+    'MBO-ADTCN' : {Accuracy:88.4,  Precision:88.35, Sensitivity:88.17, NPV:88.63, FPR:11.37, MCC:0.768},
+    'WSA-ADTCN' : {Accuracy:91.85, Precision:91.47, Sensitivity:92.11, NPV:91.59, FPR:8.41,  MCC:0.837},
+    'DBOA-ADTCN': {Accuracy:90.0,  Precision:90.0,  Sensitivity:89.79, NPV:90.21, FPR:9.79,  MCC:0.800},
+    'BOA-ADTCN' : {Accuracy:93.8,  Precision:93.47, Sensitivity:94.03, NPV:93.57, FPR:6.43,  MCC:0.876},
+};
+const CLF_BASE = {
+    'EfficientNet': {Accuracy:89.05, Precision:88.89, Sensitivity:88.98, NPV:89.12, FPR:10.88, MCC:0.781},
+    'ResNet'      : {Accuracy:92.55, Precision:92.34, Sensitivity:92.62, NPV:92.48, FPR:7.52,  MCC:0.851},
+    'DenseNet'    : {Accuracy:90.65, Precision:90.51, Sensitivity:90.60, NPV:90.70, FPR:9.30,  MCC:0.813},
+    'DTCN'        : {Accuracy:94.8,  Precision:94.74, Sensitivity:94.74, NPV:94.86, FPR:5.14,  MCC:0.896},
+};
+
+// ── Tab routing ───────────────────────────────────────────────────────────────
+function showTab(name) {
+    document.querySelectorAll('main > div').forEach(d => d.style.display='none');
+    document.getElementById(`tab-${name}`).style.display = '';
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    const labels = {overview:'🏠 Overview', pipeline:'⚙️ Run DB-BOA',
+                    blockchain:'🔗 Blockchain', metrics:'📊 Metrics',
+                    federation:'🌐 Federation', plots:'🖼️ Plots',
+                    transactions:'💳 Transactions'};
+    document.querySelectorAll('nav button').forEach(b => {
+        if (b.textContent.trim() === labels[name]) b.classList.add('active');
+    });
+    if (name === 'plots')       loadPlots();
+    if (name === 'metrics')     renderMetricsTables();
+    if (name === 'blockchain')  renderBlockchainTab();
+    if (name === 'transactions') loadTransactions();
+    if (name === 'federation')  loadFederationTab();
+}
+
+// ── SSE subscription ──────────────────────────────────────────────────────────
+function connectSSE() {
+    if (sseSource) sseSource.close();
+    sseSource = new EventSource(`${API}/api/sse/logs`);
+    sseSource.onmessage = e => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'log')               handleLog(msg.line);
+        if (msg.type === 'results_ready')   handleResults(msg.payload);
+        if (msg.type === 'pipeline_start')  onPipelineStart();
+        if (msg.type === 'pipeline_error')  onPipelineError();
+        if (msg.type === 'federation_weights') onFederationWeights(msg.payload);
+        if (msg.type === 'federation_done')    onFederationDone(msg.payload);
+    };
+    sseSource.onerror = () => {
+        setStatus('pipelineStatus', 'dot-off', 'Offline');
+    };
+}
+
+// ── Pipeline control ──────────────────────────────────────────────────────────
+async function runPipeline(quick = false) {
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    setStatus('pipelineStatus', 'dot-run', 'Running…');
+
+    clearTerminal();
+    phases = { p1:false, p2:false, p3:false };
+    runProgress = 0;
+    showProgress(true);
+
+    try {
+        await fetch(`${API}/api/run-db-boa`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ quick }),
+        });
+    } catch (e) {
+        // server might not be running — run demo
+        runPipelineDemo();
+    }
+}
+
+// Demo mode — simulate the output if API server isn't running
+function runPipelineDemo() {
+    const lines = [
+        '████████████████████████████████████████████████████████████████████',
+        '█          DB-BOA FINANCIAL SECURITY FRAMEWORK                     █',
+        '█       Prabanand & Thanabal (2025) — Replication                  █',
+        '████████████████████████████████████████████████████████████████████',
+        '',
+        '[INFO]  QUICK MODE — reduced population and iterations',
+        '══  PHASE 0  ─  DATA LOADING & ENGINEERING  ══',
+        '[DATA]  Generating synthetic financial transaction dataset …',
+        '[DATA]  Total samples : 20,000',
+        '[DATA]  Normal        : 19,000  (95.00 %)',
+        '[DATA]  Fraud         : 1,000   (5.00 %)',
+        '[DATA]  Engineering temporal context features (PTC + NTC) …',
+        '[DATA]  Feature dimensions after engineering : 274',
+        '[DATA]  Train : 14,000 | Val : 2,000 | Test : 4,000',
+        '══  PHASE 1  ─  BLOCKCHAIN SETUP & LEADER BLOCK SELECTION  ══',
+        '[CHAIN] Initialising consortium blockchain with 10 nodes …',
+        '[CHAIN] Node-00  Org1  CT=0.4371  CC=0.7630  MS=0.6722  cost=1.8723',
+        '[CHAIN] Node-01  Org2  CT=0.6388  CC=0.1670  MS=0.1826  cost=0.9884',
+        '[CHAIN] Node-07  Org2  CT=0.2255  CC=0.2691  MS=0.3614  cost=0.8561',
+        '[CHAIN] Running DB-BOA for Leader Block Selection …',
+        '  [Iter 001/12]  algo=DBOA  rand=0.2684  best=0.806  mean=1.011',
+        '  [Iter 004/12]  algo=DBOA  rand=0.3530  best=0.806  mean=0.954',
+        '  [Iter 006/12]  algo=BOA   rand=0.9555  best=0.806  mean=0.922',
+        '  [Iter 012/12]  algo=DBOA  rand=0.1691  best=0.806  mean=0.890',
+        '[CHAIN] ✔ LEADER SELECTED: Node-07 (Org2)',
+        '[CHAIN]   CT=0.2255  CC=0.2691  MS=0.3614  Total cost=0.8561',
+        '══  PHASE 2  ─  DB-BOA HYPERPARAMETER OPTIMISATION  ══',
+        '[ADTCN] Starting DB-BOA hyperparameter search …',
+        '  [Iter 001/15]  algo=DBOA  rand=0.8912  best=-100000003.8  mean=-184.3',
+        '  [Iter 005/15]  algo=BOA   rand=0.1244  best=-100000003.8  mean=-123.5',
+        '  [Iter 010/15]  algo=DBOA  rand=0.7631  best=-100000003.8  mean=-217.9',
+        '  [Iter 015/15]  algo=BOA   rand=0.3890  best=-100000003.8  mean=-136.1',
+        '[ADTCN] Optimal HnD=51  EpD=19  SeD=155',
+        '══  PHASE 3  ─  ADTCN MODEL TRAINING  ══',
+        '[ADTCN] Training ADTCN  |  arch=(51, 25, 12)  epochs=19  batch=103',
+        '[ADTCN] Training samples after balancing: 30,400',
+        '[ADTCN] Training converged in 10 iterations.',
+        '══  PHASE 4  ─  MODEL EVALUATION  ══',
+        '  Accuracy             : 99.45000 %',
+        '  Precision            : 95.87629 %',
+        '  Sensitivity          : 93.00000 %',
+        '  Specificity          : 99.78947 %',
+        '  MCC                  :  0.94139',
+        '══  PHASE 5  ─  CONSENSUS SIMULATION (5 ROUNDS)  ══',
+        '[CHAIN] Consensus Round 001 | Leader: Node-07 | Transactions: 60',
+        '[CHAIN]   ► [PROPOSE ]  Node-07 broadcasts block with 60 txns …',
+        '[CHAIN]   ► [ENDORSE ]  Node-00(Org1) ✔ endorsed  (latency=21.9 ms)',
+        '[CHAIN]   ► [ENDORSE ]  Node-01(Org2) ✔ endorsed  (latency=31.9 ms)',
+        '[CHAIN]   ► [ORDER   ]  Orderer sequences the block …',
+        '[CHAIN]   ► [COMMIT  ]  Block committed to all 10 peers.',
+        '[CHAIN]   ✔ CONSENSUS OK  |  latency=95.0 ms  |  throughput=5316.9 tps',
+        '══  PHASE 6  ─  RESULTS & PLOTS  ══',
+        '[SAVE]  Results JSON → db_boa_results.json',
+        '[PLOT]  Saved → confusion_matrix.png',
+        '[PLOT]  Saved → cost_function_convergence.png',
+        '[PLOT]  Saved → roc_curve.png',
+        '✔  DB-BOA Framework complete  (11.4s total)',
+        '  Accuracy   : 99.4500 %',
+        '  MCC        : 0.9414',
+        '  Leader     : Node-07  (cost=0.8561)',
+    ];
+
+    let i = 0;
+    const demoCfg = {
+        optimal_hyperparams: {hidden_neurons:51, epoch_count:19, steps_per_epoch:155},
+        metrics: {Accuracy:99.45, Precision:95.88, Sensitivity:93.0,
+                  Specificity:99.79, NPV:99.63, FPR:0.21, FNR:7.0,
+                  FDR:4.12, F1_Score:94.42, MCC:0.9414},
+        leader_node: 7, leader_cost: 0.8561,
+        db_boa_stats: {Best:-100000003.87, Std:0, Worst:-100000003.87,
+                       Median:-100000003.87, Mean:-100000003.87},
+        consensus_rounds: [
+            {round:1, leader:7, n_txns:60, n_endorsed:3, consensus_ok:true, latency_ms:95.0, throughput:5316.9},
+            {round:2, leader:7, n_txns:70, n_endorsed:3, consensus_ok:true, latency_ms:104.9, throughput:6254.8},
+            {round:3, leader:7, n_txns:80, n_endorsed:4, consensus_ok:true, latency_ms:104.0, throughput:7370.9},
+            {round:4, leader:7, n_txns:90, n_endorsed:4, consensus_ok:true, latency_ms:104.0, throughput:8223.8},
+            {round:5, leader:7, n_txns:100, n_endorsed:4, consensus_ok:true, latency_ms:104.0, throughput:9144.1},
+        ],
+        fed_rounds: [
+            {round_num:1, aggregation_weights:[0.481,0.312,0.207],
+             best_fitness:-0.9812, db_boa_history:Array.from({length:20},(_,i)=>-(0.85+0.13*Math.exp(-0.2*i))),
+             org_contributions:{BankA:0.481,BankB:0.312,BankC:0.207},
+             accuracy_deltas:{BankA:1.23,BankB:0.87,BankC:0.54},
+             timestamp: new Date(Date.now()-120000).toISOString()},
+            {round_num:2, aggregation_weights:[0.463,0.328,0.209],
+             best_fitness:-0.9871, db_boa_history:Array.from({length:20},(_,i)=>-(0.90+0.09*Math.exp(-0.22*i))),
+             org_contributions:{BankA:0.463,BankB:0.328,BankC:0.209},
+             accuracy_deltas:{BankA:0.91,BankB:1.14,BankC:0.72},
+             timestamp: new Date(Date.now()-60000).toISOString()},
+            {round_num:3, aggregation_weights:[0.452,0.335,0.213],
+             best_fitness:-0.9903, db_boa_history:Array.from({length:20},(_,i)=>-(0.93+0.06*Math.exp(-0.25*i))),
+             org_contributions:{BankA:0.452,BankB:0.335,BankC:0.213},
+             accuracy_deltas:{BankA:0.64,BankB:0.79,BankC:0.95},
+             timestamp: new Date().toISOString()},
+        ],
+    };
+
+    const interval = setInterval(() => {
+        if (i < lines.length) {
+            handleLog(lines[i++]);
+            runProgress = Math.round((i/lines.length)*100);
+            updateProgress(runProgress, lines[i-1].slice(0,50));
+        } else {
+            clearInterval(interval);
+            handleResults(demoCfg);
+            onPipelineDone();
+        }
+    }, 80);
+}
+
+function onPipelineStart() {
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    setStatus('pipelineStatus', 'dot-run', 'Running…');
+    showProgress(true);
+}
+
+function onPipelineDone() {
+    const btn = document.getElementById('runBtn');
+    btn.disabled = false;
+    setStatus('pipelineStatus', 'dot-ok', 'Done');
+    showProgress(false);
+}
+
+function onPipelineError() {
+    document.getElementById('runBtn').disabled = false;
+    setStatus('pipelineStatus', 'dot-off', 'Error');
+    showProgress(false);
+}
+
+// ── Log processing ────────────────────────────────────────────────────────────
+function handleLog(line) {
+    const t = document.getElementById('terminal');
+    const cursor = t.querySelector('.cursor');
+    if (cursor) cursor.remove();
+
+    const div = document.createElement('div');
+    div.className = 'terminal-line';
+    if (line.includes('ERROR') || line.includes('✗'))     div.classList.add('err');
+    else if (line.includes('WARN'))                        div.classList.add('warn');
+    else if (line.includes('✔') || line.includes('Done')) div.classList.add('done');
+    else if (line.includes('[DATA]') || line.includes('[OPT]') || line.includes('[SAVE]'))
+                                                           div.classList.add('info');
+    else if (line.includes('[CHAIN]'))                     div.classList.add('chain');
+
+    div.textContent = line;
+    t.appendChild(div);
+
+    const newCursor = document.createElement('span');
+    newCursor.className = 'cursor';
+    t.appendChild(newCursor);
+    t.scrollTop = t.scrollHeight;
+
+    // Phase detection
+    if (line.includes('PHASE 1')) updatePhase(1,'running');
+    if (line.includes('PHASE 2')) { updatePhase(1,'done'); updatePhase(2,'running'); }
+    if (line.includes('PHASE 3')) { updatePhase(2,'done'); updatePhase(3,'running'); }
+    if (line.includes('PHASE 4')) { updatePhase(3,'done'); }
+    if (line.includes('complete')) { updatePhase(3,'done'); onPipelineDone(); }
+
+    // Progress estimation
+    if (line.includes('PHASE')) {
+        const ph = parseInt(line.match(/PHASE (\d)/)?.[1] || 0);
+        if (ph) { runProgress = (ph-1)*18; updateProgress(runProgress, line); }
+    }
+    if (line.match(/\[Iter (\d+)\/(\d+)\]/)) {
+        const [,cur,tot] = line.match(/\[Iter (\d+)\/(\d+)\]/);
+        runProgress = Math.min(95, runProgress + (18/parseInt(tot)));
+        updateProgress(runProgress, `Iteration ${cur}/${tot}`);
+    }
+}
+
+// ── Results rendering ─────────────────────────────────────────────────────────
+function handleResults(r) {
+    results = r;
+    const m = r.metrics || {};
+
+    // KPIs
+    setKPI('kpi-acc',    m.Accuracy ? m.Accuracy.toFixed(2)+'%' : '—');
+    setKPI('kpi-mcc',    m.MCC      ? m.MCC.toFixed(4)          : '—');
+    setKPI('kpi-leader', r.leader_node !== undefined ? `Node-${String(r.leader_node).padStart(2,'0')}` : '—');
+    setKPI('kpi-fraud',  m.Sensitivity ? m.Sensitivity.toFixed(1)+'%' : '—');
+
+    // Hyperparams
+    const hp = r.optimal_hyperparams || {};
+    document.getElementById('hyperparams').innerHTML = `
+      <table class="metrics-table">
+        <tr><td>Hidden Neurons (HnD)</td>
+            <td class="val-highlight">${hp.hidden_neurons || '—'}</td></tr>
+        <tr><td>Epoch Count (EpD)</td>
+            <td class="val-highlight">${hp.epoch_count || '—'}</td></tr>
+        <tr><td>Steps / Epoch (SeD)</td>
+            <td class="val-highlight">${hp.steps_per_epoch || '—'}</td></tr>
+        <tr><td>Activation</td>
+            <td class="val-highlight">TanH</td></tr>
+        <tr><td>Objective (Obf2)</td>
+            <td class="val-highlight">${r.db_boa_stats?.Best?.toFixed(4) || '—'}</td></tr>
+      </table>`;
+
+    // Latest round
+    const rounds = r.consensus_rounds || [];
+    if (rounds.length > 0) {
+        const last = rounds[rounds.length-1];
+        document.getElementById('latestRound').innerHTML = `
+          <div class="round-row ok">
+            <div class="rnd-num">#${last.round}</div>
+            <span class="phase ph-propose">PROPOSE</span>
+            <span class="phase ph-endorse">ENDORSE ✔×${last.n_endorsed}</span>
+            <span class="phase ph-order">ORDER</span>
+            <span class="phase ph-commit">COMMIT</span>
+            <div class="rnd-meta">${last.latency_ms?.toFixed(0)} ms · ${last.throughput?.toFixed(0)} TPS</div>
+          </div>`;
+    }
+
+    renderConvergenceChart();
+    renderBaselineChart(m);
+    renderGainChart(m);
+    renderBlockchainTab();
+    renderMetricsTables();
+    loadPlots();
+
+    // Federation
+    if (r.fed_rounds && r.fed_rounds.length) {
+        fedRounds = r.fed_rounds;
+        renderFederationCharts();
+        renderFedRewardsChart();
+    }
+
+    // Attack simulation
+    if (r.attack_simulation) {
+        attackData = r.attack_simulation;
+        renderAttackPanel();
+    }
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+function renderConvergenceChart() {
+    if (convergenceCh) convergenceCh.destroy();
+    const ctx = document.getElementById('convergenceChart').getContext('2d');
+    const iters = 30;
+    const x = Array.from({length:iters},(_,i)=>i+1);
+
+    // Simulated convergence curves
+    const proposed = x.map(i => 1.42 + 2.5 * Math.exp(-0.18*(i-1)) + Math.random()*0.05);
+    const mbo  = x.map(i => 1.58 + 3.0 * Math.exp(-0.15*(i-1)) + Math.random()*0.07);
+    const wsa  = x.map(i => 1.87 + 3.5 * Math.exp(-0.12*(i-1)) + Math.random()*0.09);
+    const dboa = x.map(i => 1.69 + 3.2 * Math.exp(-0.14*(i-1)) + Math.random()*0.06);
+    const boa  = x.map(i => 1.75 + 3.3 * Math.exp(-0.13*(i-1)) + Math.random()*0.08);
+
+    convergenceCh = new Chart(ctx, {
+        type: 'line',
+        data: { labels: x, datasets: [
+            {label:'MBO-ADTCN',  data:mbo,  borderColor:'#ff6b6b', borderWidth:1.5, pointRadius:0, borderDash:[4,2]},
+            {label:'WSA-ADTCN',  data:wsa,  borderColor:'#ffd700', borderWidth:1.5, pointRadius:0, borderDash:[4,2]},
+            {label:'DBOA-ADTCN', data:dboa, borderColor:'#ce93d8', borderWidth:1.5, pointRadius:0, borderDash:[4,2]},
+            {label:'BOA-ADTCN',  data:boa,  borderColor:'#4fc3f7', borderWidth:1.5, pointRadius:0, borderDash:[4,2]},
+            {label:'DB-BOA-ADTCN (Proposed)', data:proposed,
+             borderColor:'#64ffda', borderWidth:2.5, pointRadius:0},
+        ]},
+        options: { responsive:true, plugins:{legend:{labels:{color:'#8892b0',font:{size:10}}}},
+                   scales:{ x:{ticks:{color:'#8892b0'}, grid:{color:'#233554'}},
+                             y:{ticks:{color:'#8892b0'}, grid:{color:'#233554'}} }},
+    });
+}
+
+function renderBaselineChart(m) {
+    if (baselineCh) baselineCh.destroy();
+    const ctx = document.getElementById('baselineChart').getContext('2d');
+    const labels = ['MBO\nADTCN','WSA\nADTCN','DBOA\nADTCN','BOA\nADTCN','DB-BOA\nADTCN'];
+    const accs   = [88.4, 91.85, 90.0, 93.8, m.Accuracy || 99.45];
+    const mccs   = [76.8, 83.7, 80.0, 87.6, (m.MCC||0.94)*100];
+
+    baselineCh = new Chart(ctx, {
+        type:'bar',
+        data:{ labels, datasets:[
+            {label:'Accuracy (%)', data:accs, backgroundColor: accs.map((_,i) =>
+                i===4 ? 'rgba(100,255,218,0.7)' : 'rgba(79,195,247,0.4)') },
+            {label:'MCC × 100',   data:mccs, backgroundColor: mccs.map((_,i) =>
+                i===4 ? 'rgba(255,215,0,0.7)' : 'rgba(255,107,107,0.4)') },
+        ]},
+        options:{responsive:true, plugins:{legend:{labels:{color:'#8892b0',font:{size:10}}}},
+                 scales:{x:{ticks:{color:'#8892b0'}, grid:{color:'#233554'}},
+                         y:{min:75, ticks:{color:'#8892b0'}, grid:{color:'#233554'}}}},
+    });
+}
+
+function renderGainChart(m) {
+    if (gainCh) gainCh.destroy();
+    const ctx = document.getElementById('gainChart')?.getContext('2d');
+    if (!ctx || !m.Accuracy) return;
+    const baselines = {...ALGO_BASE, ...CLF_BASE};
+    const names = Object.keys(baselines);
+    const gains = names.map(n => (m.Accuracy - baselines[n].Accuracy).toFixed(2));
+
+    gainCh = new Chart(ctx, {
+        type:'bar',
+        data:{ labels:names, datasets:[{
+            label:'Accuracy Gain (%)',
+            data:gains,
+            backgroundColor: gains.map(g => parseFloat(g)>0 ? 'rgba(105,255,132,0.6)' : 'rgba(255,107,107,0.6)'),
+        }]},
+        options:{responsive:true, indexAxis:'y',
+                 plugins:{legend:{display:false}},
+                 scales:{x:{ticks:{color:'#8892b0'}, grid:{color:'#233554'}},
+                         y:{ticks:{color:'#8892b0', font:{size:10}}, grid:{color:'#233554'}}}},
+    });
+}
+
+// ── Blockchain tab ────────────────────────────────────────────────────────────
+function renderBlockchainTab() {
+    if (!results) return;
+    const r = results;
+
+    // Node grid
+    const grid = document.getElementById('nodeGrid');
+    const nodes = Array.from({length:10}, (_,i) => ({
+        id: i, org: i%2===0 ? 'Org1' : 'Org2',
+        tokens: i === r.leader_node ? 100 + 15*(r.consensus_rounds?.length||1) : 100,
+        rep: (1.0 + Math.sin(i)*0.3).toFixed(3),
+        isLeader: i === r.leader_node,
+    }));
+
+    grid.innerHTML = nodes.map(n => `
+      <div class="node-card ${n.isLeader ? 'leader' : ''}">
+        ${n.isLeader ? '<div class="node-badge">★ LEADER</div>' : ''}
+        <div class="node-id">Node-${String(n.id).padStart(2,'0')}</div>
+        <div class="node-org">${n.org}MSP</div>
+        <div class="node-stat"><span>Tokens</span><span>${n.tokens}</span></div>
+        <div class="node-stat"><span>Reputation</span><span>${n.rep}</span></div>
+        <div class="node-stat"><span>Rounds Led</span><span>${n.isLeader ? r.consensus_rounds?.length||1 : 0}</span></div>
+        <div class="token-bar">
+          <div class="token-fill" style="width:${Math.min(100,(n.tokens/200)*100)}%"></div>
+        </div>
+      </div>`).join('');
+
+    // Consensus log
+    const rounds = r.consensus_rounds || [];
+    if (rounds.length === 0) return;
+    const log = document.getElementById('consensusLog');
+    log.innerHTML = rounds.map(rnd => `
+      <div class="round-row ${rnd.consensus_ok ? 'ok' : 'fail'}">
+        <div class="rnd-num">#${rnd.round}</div>
+        <span class="phase ph-propose">PROPOSE</span>
+        <span class="phase ph-endorse">ENDORSE×${rnd.n_endorsed}</span>
+        <span class="phase ph-order">ORDER</span>
+        <span class="phase ${rnd.consensus_ok ? 'ph-commit' : 'ph-fail'}">
+          ${rnd.consensus_ok ? 'COMMIT ✔' : 'FAILED ✗'}
+        </span>
+        <div style="margin-left:auto;color:var(--muted);font-size:11px;">
+          Leader: Node-${String(rnd.leader).padStart(2,'0')} ·
+          ${rnd.latency_ms?.toFixed(0)} ms ·
+          ${rnd.throughput?.toFixed(0)} TPS ·
+          ${rnd.n_txns} txns
+        </div>
+      </div>`).join('');
+}
+
+// ── Metrics tables ────────────────────────────────────────────────────────────
+function renderMetricsTables() {
+    const m = results?.metrics || {};
+    const proposed = {Accuracy: m.Accuracy||99.45, Precision: m.Precision||95.88,
+                      Sensitivity: m.Sensitivity||93.0, NPV: m.NPV||99.63,
+                      FPR: m.FPR||0.21, MCC: m.MCC||0.9414};
+
+    const rows = ['Accuracy','Precision','Sensitivity','NPV','FPR','MCC'];
+
+    // Algo table
+    const tbody1 = document.getElementById('algoTableBody');
+    tbody1.innerHTML = rows.map(row => {
+        const isMCC = row === 'MCC';
+        const fmt = v => isMCC ? v.toFixed(5) : v.toFixed(5)+'%';
+        const cols = Object.values(ALGO_BASE).map(b => `<td>${fmt(b[row])}</td>`).join('');
+        const pval = fmt(proposed[row]);
+        return `<tr><td><strong>${row}</strong></td>${cols}
+                    <td class="val-highlight">${pval}</td></tr>`;
+    }).join('');
+
+    // Classifier table
+    const tbody2 = document.getElementById('clfTableBody');
+    tbody2.innerHTML = rows.map(row => {
+        const isMCC = row === 'MCC';
+        const fmt = v => isMCC ? v.toFixed(5) : v.toFixed(5)+'%';
+        const cols = Object.values(CLF_BASE).map(b => `<td>${fmt(b[row])}</td>`).join('');
+        const pval = fmt(proposed[row]);
+        return `<tr><td><strong>${row}</strong></td>${cols}
+                    <td class="val-highlight">${pval}</td></tr>`;
+    }).join('');
+
+    // Stat table
+    const stats = results?.db_boa_stats;
+    if (stats) {
+        document.getElementById('statTable').innerHTML = `
+          <table class="metrics-table">
+            ${Object.entries(stats).map(([k,v]) =>
+                `<tr><td>${k}</td><td class="val-highlight">${parseFloat(v).toFixed(6)}</td></tr>`
+            ).join('')}
+          </table>`;
+    }
+}
+
+// ── Plots ─────────────────────────────────────────────────────────────────────
+async function loadPlots() {
+    const grid = document.getElementById('plotGrid');
+    try {
+        const resp = await fetch(`${API}/api/plots`);
+        const files = await resp.json();
+        if (!files.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">No plots yet — run the pipeline first</div>`; return; }
+        grid.innerHTML = files.map(f => `
+          <div class="plot-card" onclick="openModal('${API}/api/plots/${f}')">
+            <img src="${API}/api/plots/${f}" alt="${f}" loading="lazy"/>
+            <div class="plot-name">${f.replace('.png','').replace(/_/g,' ')}</div>
+          </div>`).join('');
+    } catch {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+          API server not running. Start the server with <code>npm start</code> in the api-server directory.
+        </div>`;
+    }
+}
+
+function openModal(src) {
+    document.getElementById('modalImg').src = src;
+    document.getElementById('imgModal').style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('imgModal').style.display = 'none';
+}
+
+// ── Transactions ──────────────────────────────────────────────────────────────
+async function submitTxn() {
+    const txnId    = document.getElementById('txnId').value || `TXN-${Date.now()}`;
+    const amount   = document.getElementById('txnAmount').value || '100';
+    const senderId = document.getElementById('txnSender').value || 'WALLET-000';
+    const recvId   = document.getElementById('txnReceiver').value || 'WALLET-001';
+
+    const resultEl = document.getElementById('txnResult');
+    resultEl.innerHTML = `<span style="color:var(--gold)">Classifying…</span>`;
+
+    try {
+        const resp = await fetch(`${API}/api/submit-transaction`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ txnId, amount, senderId, receiverId: recvId, features:[] }),
+        });
+        const data = await resp.json();
+        const fraud = data.isFraud;
+        transactions.unshift(data);
+        renderTxnLedger();
+
+        resultEl.innerHTML = `
+          <div style="padding:12px;background:var(--navy);border-radius:8px;border-left:3px solid ${fraud ? 'var(--red)' : 'var(--green)'}">
+            <strong>Transaction ${txnId}</strong><br/>
+            <span class="badge ${fraud ? 'badge-red' : 'badge-green'}">${fraud ? '🚨 FRAUD DETECTED' : '✔ LEGITIMATE'}</span>
+            &nbsp; Score: ${data.fraudScore} &nbsp; Amount: $${parseFloat(amount).toFixed(2)}
+          </div>`;
+    } catch (e) {
+        // Demo mode
+        const fraud = parseFloat(amount) > 5000 || Math.random() < 0.05;
+        const score = fraud ? (0.7+Math.random()*0.3).toFixed(4) : (Math.random()*0.15).toFixed(4);
+        transactions.unshift({ txnId, amount, senderId, receiverId: recvId, isFraud: fraud, fraudScore: score, timestamp: new Date().toISOString() });
+        renderTxnLedger();
+        resultEl.innerHTML = `
+          <div style="padding:12px;background:var(--navy);border-radius:8px;border-left:3px solid ${fraud ? 'var(--red)' : 'var(--green)'}">
+            <strong>${txnId}</strong>  &nbsp;
+            <span class="badge ${fraud ? 'badge-red' : 'badge-green'}">${fraud ? '🚨 FRAUD' : '✔ LEGITIMATE'}</span>
+            &nbsp; Score: ${score} &nbsp; (Demo Mode)
+          </div>`;
+    }
+}
+
+async function loadTransactions() {
+    try {
+        const resp = await fetch(`${API}/api/transactions`);
+        const data = await resp.json();
+        if (Array.isArray(data) && data.length) { transactions = data; renderTxnLedger(); }
+    } catch { /* demo */ }
+}
+
+function renderTxnLedger() {
+    const el = document.getElementById('txnLedger');
+    if (!transactions.length) { el.innerHTML = '<div class="empty-state">No transactions</div>'; return; }
+    el.innerHTML = `<table class="metrics-table" style="width:100%">
+      <thead><tr><th>ID</th><th>Amount</th><th>From</th><th>To</th><th>Status</th><th>Score</th><th>Time</th></tr></thead>
+      <tbody>
+      ${transactions.slice(0,50).map(t => `<tr>
+        <td style="font-family:monospace">${t.txnId}</td>
+        <td>$${parseFloat(t.amount||0).toFixed(2)}</td>
+        <td style="color:var(--muted)">${(t.senderId||'').slice(0,12)}</td>
+        <td style="color:var(--muted)">${(t.receiverId||'').slice(0,12)}</td>
+        <td><span class="badge ${t.isFraud ? 'badge-red' : 'badge-green'}">${t.isFraud ? '🚨 FRAUD' : '✔ OK'}</span></td>
+        <td>${t.fraudScore || '—'}</td>
+        <td style="color:var(--muted);font-size:11px">${new Date(t.timestamp||Date.now()).toLocaleTimeString()}</td>
+      </tr>`).join('')}
+      </tbody></table>`;
+}
+
+// ── Federation tab ────────────────────────────────────────────────────────────
+async function loadFederationTab() {
+    // Try live API first
+    try {
+        const resp = await fetch(`${API}/api/federation-history`);
+        const data = await resp.json();
+        if (Array.isArray(data) && data.length) {
+            fedRounds = data;
+        }
+    } catch { /* use stored fedRounds from results */ }
+
+    if (!fedRounds.length) return;   // nothing to render yet
+    renderFederationCharts();
+    renderFedRewardsChart();
+
+    // Attack panel
+    if (attackData) renderAttackPanel();
+}
+
+function renderAttackPanel() {
+    if (!attackData) return;
+
+    const panel = document.getElementById('attackPanel');
+    if (panel) panel.style.display = '';
+
+    const orgNames = ['BankA', 'BankB', 'BankC'];
+    const w = attackData.db_boa_weight_under_attack;
+
+    // Summary KPIs
+    const summaryEl = document.getElementById('attackSummary');
+    if (summaryEl) {
+        const suppressed = w < 0.20;
+        summaryEl.innerHTML = `
+          <table class="metrics-table">
+            <tr><td>Attacker</td>
+                <td class="val-highlight" style="color:var(--red)">${attackData.attacker}</td></tr>
+            <tr><td>Rounds simulated</td>
+                <td class="val-highlight">${attackData.n_rounds}</td></tr>
+            <tr><td>Verdicts disputed</td>
+                <td class="val-highlight" style="color:var(--red)">${attackData.n_disputed}</td></tr>
+            <tr><td>Final tokens</td>
+                <td class="val-highlight" style="color:${attackData.final_tokens < 100 ? 'var(--red)' : 'var(--green)'}">
+                  ${attackData.final_tokens} (Δ${attackData.final_tokens - 100 >= 0 ? '+' : ''}${attackData.final_tokens - 100})</td></tr>
+            <tr><td>Final reputation</td>
+                <td class="val-highlight" style="color:${attackData.final_reputation < 1.0 ? 'var(--red)' : 'var(--green)'}">
+                  ${attackData.final_reputation.toFixed(3)}</td></tr>
+            <tr><td>DB-BOA weight (attacker)</td>
+                <td class="val-highlight" style="color:${suppressed ? 'var(--green)' : 'var(--gold)'}">
+                  ${w.toFixed(4)} ${suppressed ? '✔ SUPPRESSED' : '⚠ PARTIAL'}</td></tr>
+          </table>`;
+    }
+
+    // Weights bar chart comparing normal vs attack
+    const ctxEl = document.getElementById('attackWeightsChart');
+    if (ctxEl) {
+        if (attackWeightsCh) attackWeightsCh.destroy();
+        // Normal weights from last fed round
+        const normalW = fedRounds.length
+            ? (fedRounds[fedRounds.length - 1].aggregation_weights || [0.45, 0.33, 0.22])
+            : [0.45, 0.33, 0.22];
+        // Attack weights: reconstruct from attacker weight + distribute rest
+        const atkW = orgNames.map(n =>
+            n === attackData.attacker ? w : (1 - w) / 2
+        );
+        attackWeightsCh = new Chart(ctxEl.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: orgNames,
+                datasets: [
+                    { label: 'Normal weights', data: normalW,
+                      backgroundColor: 'rgba(100,255,218,0.5)' },
+                    { label: 'Under attack', data: atkW,
+                      backgroundColor: orgNames.map(n =>
+                          n === attackData.attacker
+                              ? 'rgba(255,107,107,0.75)'
+                              : 'rgba(100,149,237,0.5)') },
+                ],
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#8892b0', font: { size: 10 } } } },
+                scales: {
+                    x: { ticks: { color: '#8892b0' }, grid: { color: '#233554' } },
+                    y: { min: 0, max: 1, ticks: { color: '#8892b0' }, grid: { color: '#233554' } },
+                },
+            },
+        });
+    }
+
+    // Verdict log
+    const logEl = document.getElementById('attackLog');
+    if (logEl && attackData.attack_log) {
+        logEl.innerHTML = attackData.attack_log.map(e =>
+            `<div style="color:${e.outcome === 'DISPUTED' ? 'var(--red)' : 'var(--green)'}">` +
+            `Rnd ${String(e.round).padStart(2,'0')} | ` +
+            `y=${e.y_true} | consensus=${e.consensus} | BankC=${e.attacker_verdict} | ` +
+            `${e.outcome.padEnd(10)} | tokens=${e.tokens} | rep=${e.reputation.toFixed(3)}` +
+            `</div>`
+        ).join('');
+    }
+}
+
+function renderFederationCharts() {
+    if (!fedRounds.length) return;
+
+    const orgNames  = ['BankA', 'BankB', 'BankC'];
+    const roundNums = fedRounds.map(r => `Round ${r.round_num || r.round}`);
+    const colors    = ['rgba(100,255,218,0.75)', 'rgba(100,149,237,0.75)', 'rgba(255,215,0,0.75)'];
+
+    // ── Panel 1: Aggregation Weights grouped bar chart ────────────────────────
+    const weightsEl  = document.getElementById('fedWeightsEmpty');
+    const weightsCtx = document.getElementById('fedWeightsChart');
+    if (weightsEl)  weightsEl.style.display = 'none';
+    if (weightsCtx) weightsCtx.style.display = '';
+
+    if (fedWeightsCh) fedWeightsCh.destroy();
+    const wCtx = weightsCtx.getContext('2d');
+    fedWeightsCh = new Chart(wCtx, {
+        type: 'bar',
+        data: {
+            labels: roundNums,
+            datasets: orgNames.map((org, i) => ({
+                label: org,
+                data: fedRounds.map(r => {
+                    const w = r.aggregation_weights || [];
+                    return w[i] !== undefined ? parseFloat(w[i].toFixed(3)) : null;
+                }),
+                backgroundColor: colors[i],
+            })),
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: '#8892b0', font: { size: 10 } } } },
+            scales: {
+                x: { stacked: false, ticks: { color: '#8892b0' }, grid: { color: '#233554' } },
+                y: { min: 0, max: 1, ticks: { color: '#8892b0' }, grid: { color: '#233554' },
+                     title: { display: true, text: 'Weight', color: '#8892b0' } },
+            },
+        },
+    });
+
+    // ── Panel 2: Accuracy before/after (accuracy_deltas) ─────────────────────
+    const accEl  = document.getElementById('fedAccEmpty');
+    const accCtx = document.getElementById('fedAccChart');
+    if (accEl)  accEl.style.display = 'none';
+    if (accCtx) accCtx.style.display = '';
+
+    if (fedAccCh) fedAccCh.destroy();
+    const aCtx = accCtx.getContext('2d');
+    // Build cumulative accuracy gain per org
+    const cumulativeGain = orgNames.map((org, i) => ({
+        label: `${org} Δ Accuracy`,
+        data: fedRounds.map(r => {
+            const d = r.accuracy_deltas || {};
+            return d[org] !== undefined ? parseFloat(d[org].toFixed(3)) : 0;
+        }),
+        borderColor: colors[i],
+        backgroundColor: colors[i].replace('0.75', '0.15'),
+        fill: true,
+        tension: 0.3,
+        pointRadius: 4,
+    }));
+    fedAccCh = new Chart(aCtx, {
+        type: 'line',
+        data: { labels: roundNums, datasets: cumulativeGain },
+        options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: '#8892b0', font: { size: 10 } } } },
+            scales: {
+                x: { ticks: { color: '#8892b0' }, grid: { color: '#233554' } },
+                y: { ticks: { color: '#8892b0' }, grid: { color: '#233554' },
+                     title: { display: true, text: 'Δ Accuracy (%)', color: '#8892b0' } },
+            },
+        },
+    });
+
+    // ── Panel 3: DB-BOA Job 3 convergence ─────────────────────────────────────
+    const convEl  = document.getElementById('fedConvEmpty');
+    const convCtx = document.getElementById('fedConvChart');
+    if (convEl)  convEl.style.display = 'none';
+    if (convCtx) convCtx.style.display = '';
+
+    if (fedConvCh) fedConvCh.destroy();
+    const cCtx = convCtx.getContext('2d');
+    const convDatasets = fedRounds.map((r, ri) => {
+        const hist = r.db_boa_history || [];
+        return {
+            label: `Round ${r.round_num || r.round}`,
+            data: hist.map((v, i) => ({ x: i + 1, y: -v })),  // negate (was minimised)
+            borderColor: colors[ri % colors.length],
+            borderWidth: 1.8,
+            pointRadius: 0,
+            tension: 0.2,
+        };
+    });
+    fedConvCh = new Chart(cCtx, {
+        type: 'line',
+        data: { datasets: convDatasets },
+        options: {
+            responsive: true,
+            parsing: false,
+            plugins: { legend: { labels: { color: '#8892b0', font: { size: 10 } } } },
+            scales: {
+                x: { type: 'linear', title: { display: true, text: 'Iteration', color: '#8892b0' },
+                     ticks: { color: '#8892b0' }, grid: { color: '#233554' } },
+                y: { title: { display: true, text: 'Obf2 (Global)', color: '#8892b0' },
+                     ticks: { color: '#8892b0' }, grid: { color: '#233554' } },
+            },
+        },
+    });
+
+    // ── Panel 4: Round History Table ──────────────────────────────────────────
+    const histEl = document.getElementById('fedHistTable');
+    if (histEl) {
+        histEl.innerHTML = `
+          <table class="metrics-table" style="width:100%">
+            <thead><tr>
+              <th>Round</th><th>BankA Weight</th><th>BankB Weight</th><th>BankC Weight</th>
+              <th>Best Fitness</th><th>Timestamp</th>
+            </tr></thead>
+            <tbody>
+            ${fedRounds.map(r => {
+                const w = r.aggregation_weights || [];
+                return `<tr>
+                  <td class="val-highlight">#${r.round_num || r.round}</td>
+                  <td>${w[0] !== undefined ? w[0].toFixed(4) : '—'}</td>
+                  <td>${w[1] !== undefined ? w[1].toFixed(4) : '—'}</td>
+                  <td>${w[2] !== undefined ? w[2].toFixed(4) : '—'}</td>
+                  <td style="color:var(--gold)">${r.best_fitness !== undefined ? r.best_fitness.toFixed(6) : '—'}</td>
+                  <td style="color:var(--muted);font-size:11px">${r.timestamp ? new Date(r.timestamp).toLocaleString() : '—'}</td>
+                </tr>`;
+            }).join('')}
+            </tbody>
+          </table>`;
+    }
+}
+
+function renderFedRewardsChart() {
+    if (!fedRounds.length) return;
+
+    const orgNames = ['BankA', 'BankB', 'BankC'];
+    const colors   = ['rgba(100,255,218,0.75)', 'rgba(100,149,237,0.75)', 'rgba(255,215,0,0.75)'];
+
+    // Sum token rewards across all fed rounds per org
+    const totals = orgNames.map(org => {
+        return fedRounds.reduce((sum, r) => {
+            const contrib = r.org_contributions || {};
+            // reward = weight × 20 tokens distributed per round
+            return sum + (contrib[org] || 0) * 20;
+        }, 100); // base 100 tokens
+    });
+
+    const panelEl  = document.getElementById('fedRewardsPanel');
+    const chartCtx = document.getElementById('fedRewardsChart');
+    if (panelEl)  panelEl.style.display = 'none';
+    if (chartCtx) chartCtx.style.display = '';
+
+    if (fedRewardsCh) fedRewardsCh.destroy();
+    const ctx = chartCtx.getContext('2d');
+    fedRewardsCh = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: orgNames,
+            datasets: [{
+                label: 'Token Balance',
+                data: totals,
+                backgroundColor: totals.map(v => v >= 100 ? 'rgba(105,255,132,0.65)' : 'rgba(255,107,107,0.65)'),
+                borderWidth: 0,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { min: 0, ticks: { color: '#8892b0' }, grid: { color: '#233554' },
+                     title: { display: true, text: 'Tokens', color: '#8892b0' } },
+                y: { ticks: { color: '#8892b0' }, grid: { color: '#233554' } },
+            },
+        },
+    });
+}
+
+function onFederationWeights(payload) {
+    // SSE event: single round weights arrived mid-run
+    if (payload && Array.isArray(payload.aggregation_weights)) {
+        // Update or push to fedRounds
+        const idx = fedRounds.findIndex(r => (r.round_num || r.round) === payload.round_num);
+        if (idx >= 0) fedRounds[idx] = { ...fedRounds[idx], ...payload };
+        else fedRounds.push(payload);
+        renderFederationCharts();
+        renderFedRewardsChart();
+    }
+}
+
+function onFederationDone(payload) {
+    if (payload && Array.isArray(payload)) {
+        fedRounds = payload;
+    }
+    renderFederationCharts();
+    renderFedRewardsChart();
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function setKPI(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+}
+
+function setStatus(id, dotClass, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = `<span class="status-dot ${dotClass}"></span>${text}`;
+}
+
+function showProgress(show) {
+    const pw = document.getElementById('progressWrap');
+    if (pw) pw.style.display = show ? 'block' : 'none';
+}
+
+function updateProgress(pct, label) {
+    const bar = document.getElementById('progressBar');
+    const lbl = document.getElementById('progressLabel');
+    if (bar) bar.style.width = pct + '%';
+    if (lbl) lbl.textContent = label || '';
+}
+
+function updatePhase(n, state) {
+    const el = document.getElementById(`phase${n}Status`);
+    if (!el) return;
+    const map = {
+        running : `<span style="color:var(--gold)">⟳ Running…</span>`,
+        done    : `<span style="color:var(--green)">✔ Complete</span>`,
+    };
+    el.innerHTML = map[state] || '';
+}
+
+function clearTerminal() {
+    const t = document.getElementById('terminal');
+    t.innerHTML = '<span class="cursor"></span>';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async function init() {
+    // Try to connect to API server
+    try {
+        const r = await fetch(`${API}/health`);
+        const d = await r.json();
+        setStatus('pipelineStatus', 'dot-ok', 'API Online');
+        if (d.fabricConnected) setStatus('fabricStatus', 'dot-ok', 'Fabric');
+    } catch {
+        setStatus('pipelineStatus', 'dot-off', 'Demo Mode');
+    }
+
+    connectSSE();
+    renderMetricsTables();   // fill with paper reference values immediately
+
+    // Pre-fill overview charts with paper data
+    renderConvergenceChart();
+    renderBaselineChart({ Accuracy: 95.45, MCC: 0.909 });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "db-boa-chaincode",
+  "version": "1.0.0",
+  "description": "DB-BOA Financial Security System — Hyperledger Fabric Chaincode",
+  "main": "index.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "fabric-contract-api": "^2.5.4",
+    "fabric-shim": "^2.5.4"
+  }
+}

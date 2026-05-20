@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./network.sh up:*)",
+      "Bash(./network.sh deployCC -ccn db-boa -ccp ../db-boa -ccl javascript -ccv 1 -ccs 1)",
+      "Bash(docker run:*)"
+    ]
+  }
+}

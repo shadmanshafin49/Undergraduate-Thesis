@@ -1,0 +1,12 @@
+# DB-BOA Financial Security Framework — Dependencies
+# Install with: pip install -r requirements.txt
+
+numpy>=1.24
+pandas>=1.5
+scikit-learn>=1.2
+scipy>=1.10
+matplotlib>=3.6
+
+# Optional — for GPU-accelerated ADTCN (PyTorch variant)
+# torch>=2.0
+# torchvision>=0.15
