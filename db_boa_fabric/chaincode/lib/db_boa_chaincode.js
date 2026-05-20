@@ -12,7 +12,7 @@
  *   transaction     TXN_{id}               — anonymised transaction + verdicts
  *   leaderElection  LEADER_{roundId}       — DB-BOA Job 2 output per round
  *   consensusRound  ROUND_{roundNum}       — block consensus metrics
- *   federationRound FED_{roundNum}         — DB-BOA Job 3 output + reward record
+ *   federationRound FED_{roundNum}         — Shapley-weighted aggregation output + reward record
  *   orgModel        MODEL_{org}_{round}    — per-org accuracy & weight hash
  *   hyperparams     HYPERPARAMS            — DB-BOA Job 1 optimal hyperparameters
  *   counters        COUNTERS               — running totals
@@ -23,7 +23,7 @@
  *   Selected as leader, round succeeds      +10 tokens
  *   Verdict disputed by majority            –2 tokens
  *   Consensus round fails (applied to leader) –2 tokens
- *   Federation participation                +20 tokens shared by weight
+ *   Federation participation                +20 tokens shared by Shapley contribution weight
  *   Reputation on success                   +0.02
  *   Reputation on failure                   –0.05
  *
@@ -430,13 +430,14 @@ class DBBOAContract extends Contract {
     }
 
     /**
-     * recordFederationRound — record DB-BOA Job 3 output and distribute rewards.
+     * recordFederationRound — record Shapley-weighted aggregation and distribute rewards.
+     * (DB-BOA Job 3 was replaced by exact Shapley values for fairness attribution.)
      *
-     * aggregationWeightsJson: '{"BankA":0.61,"BankB":0.24,"BankC":0.15}'
+     * aggregationWeightsJson: '{"BankA":0.61,"BankB":0.24,"BankC":0.15}'  Shapley weights
      * orgContributionsJson:   same format
-     * dbBoaHistoryJson:       JSON array of best-fitness per iteration
-     * bestFitness:            best –Obf2 value found
-     * globalWeightsHash:      SHA-256 of aggregated weight array
+     * dbBoaHistoryJson:       kept for schema compatibility (pass '[]' if unused)
+     * bestFitness:            Obf2 of the Krum-selected global model
+     * globalWeightsHash:      SHA-256 of the Krum-selected weight array
      */
     async recordFederationRound(ctx, roundNum, aggregationWeightsJson,
                                  orgContributionsJson, dbBoaHistoryJson,

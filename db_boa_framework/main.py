@@ -134,10 +134,10 @@ def main():
     adtcn = ADTCN()
     optimal_params = adtcn.optimise_hyperparams(X_opt, y_opt, verbose=True)
 
-    print(f"\n[OPT]   ✔ Optimal hyperparameters found:", flush=True)
-    print(f"         Hidden Neurons   (HnD) : {optimal_params['hidden_neurons']}", flush=True)
-    print(f"         Epoch Count      (EpD) : {optimal_params['epoch_count']}", flush=True)
-    print(f"         Steps per Epoch  (SeD) : {optimal_params['steps_per_epoch']}", flush=True)
+    print(f"\n[OPT]   ✔ Optimal hyperparameters found (2D search):", flush=True)
+    print(f"         Conv Filters (F)   : {optimal_params['hidden_neurons']}", flush=True)
+    print(f"         Epoch Count (fixed): {optimal_params['epoch_count']}", flush=True)
+    print(f"         Steps per Epoch    : {optimal_params['steps_per_epoch']}", flush=True)
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 3 ── ADTCN Training
@@ -167,6 +167,36 @@ def main():
         print("[STAT]  DB-BOA Statistical Evaluation (Table 2):", flush=True)
         for k, v in adtcn.opt_stats.items():
             print(f"         {k:<10} : {v:.6f}", flush=True)
+
+    # ── DB-BOA vs defaults comparison ────────────────────────────────────────
+    # Substantiates the hyperparameter optimisation claim (Q14 in defense).
+    sep()
+    print("[OPT]  Comparing DB-BOA-optimal vs default hyperparameters …",
+          flush=True)
+    default_adtcn = ADTCN(cfg=ADTCN_CONFIG)
+    default_adtcn.optimal_params = {
+        "hidden_neurons" : ADTCN_CONFIG["hidden_neurons"],
+        "epoch_count"    : ADTCN_CONFIG["epoch_count"],
+        "steps_per_epoch": ADTCN_CONFIG["steps_per_epoch"],
+    }
+    default_adtcn.fit(X_full, y_full, verbose=False)
+    default_metrics = compute_all_metrics(y_test, default_adtcn.predict(X_test))
+    delta_acc = metrics["Accuracy"] - default_metrics["Accuracy"]
+    delta_mcc = metrics["MCC"]      - default_metrics["MCC"]
+    sign_acc  = "▲" if delta_acc >= 0 else "▼"
+    sign_mcc  = "▲" if delta_mcc >= 0 else "▼"
+    print(f"[OPT]  Default  (F={ADTCN_CONFIG['hidden_neurons']}, "
+          f"ep={ADTCN_CONFIG['epoch_count']}, "
+          f"spe={ADTCN_CONFIG['steps_per_epoch']})  "
+          f"Acc={default_metrics['Accuracy']:.4f}%  MCC={default_metrics['MCC']:.4f}",
+          flush=True)
+    print(f"[OPT]  DB-BOA   (F={optimal_params['hidden_neurons']}, "
+          f"ep={optimal_params['epoch_count']}, "
+          f"spe={optimal_params['steps_per_epoch']})  "
+          f"Acc={metrics['Accuracy']:.4f}%  MCC={metrics['MCC']:.4f}",
+          flush=True)
+    print(f"[OPT]  Gain from DB-BOA: Accuracy {sign_acc}{abs(delta_acc):.4f}%  "
+          f"MCC {sign_mcc}{abs(delta_mcc):.4f}", flush=True)
 
     # ── Comparison against baselines ─────────────────────────────────────────
     sep()

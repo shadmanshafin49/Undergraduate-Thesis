@@ -200,6 +200,14 @@ class FinancialDataLoader:
         Stratified: each org gets proportional fraud/normal samples.
         No overlap between org datasets.
         Returns: dict of {org_name: (X_subset, y_subset)}
+
+        Ecological validity note
+        ------------------------
+        The ULB dataset comes from a single bank's transactions.  All three
+        "orgs" therefore share the same customer population, the same time
+        period, and the same fraud typology.  This is a controlled simulation
+        rather than a true cross-institution federated deployment.  See
+        ORG_DATA_SPLITS comment in config.py and the thesis Limitations section.
         """
         from config import ORG_DATA_SPLITS
         from sklearn.model_selection import train_test_split as tts

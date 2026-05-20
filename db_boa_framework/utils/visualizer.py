@@ -179,45 +179,17 @@ def plot_roc_curve(y_true, y_proba, save: bool = True):
     return path
 
 
-# ─── 4. Activation Function Comparison (Fig.10) ──────────────────────────────
+# ─── 4. Activation Function Comparison (removed) ─────────────────────────────
+# This plot was removed because every value was a hardcoded offset from the
+# single measured accuracy — no other activation was actually tested.  The
+# architecture uses nn.ReLU() throughout; claiming TanH is the peak would be
+# fabricated data.  To reinstate, train 6 separate models with different
+# activations and pass the results as a dict to a new plotting function.
 
 def plot_activation_comparison(proposed_metrics: dict, save: bool = True):
-    """Accuracy of proposed model across 6 activation functions (Fig.10a style).
-    Baseline curves are omitted until ULB-evaluated baselines are available."""
-    activations = ["Linear", "ReLU", "TanH", "Sigmoid", "Softmax", "Leaky_ReLU"]
-
-    proposed_acc = [
-        proposed_metrics["Accuracy"] - 1.2,
-        proposed_metrics["Accuracy"] - 0.8,
-        proposed_metrics["Accuracy"],          # TanH is best
-        proposed_metrics["Accuracy"] - 0.5,
-        proposed_metrics["Accuracy"] - 1.0,
-        proposed_metrics["Accuracy"] - 0.3,
-    ]
-
-    fig, ax = plt.subplots(figsize=(11, 5))
-    x = np.arange(len(activations))
-
-    ax.plot(x, proposed_acc, color=COLORS["proposed"],
-            marker="*", linewidth=2.5, markersize=10,
-            label="DB-BOA-ADTCN (Proposed)")
-
-    ax.set_xticks(x); ax.set_xticklabels(activations, rotation=10)
-    ax.set_xlabel("Activation Function")
-    ax.set_ylabel("Accuracy (%)")
-    ax.set_title("Accuracy vs Activation Function — DB-BOA-ADTCN (ULB dataset)")
-    ax.legend(fontsize=9)
-    ax.grid(True, color=COLORS["grid"], axis="y")
-    y_min = max(60, min(proposed_acc) - 5)
-    ax.set_ylim(y_min, min(100, max(proposed_acc) + 3))
-    plt.tight_layout()
-
-    path = os.path.join(RESULTS_DIR, "activation_accuracy.png")
-    if save:
-        fig.savefig(path, dpi=150, bbox_inches="tight")
-        print(f"[PLOT]  Saved → {path}", flush=True)
-    plt.close()
-    return path
+    """Placeholder — activation comparison plot removed (data was fabricated).
+    Returns None so generate_all_plots silently skips it."""
+    return None
 
 
 # ─── 5. Classifier Comparison (Fig.11) ───────────────────────────────────────

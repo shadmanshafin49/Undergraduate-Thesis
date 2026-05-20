@@ -102,21 +102,19 @@ ADTCN_CONFIG = {
 }
 
 # ─── Comparison Baselines ────────────────────────────────────────────────────
-# Baseline algorithms for convergence comparison (Section VII of paper)
+# ULB-evaluated algorithm baselines (run run_baselines.py to populate results)
 BASELINE_NAMES = [
-    "MBO-ADTCN",
-    "WSA-ADTCN",
-    "DBOA-ADTCN",
-    "BOA-ADTCN",
+    "FedAvg",
+    "FedAvg+Krum",
+    "FedAvg+DP",
     "DB-BOA-ADTCN",   # ← proposed
 ]
 
-# Baseline classifier names (Table 4 of paper)
+# ULB-evaluated classifier baselines
 CLASSIFIER_NAMES = [
-    "EfficientNet",
-    "ResNet",
-    "DenseNet",
-    "DTCN",
+    "FedAvg",
+    "FedAvg+Krum",
+    "FedAvg+DP",
     "DB-BOA-ADTCN",   # ← proposed
 ]
 
@@ -134,7 +132,7 @@ INCENTIVE_CONFIG = {
     "consensus_fail_penalty" : 2,    # −2   consensus round fails under leader
 
     # recordFederationRound chaincode function
-    "federation_pool"        : 20,   # +20  shared by DB-BOA weight across orgs
+    "federation_pool"        : 20,   # +20  shared by Shapley contribution weight across orgs
 
     # Latency threshold for bonus award (ms)
     "latency_threshold_ms"   : 300,
@@ -178,3 +176,9 @@ ORG_DATA_SPLITS = {
     'BankB': 0.30,   # Bank B has medium data (30%)
     'BankC': 0.20,   # Bank C has least data (20%)
 }
+# Limitation: the ULB dataset comes from one bank's transactions; all three
+# "orgs" share the same customer population, time period, and fraud patterns.
+# This is a controlled simulation, not a real cross-bank federated deployment.
+# McMahan et al. (AISTATS 2017) assume i.i.d. data; this split is mildly
+# non-i.i.d. (different volumes, same fraud rate).  For severely heterogeneous
+# distributions FedProx (Li et al., MLSys 2020) would be more appropriate.

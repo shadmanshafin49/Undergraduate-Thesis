@@ -15,11 +15,19 @@ FederationManager orchestrates federated rounds:
 
 Architecture note
 -----------------
-Krum    → security  (Byzantine fault tolerance)
+Krum    → security  (outlier-weight rejection for consensus alignment; with f=0 and
+                     n=3 this selects the most consensus-aligned org, not a Byzantine-
+                     tolerant global model — no adversary is assumed)
 Shapley → fairness  (game-theoretic contribution attribution; coalition_value() requires
-                     a shared labelled validation set at the aggregator — this assumes
-                     a trusted-aggregator model.  See Hsieh et al. (2020) for a discussion
-                     of the federated-evaluation trade-off this introduces.)
+                     a shared labelled validation set at the aggregator — trusted-
+                     aggregator assumption, see Hsieh et al. (2020))
+
+Design intent: Krum and Shapley serve *different* objectives and operate independently.
+Krum decides *which* model becomes the global model (security / outlier rejection).
+Shapley decides *how much* each org earns (fairness / incentive distribution).
+An org whose weights are Krum-rejected can still earn tokens if it helps coalitions
+on the validation set — this is intentional: the incentive signal remains honest even
+when an org's current-round weights are noisy or unlucky.
 
 References
 ----------
@@ -91,7 +99,16 @@ class FederationManager:
                 for m in org_models.values()
             ]
             if verbose:
+                # Basic composition (Dwork et al. 2006 §3.5):
+                # ε_total = k·ε,  δ_total = k·δ  after k rounds
+                n_rounds_so_far = len(self.round_history) + 1
+                eps_total   = dp_eps   * n_rounds_so_far
+                delta_total = dp_delta * n_rounds_so_far
                 print(f"[FED]  DP weight sharing  : ε={dp_eps}, δ={dp_delta:.0e}",
+                      flush=True)
+                print(f"[FED]  DP composition     : after {n_rounds_so_far} round(s) "
+                      f"ε_total={eps_total:.2f}, δ_total={delta_total:.2e} "
+                      f"(basic composition, Dwork et al. 2006 §3.5)",
                       flush=True)
         else:
             org_weights_list = [m.extract_weights() for m in org_models.values()]
@@ -190,17 +207,21 @@ class FederationManager:
 
     def _krum_aggregate(self, org_weights_list: list) -> tuple:
         """
-        Krum Byzantine-robust aggregation (Blanchard et al., NeurIPS 2017).
+        Krum-based outlier-weight rejection (Blanchard et al., NeurIPS 2017).
 
-        Each org i receives a score = sum of squared L2 distances to its
+        Each org i is scored by the sum of squared L2 distances to its
         k = max(1, n-f-2) nearest neighbours.  The org with the minimum
-        score is the most consensus-aligned and is selected as the global
-        model, preventing any single Byzantine org from corrupting the
-        aggregate before the token-penalty mechanism fires.
+        score is the most consensus-aligned and becomes the global model.
+
+        With f=0 and n=3 (k=1) this is outlier rejection: it selects the
+        org whose weight vector is closest to the other orgs.  The full
+        Byzantine fault-tolerance guarantee (Blanchard et al.) requires f≥1
+        and n≥2f+3; our setup uses f=0, so we claim consensus alignment,
+        not adversarial robustness.
 
         Returns
         -------
-        selected_weights : list[np.ndarray]  — Krum-selected global model
+        selected_weights : list[np.ndarray]  — selected global model
         selected_idx     : int               — index of selected org
         scores           : np.ndarray        — Krum score per org
         """

@@ -142,6 +142,140 @@ with the exact path and the Kaggle download URL instead of a cryptic pandas erro
 
 ---
 
+## ✅ Fix 7 — Krum Byzantine claim corrected; Krum/Shapley independence documented (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/models/federation_manager.py` — module docstring, `_krum_aggregate` docstring
+
+**What changed**: Removed all "Byzantine fault tolerance" language.  Krum is now
+described as "outlier-weight rejection for consensus alignment" with an explicit
+note that f=0 means no adversary is assumed (f≥1 is needed for the Blanchard et al.
+guarantee).  Added an "Architecture note" explaining that Krum (security) and
+Shapley (fairness) are independent by design — different objectives, different
+evaluation criteria — and this is intentional.
+
+---
+
+## ✅ Fix 8 — DP composition logged per federation round (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/models/federation_manager.py` — `run_federation_round()`
+
+**What changed**: After each DP weight-sharing step, the console now prints:
+`[FED]  DP composition: after k round(s) ε_total=k·ε, δ_total=k·δ (basic composition)`
+With ε=1.0 and 3 rounds: ε_total=3.0, δ_total=3e-5.  Cited Dwork et al. (2006 §3.5).
+
+---
+
+## ✅ Fix 9 — Fabricated activation plot replaced with no-op stub (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/utils/visualizer.py` — `plot_activation_comparison()`
+
+**What changed**: The function was removed and replaced with a stub that returns
+`None`.  The previous implementation plotted hardcoded offsets from the single
+measured accuracy — no other activation was ever tested.  A comment explains
+what is needed to reinstate the plot legitimately.
+
+---
+
+## ✅ Fix 10 — DB-BOA epoch search dimension removed; search is now 2D (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — `_ADTCNObjective`, `optimise_hyperparams`
+- `db_boa_framework/main.py` — Phase 2 print
+
+**What changed**: Epoch count was removed from the DB-BOA search space because
+the surrogate cap at 5 epochs made the dimension flat for any proposed value > 5.
+Search is now 2D: (n_filters, steps_per_epoch).  `optimal_params["epoch_count"]`
+is set to the fixed config default and labelled "not searched".  All print
+statements updated to say "2D search".
+
+---
+
+## ✅ Fix 11 — CNN surrogate class distribution corrected to real fraud rate (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — `_ADTCNObjective.__init__`
+
+**What changed**: Surrogate subsample now preserves the real ~0.17% fraud rate
+instead of the previous ~50/50 split.  Hyperparameters found by DB-BOA now
+reflect deployment conditions.
+
+---
+
+## ✅ Fix 12 — MTTA label corrected to GlobalMaxPool (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — module docstring
+
+**What changed**: "Multiple Time-scale Temporal Attention" replaced with
+"GlobalMaxPool — selects the most anomalous time-step activation (pooling, not
+attention; the paper's MTTA label is re-used here)".
+
+---
+
+## ✅ Fix 13 — DB-BOA vs defaults comparison added to Phase 4 (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/main.py` — Phase 4
+
+**What changed**: Phase 4 now trains a second model with the default
+hyperparameters (F=128, ep=30, spe=150) and prints a side-by-side accuracy and
+MCC comparison against the DB-BOA-optimal model.  Substantiates the
+hyperparameter optimisation contribution.
+
+---
+
+## ✅ Fix 14 — BASELINE_NAMES / CLASSIFIER_NAMES updated to ULB baselines (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/config.py`
+
+**What changed**: Replaced MBO-ADTCN, EfficientNet, etc. with ULB-compatible
+names: FedAvg, FedAvg+Krum, FedAvg+DP, DB-BOA-ADTCN.
+
+---
+
+## ✅ Fix 15 — Chaincode and config "DB-BOA weight" comments updated to Shapley (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/config.py` — INCENTIVE_CONFIG `federation_pool` comment
+- `db_boa_fabric/chaincode/lib/db_boa_chaincode.js` — header comment, `recordFederationRound` docstring
+
+**What changed**: All references to "DB-BOA Job 3 output" and "shared by weight"
+replaced with "Shapley-weighted aggregation" and "shared by Shapley contribution
+weight".
+
+---
+
+## ✅ Fix 16 — Ecological validity and i.i.d. notes added (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/data/data_loader.py` — `split_for_orgs` docstring
+- `db_boa_framework/config.py` — `ORG_DATA_SPLITS` comment
+
+**What changed**: Added "Ecological validity note" in `split_for_orgs` docstring
+acknowledging that ULB comes from a single bank (controlled simulation, not a
+real cross-institution deployment).  Config comment notes the i.i.d. assumption
+and cites FedProx (Li et al., 2020) as the appropriate alternative for severely
+heterogeneous distributions.
+
+---
+
+## ✅ Fix 17 — run_baselines.py helper script created (2026-05-20)
+
+**Files changed**
+- `db_boa_framework/run_baselines.py` — new file
+
+**What changed**: Created a self-contained script that runs FedAvg, FedAvg+Krum,
+FedAvg+DP, and DB-BOA-ADTCN on the ULB dataset and prints Python dict literals
+ready to paste into `baseline_metrics()`.  All four runs share the same DB-BOA
+hyperparameter search so results are directly comparable.  Run with:
+`python3 db_boa_framework/run_baselines.py`
+
+---
+
 ## ✅ Fix 6 — Synthetic baselines removed (2026-05-20)
 
 **Files changed**

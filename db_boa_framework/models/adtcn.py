@@ -7,7 +7,9 @@ Architecture (per paper §VI, with true temporal modelling):
   ┌───────────────────────────────────────────────────────────────────┐
   │  MJE   Multi-modal Joint Embedding  — raw 30-feature input         │
   │  TCL   Temporal Context Learning    — 1D-CNN over seq_len=10 steps │
-  │  MTTA  Multiple Time-scale Temporal Attention  — GlobalMaxPool      │
+  │  MTTA  GlobalMaxPool — selects the most anomalous time-step        │
+  │         activation across the SEQ_LEN window  (pooling, not        │
+  │         attention; the paper's "MTTA" label is re-used here)       │
   │  OUT   Classifier head  Linear(n_filters×2 → 2)                    │
   └───────────────────────────────────────────────────────────────────┘
 
@@ -15,7 +17,9 @@ The 1D-CNN processes 10 consecutive transactions as an ordered sequence
 (Conv1d(30, F, 3) → ReLU → Conv1d(F, 2F, 3) → GlobalMaxPool → Linear),
 so temporal order is genuinely exploited and the "TCL" claim is defensible.
 
-DB-BOA still optimises (n_filters, epochs, steps/epoch) via Eq.11.
+DB-BOA optimises (n_filters, steps/epoch) via Eq.11.  Epoch count is fixed
+at ADTCN_CONFIG["epoch_count"] (not searched) because the surrogate cap
+makes the epoch dimension flat above 5 — see _ADTCNObjective docstring.
 Class imbalance (~0.17% fraud) is handled with weighted cross-entropy loss.
 
 References
@@ -93,29 +97,35 @@ class _ADTCNObjective:
     Wraps ADTCN evaluation as a callable fitness function for DB-BOA.
 
     Uses the same _Conv1dClassifier architecture as the final model, trained on
-    a 2,000-row stratified subsample for up to _SURROGATE_EPOCHS epochs.  This
-    makes DB-BOA actually optimise CNN filter count, not MLP neuron count.
-    DB-BOA minimises, so we return −Obf2.
+    a 2,000-row stratified subsample (matching the real ~0.17% fraud rate) for
+    _SURROGATE_EPOCHS epochs.  DB-BOA minimises, so we return −Obf2.
+
+    Epoch count is NOT part of the search space: the surrogate hard-caps at 5
+    epochs regardless of what DB-BOA proposes, making that dimension flat.
+    Removing it makes the search genuinely 2-dimensional.
 
     Hyperparameter mapping
     ----------------------
     params[0]  →  n_filters          (Conv1d channel count)
-    params[1]  →  epochs
-    params[2]  →  steps_per_epoch    (controls batch_size)
+    params[1]  →  steps_per_epoch    (controls batch_size)
+    epoch count is fixed at _SURROGATE_EPOCHS for the surrogate; the final
+    model uses ADTCN_CONFIG["epoch_count"].
     """
 
     _SURROGATE_ROWS   = 2_000   # rows per evaluation (speed vs. fidelity trade-off)
-    _SURROGATE_EPOCHS = 5       # hard cap on surrogate training epochs
+    _SURROGATE_EPOCHS = 5       # surrogate training epochs (not searched)
 
     def __init__(self, X_opt, y_opt, random_state: int = 42):
         rng   = np.random.RandomState(random_state)
         n_raw = min(X_opt.shape[1], N_RAW_FEATURES + 3)
         self._n_raw = n_raw
 
-        # Stratified subsample for speed
+        # Subsample preserving the real class distribution (~0.17% fraud)
         fraud_idx  = np.where(y_opt == 1)[0]
         normal_idx = np.where(y_opt == 0)[0]
-        n_f = min(len(fraud_idx),  self._SURROGATE_ROWS // 2)
+        total      = len(fraud_idx) + len(normal_idx)
+        fraud_rate = len(fraud_idx) / total
+        n_f = max(4, int(self._SURROGATE_ROWS * fraud_rate))
         n_n = min(len(normal_idx), self._SURROGATE_ROWS - n_f)
         idx = np.concatenate([
             rng.choice(fraud_idx,  n_f, replace=False),
@@ -140,8 +150,8 @@ class _ADTCNObjective:
             return 10.0
 
         n_filters = max(8,  int(round(float(params[0]))))
-        n_ep      = min(self._SURROGATE_EPOCHS, max(2, int(round(float(params[1])))))
-        spe       = max(10, int(round(float(params[2]))))
+        spe       = max(10, int(round(float(params[1]))))
+        n_ep      = self._SURROGATE_EPOCHS   # fixed; epoch count is not searched
 
         n       = len(self.X_seq)
         n_train = int(0.7 * n)
@@ -200,7 +210,7 @@ class ADTCN:
 
     Workflow
     --------
-    1. DB-BOA searches for optimal (n_filters, epochs, steps/epoch).
+    1. DB-BOA searches for optimal (n_filters, steps/epoch) — 2D; epoch fixed.
     2. Final _Conv1dClassifier is trained on 10-step transaction sequences.
     3. All paper metrics are computed on the held-out test set.
 
@@ -219,22 +229,20 @@ class ADTCN:
     # ── public API ────────────────────────────────────────────────────────────
 
     def optimise_hyperparams(self, X_opt, y_opt, verbose: bool = True):
-        """Run DB-BOA to find optimal (n_filters, epochs, steps/epoch)."""
+        """Run DB-BOA to find optimal (n_filters, steps/epoch) — 2D search."""
         if verbose:
-            _print("Starting DB-BOA hyperparameter search …")
+            _print("Starting DB-BOA hyperparameter search (2D) …")
             _print(f"Search space: filters∈{DB_BOA_CONFIG['filter_count_bounds']}  "
-                   f"EpD∈{DB_BOA_CONFIG['epoch_count_bounds']}  "
-                   f"SeD∈{DB_BOA_CONFIG['steps_per_epoch_bounds']}")
+                   f"SeD∈{DB_BOA_CONFIG['steps_per_epoch_bounds']}  "
+                   f"epoch_count fixed={self.cfg['epoch_count']}")
             _sep()
 
         objective = _ADTCNObjective(X_opt, y_opt,
                                     random_state=self.cfg["random_state"])
 
         lb = np.array([DB_BOA_CONFIG["filter_count_bounds"][0],
-                       DB_BOA_CONFIG["epoch_count_bounds"][0],
                        DB_BOA_CONFIG["steps_per_epoch_bounds"][0]], dtype=float)
         ub = np.array([DB_BOA_CONFIG["filter_count_bounds"][1],
-                       DB_BOA_CONFIG["epoch_count_bounds"][1],
                        DB_BOA_CONFIG["steps_per_epoch_bounds"][1]], dtype=float)
 
         optimizer = DBBOA(
@@ -252,15 +260,15 @@ class ADTCN:
 
         self.optimal_params = {
             "hidden_neurons"  : max(8,  int(round(best_pos[0]))),   # → n_filters
-            "epoch_count"     : max(3,  int(round(best_pos[1]))),
-            "steps_per_epoch" : max(20, int(round(best_pos[2]))),
+            "epoch_count"     : self.cfg["epoch_count"],            # fixed, not searched
+            "steps_per_epoch" : max(20, int(round(best_pos[1]))),
         }
         self.opt_history = history
         self.opt_stats   = optimizer.summary_stats()
 
         if verbose:
-            _print(f"Optimal Conv filters (HnD→F): {self.optimal_params['hidden_neurons']}")
-            _print(f"Optimal epochs       (EpD)  : {self.optimal_params['epoch_count']}")
+            _print(f"Optimal Conv filters (F)    : {self.optimal_params['hidden_neurons']}")
+            _print(f"Epoch count (fixed)         : {self.optimal_params['epoch_count']}")
             _print(f"Optimal steps/epoch  (SeD)  : {self.optimal_params['steps_per_epoch']}")
             _print(f"Best Obf2 (negated)         : {best_fit:.6f}")
 
