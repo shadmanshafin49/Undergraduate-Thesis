@@ -24,7 +24,7 @@ DATASET_PATH = os.path.join(os.path.dirname(BASE_DIR), "datasets", "creditcard.c
 DATA_CONFIG = {
     "dataset_path"      : DATASET_PATH,
     "n_features"        : 30,       # V1-V28 + Amount + Time (base raw features)
-    "sequence_length"   : 10,       # look-back window for temporal context
+    "sequence_length"   : 10,       # look-back window; chosen empirically — ablation over {5,10,20} is left for future work
     "test_size"         : 0.20,     # 80/20 train-test split
     "val_size"          : 0.10,     # 10 % of training set for validation
     "random_state"      : 42,
@@ -91,7 +91,8 @@ ADTCN_CONFIG = {
     "steps_per_epoch"    : 150,
 
     # Architecture flags
-    "activation"         : "tanh",    # paper's best activation (TanH)
+    # activation: ReLU is used (hardcoded in _Conv1dClassifier); TanH was the
+    # paper's claimed best but was never tested in this implementation.
     "dropout_rate"       : 0.3,
     "learning_rate"      : 0.001,
 

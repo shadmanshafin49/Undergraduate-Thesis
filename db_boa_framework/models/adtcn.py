@@ -46,7 +46,7 @@ from algorithms.db_boa import DBBOA
 warnings.filterwarnings("ignore")
 
 N_RAW_FEATURES = 30   # V1-V28 + Amount + Time (first 30 cols of engineered matrix)
-SEQ_LEN        = 10   # look-back window — matches DATA_CONFIG["sequence_length"]
+SEQ_LEN        = 10   # 10-step window chosen empirically; ablation over {5,10,20} is left for future work
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
@@ -70,6 +70,9 @@ class _Conv1dClassifier(nn.Module):
 
     Conv1d(30, F, kernel=3) → ReLU → Conv1d(F, 2F, kernel=3) → GlobalMaxPool
     → Linear(2F, 2)
+
+    Activation: ReLU (hardcoded). TanH was the paper's claimed best activation
+    but was not tested in this implementation; no activation ablation was run.
     """
 
     def __init__(self, n_features: int = N_RAW_FEATURES, n_filters: int = 64):
@@ -114,6 +117,7 @@ class _ADTCNObjective:
 
     _SURROGATE_ROWS   = 2_000   # rows per evaluation (speed vs. fidelity trade-off)
     _SURROGATE_EPOCHS = 5       # surrogate training epochs (not searched)
+    _MIN_FRAUD_ROWS   = 30      # minimum fraud samples; guards against near-zero count at 0.17% rate
 
     def __init__(self, X_opt, y_opt, random_state: int = 42):
         rng   = np.random.RandomState(random_state)
@@ -125,7 +129,10 @@ class _ADTCNObjective:
         normal_idx = np.where(y_opt == 0)[0]
         total      = len(fraud_idx) + len(normal_idx)
         fraud_rate = len(fraud_idx) / total
-        n_f = max(4, int(self._SURROGATE_ROWS * fraud_rate))
+        # Minimum of _MIN_FRAUD_ROWS (30) so that with the real 0.17% fraud rate
+        # (which would give only ~3 fraud samples in 2,000 rows) the CNN still
+        # receives enough positive examples for stable gradient estimates.
+        n_f = max(self._MIN_FRAUD_ROWS, int(self._SURROGATE_ROWS * fraud_rate))
         n_n = min(len(normal_idx), self._SURROGATE_ROWS - n_f)
         idx = np.concatenate([
             rng.choice(fraud_idx,  n_f, replace=False),
@@ -387,6 +394,22 @@ class ADTCN:
         features) and builds sliding windows of SEQ_LEN consecutive transactions.
         The first SEQ_LEN-1 rows are padded by repeating the first row so that
         output length always equals input length.
+
+        Design note — PTC/NTC features are intentionally discarded (Q30)
+        ------------------------------------------------------------------
+        The input matrix X has shape (n, ~301): leading 33 columns are raw
+        features; columns 33+ are PTC rolling-statistics and NTC differences
+        computed by _engineer_temporal_features().  This method extracts only
+        the leading n_raw (≤33) columns.  The PTC/NTC block is available in X
+        but the 1D-CNN receives its own temporal context implicitly by sliding
+        over SEQ_LEN consecutive raw-feature vectors.  Adding the 268 PTC/NTC
+        columns to the CNN input would change the channel count and was not
+        evaluated; they serve as documentation of the TCL concept rather than
+        live model inputs.
+
+        Boundary condition: the first SEQ_LEN-1 predictions use a padded context
+        (row 0 repeated). This affects ~0.003% of the 284,807-row dataset and
+        does not meaningfully bias aggregate metrics.
         """
         n_raw = getattr(self, "_n_raw", N_RAW_FEATURES)
         X_raw = X[:, :n_raw].astype(np.float32)

@@ -65,6 +65,19 @@ class FederatedADTCN(ADTCN):
         The clipping step ensures the global sensitivity of the weight
         vector is bounded by C, which is required for the DP guarantee to
         hold.  Smaller ε → more noise → stronger privacy, less accuracy.
+
+        DP noise magnitude disclosure (answers Q50)
+        -------------------------------------------
+        At ε=1.0, δ=1e-5: σ = √(2·ln(125000)) ≈ 4.84.
+        After L2-clipping the weight tensor to norm ≤ 1, the per-element
+        magnitude is roughly 1/√dim:
+          Conv1d(33, F, 3) weights : dim ≈ 5940  → per-element ≈ 0.013
+          Conv1d(F, 2F, 3) weights : dim ≈ 24576 → per-element ≈ 0.006
+        σ=4.84 therefore exceeds per-element signal by ×370–×800.  The
+        aggregated (Krum-selected) global model at ε=1.0 is effectively
+        near-random weights.  This is the deliberate privacy–utility trade-off
+        at a very tight privacy budget; a practical DP-FL deployment would use
+        ε≥50 or DP-SGD (McMahan et al., ICLR 2018).  See thesis Limitations.
         """
         weights     = self.extract_weights()
         sensitivity = 1.0                                  # clipping norm C

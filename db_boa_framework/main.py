@@ -283,6 +283,10 @@ def main():
           f"— demonstrating {n_fed_rounds} events", flush=True)
     fed_results  = []
 
+    # FL Validity note: orgs do not perform local gradient updates between
+    # federation rounds in this simulation.  A production FL system would run N
+    # local epochs between rounds; the absence of inter-round drift means the
+    # 3-round convergence result does not generalise to real FL deployments.
     for fed_round in range(1, n_fed_rounds + 1):
         header(f"FEDERATION ROUND {fed_round}")
 
@@ -292,9 +296,10 @@ def main():
             for name, m in org_models.items()
         }
 
-        # Shared anonymised validation set
-        X_val_shared = X_test[:500]
-        y_val_shared = y_test[:500]
+        # Shared anonymised validation set — use the training validation split,
+        # not test data, so X_test remains unseen until final reporting.
+        X_val_shared = X_val[:500]
+        y_val_shared = y_val[:500]
 
         # Run DB-BOA Job 3
         fed_result = fed_manager.run_federation_round(
@@ -494,6 +499,15 @@ def main():
             print(f"  ✔  Reputation fell: 1.000 → {attacker_reputation:.3f} "
                   f"— future leader selection penalised", flush=True)
         sep("═")
+
+        # Limitation: the token incentive penalises false-fraud-at-consensus only
+        # indirectly.  A bank that always reports fraud earns tokens for every
+        # real fraud event (y_true=1) because the honest banks also vote 1 and
+        # consensus=1.  The mechanism provides no formal deterrent against a
+        # patient attacker at higher fraud base rates, and cannot distinguish
+        # honest correct predictions from malicious coincidental ones.  A
+        # reputation-weighted or stake-based mechanism would provide stronger
+        # deterrence.  See thesis Limitations section.
 
         # Append attack results to JSON
         results["attack_simulation"] = {

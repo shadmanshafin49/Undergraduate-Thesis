@@ -308,3 +308,120 @@ the dict.
 **Citation**: Liu et al., "Pick and Choose: A GNN-based Imbalanced Learning Approach for Fraud Detection", WWW 2021.
 
 ---
+
+## ✅ Fix 18 — Dead `activation="tanh"` config key removed (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/config.py` — `"activation": "tanh"` key removed from `ADTCN_CONFIG`; replaced with a comment stating ReLU is used
+- `db_boa_framework/models/adtcn.py` — `_Conv1dClassifier` docstring updated to state ReLU is hardcoded and TanH was the paper's claim but untested
+
+**What changed**: The `activation` key in `ADTCN_CONFIG` was never read by `_Conv1dClassifier`, which hardcodes `nn.ReLU()`.  The comment falsely claimed TanH was the paper's best activation.  The dead key is removed; both files now honestly state that ReLU is used and no activation ablation was performed.
+
+---
+
+## ✅ Fix 19 — Surrogate minimum fraud samples raised to 30 (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — `_ADTCNObjective`: added `_MIN_FRAUD_ROWS = 30`; `n_f = max(self._MIN_FRAUD_ROWS, int(...))` replaces `max(4, ...)`
+
+**What changed**: With `_SURROGATE_ROWS=2_000` and the real 0.17% fraud rate, `max(4, int(2000×0.0017)) = 4` fraud samples — far too few for stable CNN gradients.  The minimum is now 30, ensuring at least 30 fraud examples per surrogate evaluation.  A docstring comment explains the trade-off.
+
+---
+
+## ✅ Fix 20 — Incentive mechanism over-reporting limitation documented (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/main.py` — Phase 8 attack simulation: added limitation comment before JSON serialisation
+
+**What changed**: Added a code comment explaining that the token incentive only indirectly penalises malicious over-reporting — a bank that always votes fraud earns tokens for every real fraud event.  Points to the thesis Limitations section.
+
+---
+
+## ✅ Fix 21 — DP accuracy cost comparison added to run_baselines.py (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/run_baselines.py` — new block after all baseline runs that computes and prints the DP accuracy/MCC cost
+
+**What changed**: After the four baseline runs complete, the script now prints:
+```
+DP ACCURACY COST  (ε=1.0, δ=1e-5, basic Gaussian mechanism)
+  FedAvg (no DP)  Accuracy=XX.XXXXX%  MCC=0.XXXXX
+  FedAvg+DP       Accuracy=XX.XXXXX%  MCC=0.XXXXX
+  DP cost:  Accuracy ▼X.XXXXX%  MCC ▼0.XXXXX
+```
+This directly answers defense Q38: "How much accuracy does DP cost at ε=1.0?"
+
+---
+
+## ✅ Fix 22 — FL validity note added to federation loop (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/main.py` — Phase 7 federation loop: added "FL Validity note" comment before the `for fed_round` loop
+
+**What changed**: Added a comment acknowledging that orgs do not perform local gradient updates between federation rounds in this simulation.  States that the absence of inter-round drift means the 3-round convergence result does not generalise to real FL deployments.
+
+---
+
+## ✅ Fix 23 — SEQ_LEN=10 justification comment added (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — `SEQ_LEN` constant comment updated
+- `db_boa_framework/config.py` — `"sequence_length": 10` comment updated
+
+**What changed**: Both locations now state: "10-step window chosen empirically; ablation over {5,10,20} is left for future work."  Sufficient to answer Q96 honestly.
+
+---
+
+## ✅ Fix 24 — Simulated latency disclosed in leader_block.py (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/blockchain/leader_block.py` — `simulate_consensus_round()`: added comment before latency arithmetic
+
+**What changed**: Added a 5-line comment explaining that all latency values are derived from normalised resource scores and `time.sleep`, not from a live Hyperledger Fabric network.  References the thesis Limitations section.
+
+---
+
+## ✅ Fix 25 — Sequence-padding bias disclosed in _make_sequences (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — `_make_sequences()` docstring
+
+**What changed**: Added: "Boundary condition: the first SEQ_LEN-1 predictions use a padded context (row 0 repeated). This affects ~0.003% of the 284,807-row dataset and does not meaningfully bias aggregate metrics."  Answers Q126 honestly.
+
+---
+
+## ✅ Fix 26 — DP σ=4.84 noise magnitude disclosed in federated_adtcn.py (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/models/federated_adtcn.py` — `extract_weights_with_dp()` docstring
+
+**What changed**: Added a "DP noise magnitude disclosure" block explaining that at ε=1.0 σ≈4.84 exceeds per-element weight magnitudes by ×370–×800, making the DP-shared global model near-random weights.  States this is the deliberate privacy–utility trade-off at a tight privacy budget and references DP-SGD (McMahan et al., ICLR 2018) and ε≥50 as practical alternatives.  Answers Q50.
+
+---
+
+## ✅ Fix 27 — PTC/NTC feature discard explained in _make_sequences (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — `_make_sequences()` docstring
+
+**What changed**: Added a "Design note" block explaining that the input matrix has ~301 columns but `_make_sequences` intentionally takes only the leading 33 raw-feature columns.  The 268 PTC/NTC columns remain available in X but the 1D-CNN derives its own temporal context by sliding over SEQ_LEN consecutive raw-feature vectors.  Answers Q30 honestly without requiring a code change.
+
+---
+
+## ✅ Fix 28 — Shapley validation set changed from X_test to X_val (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/main.py` — Phase 7 federation loop
+
+**What changed**: `X_val_shared = X_test[:500]` replaced with `X_val_shared = X_val[:500]` (same for y).  Shapley coalition values — which determine on-chain token distribution — are now computed on the training validation split, keeping X_test unseen until final reporting.  Added a one-line comment explaining the fix.
+
+---
+
+## ✅ Fix 29 — FedAvg updated to McMahan size-weighted averaging (2026-05-21)
+
+**Files changed**
+- `db_boa_framework/run_baselines.py` — `_avg_weights()` signature and body; `run_one_baseline()` now collects `org_counts` and passes them to `_avg_weights()`
+
+**What changed**: `_avg_weights()` now accepts an optional `counts` list.  When provided it computes w_global ← Σ_k (n_k/n)·w_k, matching McMahan et al. (AISTATS 2017).  The FedAvg call in `run_one_baseline()` passes the actual org sample sizes ([n_BankA, n_BankB, n_BankC] ≈ [50%, 30%, 20%] of train set).  With the correct weights [0.5, 0.3, 0.2] the FedAvg baseline is now the faithful McMahan implementation.  Answers Q144.
+
+---

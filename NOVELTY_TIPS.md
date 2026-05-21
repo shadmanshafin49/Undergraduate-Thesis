@@ -1,207 +1,157 @@
 # Open Issues — Must Fix Before Submission
 
-The 1D-CNN, DP formula, Shapley math, and weighted cross-entropy are solid.
-Everything below is still broken. Issues are ordered by how fast they would end
+Everything below is still open. Issues are ordered by how fast they would end
 a defense.
-
----
-
-## CRITICAL — Will fail a supervisor question
-
-### ✅ 1. Krum with f=0 claims "Byzantine-robust" but tolerates zero adversaries
-
-**File**: `db_boa_framework/config.py:167` (`byzantine_f = 0`)
-**File**: `db_boa_framework/models/federation_manager.py:18` (module docstring)
-
-**Fix applied**: Removed "Byzantine fault tolerance" everywhere it appeared.
-The module docstring, `_krum_aggregate` docstring, and architecture note now all
-say "outlier-weight rejection for consensus alignment" and explicitly state that
-with f=0 and n=3 no adversary is assumed.  The distinction from Blanchard et al.
-(f≥1) is documented inline.
-
----
-
-### ✅ 2. The activation comparison plot fabricates data
-
-**File**: `db_boa_framework/utils/visualizer.py:189-196`
-
-Every value was a hardcoded offset from the single measured accuracy; no other
-activation was actually tested.  The CNN uses `nn.ReLU()` but the plot labelled
-TanH as the peak — fabricated data.
-
-**Fix applied**: `plot_activation_comparison()` is now a no-op stub that returns
-`None`.  `generate_all_plots` already filters `None` results.  A comment above
-the stub explains why it was removed and what would be needed to reinstate it
-(train 6 models with different activations, record real results).
-
----
-
-### ✅ 3. DB-BOA cannot optimise epoch count — the dimension is frozen at 5
-
-**File**: `db_boa_framework/models/adtcn.py:143`
-
-The surrogate hard-capped training at 5 epochs regardless of what DB-BOA
-proposed, making the epoch dimension flat.
-
-**Fix applied**: Epoch count removed from the DB-BOA search space entirely.
-`_ADTCNObjective.__call__` now uses 2D params: `params[0]`→n_filters,
-`params[1]`→steps_per_epoch.  `optimise_hyperparams` builds a 2D lb/ub array.
-`optimal_params["epoch_count"]` is now set to `self.cfg["epoch_count"]` (the
-fixed default) — it is documented as "not searched".  Module docstring, ADTCN
-class docstring, and Phase 2 print in main.py updated to say "2D search".
-
----
-
-### ✅ 4. No ULB baseline runs exist — the comparison is empty and unfalsifiable
-
-**File**: `db_boa_framework/utils/metrics.py:150-152`
-
-**Fix applied**: Created `db_boa_framework/run_baselines.py` — a self-contained
-script that runs the four configurations (FedAvg, FedAvg+Krum, FedAvg+DP,
-DB-BOA-ADTCN) on the ULB dataset and prints Python dict literals ready to paste
-into `baseline_metrics()`.  The script reuses the same DB-BOA hyperparameter
-search across all runs so results are directly comparable.  Run with:
-`python3 run_baselines.py`
 
 ---
 
 ## SIGNIFICANT — Weakens a claimed contribution
 
-### ✅ 5. CNN surrogate optimises on 50/50 fraud rate; deployment is 0.17%
+### ✅ 1. DP noise (σ=4.84) completely overwhelms federated weight magnitudes
 
-**File**: `db_boa_framework/models/adtcn.py:116-123`
+**File**: `db_boa_framework/models/federated_adtcn.py:69-79`
+**Defense question**: Q50
 
-The surrogate subsample was ~50% fraud; real deployment is 0.17%.
+σ = C·√(2·ln(1.25/δ))/ε = 1·√(2·ln(125000))/1 ≈ 4.84.  After L2 clipping
+each weight tensor to norm ≤ 1, the per-element magnitude is 1/√dim:
 
-**Fix applied**: Subsample now uses the real fraud rate:
+  Conv1d(30, F, 3) weights : dim = F×30×3 = 5760 → per-element ≈ 0.013
+  Conv1d(F, 2F, 3) weights : dim = 2F×F×3 ≈ 24576 → per-element ≈ 0.006
+  Bias tensors              : dim = F ≈ 64   → per-element ≈ 0.125
+
+Noise σ=4.84 is 37–800× the per-element signal.  Krum then selects ONE org's
+noisy weights (no averaging to reduce noise), so the global model is effectively
+random weights.  `run_baselines.py` will reveal this as a catastrophic accuracy
+drop for FedAvg+DP — the student must understand the cause or Q50 will catch
+them off guard.
+
+**Fix needed**: Either (a) increase ε to a less aggressive value (ε=50 or ε=100
+are common in applied DP-FL) and report the privacy budget honestly, or (b)
+apply DP-SGD (per-example gradient clipping + noise, McMahan et al. 2018) which
+keeps C proportional to a single gradient rather than the entire weight tensor, or
+(c) keep ε=1.0 but explicitly disclose in the thesis: "At ε=1.0, σ≈4.84 exceeds
+per-element weight magnitudes by ×370; the global model post-DP is near-random
+weights, and the DP contribution serves as a privacy mechanism at the cost of
+near-complete model degradation.  Results in Section X confirm this trade-off."
+Disclosure without a code change is the fastest fix before a defense.
+
+---
+
+### ✅ 2. PTC/NTC feature engineering creates ~268 features never used by the CNN
+
+**File**: `db_boa_framework/data/data_loader.py:156-200` (`_engineer_temporal_features`)
+**File**: `db_boa_framework/models/adtcn.py:391-399` (`_make_sequences`)
+**Defense question**: Q30
+
+`_engineer_temporal_features()` computes PTC rolling mean/std over windows [5,10,20]
+and NTC diff orders [1,2] across all 33 input columns.  With 33 base features,
+3 windows × 2 stats = 6 PTC passes → 198 extra columns; 2 NTC diffs → 66 extra
+columns; plus MJE cross-features.  Total engineered matrix ≈ 301 columns.
+
+`_make_sequences()` takes `X[:, :n_raw]` where `n_raw = min(X.shape[1], 33)`.
+The entire PTC/NTC block (columns 33+) is silently discarded.  The CNN sees
+exactly 33 features regardless of how much temporal engineering was applied.
+
+A supervisor asking Q30 will note: "Your data loader engineers 301 features but
+the model uses 33.  Why engineer 268 features you throw away?"  There is no good
+answer other than "the feature pipeline was inherited and the CNN was designed to
+use raw features only."
+
+**Fix needed**: Either (a) pass the full engineered matrix into the CNN (change
+`N_RAW_FEATURES + 3` to the full engineered dimension and update Conv1d input
+channels), or (b) remove `_engineer_temporal_features()` and document that only
+raw + recurrence features are used, or (c) add an explicit comment in
+`_make_sequences` noting that PTC/NTC features are available in the input matrix
+but the CNN uses only the leading 33 base columns, citing the design decision.
+Option (c) is the fastest fix: one comment + one thesis sentence.
+
+---
+
+## MINOR — Must disclose before defense
+
+### ✅ 3. Shapley coalition values computed on X_test[:500] — test data used before evaluation
+
+**File**: `db_boa_framework/main.py:300-301`
+**Defense question**: Q63, Q94
+
 ```python
-fraud_rate = len(fraud_idx) / total
-n_f = max(4, int(self._SURROGATE_ROWS * fraud_rate))
+X_val_shared = X_test[:500]
+y_val_shared = y_test[:500]
 ```
-The surrogate now trains on ~0.17% fraud, matching deployment conditions.
+
+The Shapley coalition values v(S) — which determine the on-chain token distribution
+— are computed on a slice of the final test set.  Although Krum selects the global
+model independently (no circularity in model accuracy), using test data for ANY
+computation before final evaluation violates clean evaluation protocol.  Examiners
+from a machine-learning background will immediately flag this when they see Q63.
+
+A proper setup uses the training validation split (`X_val, y_val` returned by
+`loader.load()`) for Shapley, keeping X_test untouched until final reporting.
+
+**Fix needed**: Replace `X_test[:500]` / `y_test[:500]` with `X_val[:500]` /
+`y_val[:500]` in the federation loop (and in `run_baselines.py` if applicable).
+One-line change.  Add a thesis note: "Shapley coalition values are evaluated on
+the held-out training validation set so the final test set remains unseen during
+all intermediate computations."
 
 ---
 
-### ✅ 6. MTTA is labelled "Multiple Time-scale Temporal Attention" but is GlobalMaxPool
+### ✅ 4. FedAvg baseline uses equal-weight average, not McMahan et al.'s size-weighted average
 
-**File**: `db_boa_framework/models/adtcn.py:11` (docstring), `adtcn.py:85`
+**File**: `db_boa_framework/run_baselines.py:61-67` (`_avg_weights`)
+**Defense question**: Q144
 
-**Fix applied**: Module docstring updated:
-```
-│  MTTA  GlobalMaxPool — selects the most anomalous time-step        │
-│         activation across the SEQ_LEN window  (pooling, not        │
-│         attention; the paper's "MTTA" label is re-used here)       │
-```
-No code changed (the pooling operation is correct); only the label claim is
-corrected.
+McMahan et al. (AISTATS 2017) defines FedAvg aggregation as:
+  w_global ← Σ_k (n_k / n) · w_k
+where n_k is the number of local samples for org k.  With the 50/30/20 split,
+the correct FedAvg weights are [0.5, 0.3, 0.2].
 
----
+`_avg_weights()` uses 1/K = 1/3 ≈ 0.333 for each org — equal weighting regardless
+of data volume.  This is technically *unweighted FedAvg*, not McMahan et al.'s
+original algorithm.  Q144 asks this directly.  An examiner who knows FedAvg will
+catch the deviation.
 
-### ✅ 7. Krum and Shapley operate independently and can produce contradictory decisions
-
-**File**: `db_boa_framework/models/federation_manager.py:97-160`
-
-**Fix applied**: Added an "Architecture note" block to the module docstring that
-explicitly states this is intentional:
-- Krum decides *which* model is used globally (security / outlier rejection).
-- Shapley decides *how much* each org earns (fairness / incentive distribution).
-An org whose weights are Krum-rejected can still earn tokens, and this is
-documented as correct behaviour.
-
----
-
-### ✅ 8. DP composition across 3 federation rounds is never computed or disclosed
-
-**File**: `db_boa_framework/models/federated_adtcn.py:50-80`
-**File**: `db_boa_framework/main.py` (Phase 7)
-
-**Fix applied**: After each DP weight-sharing step in `run_federation_round()`,
-the following is now logged:
-```
-[FED]  DP composition  : after k round(s) ε_total=k·ε, δ_total=k·δ
-                         (basic composition, Dwork et al. 2006 §3.5)
-```
-With ε=1.0, δ=1e-5 and 3 rounds this gives ε_total=3.0, δ_total=3e-5.
-
----
-
-### ✅ 9. No experiment shows DB-BOA finds better hyperparameters than defaults
-
-**File**: `db_boa_framework/models/adtcn.py` (optimise_hyperparams)
-**File**: `db_boa_framework/main.py` (Phase 2)
-
-**Fix applied**: Phase 4 in main.py now trains a second model with the default
-config values (hidden_neurons=128, epoch_count=30, steps_per_epoch=150) and
-prints a side-by-side comparison:
-```
-[OPT]  Default  (F=128, ep=30, spe=150)  Acc=XX.XXXX%  MCC=0.XXXX
-[OPT]  DB-BOA   (F=..., ep=..., spe=...) Acc=XX.XXXX%  MCC=0.XXXX
-[OPT]  Gain from DB-BOA: Accuracy ▲X.XXXX%  MCC ▲0.XXXX
-```
-
----
-
-## MINOR — Must fix before anyone reads the code
-
-### ✅ 10. `BASELINE_NAMES` and `CLASSIFIER_NAMES` still list synthetic-data algorithms
-
-**File**: `db_boa_framework/config.py:106-121`
-
-**Fix applied**: Both lists now contain ULB-evaluated names:
+**Fix needed**: Change `_avg_weights()` to data-size-weighted average:
 ```python
-BASELINE_NAMES   = ["FedAvg", "FedAvg+Krum", "FedAvg+DP", "DB-BOA-ADTCN (proposed)"]
-CLASSIFIER_NAMES = ["FedAvg", "FedAvg+Krum", "FedAvg+DP", "DB-BOA-ADTCN (proposed)"]
+def _avg_weights(weights_list: list, counts: list) -> list:
+    total = sum(counts)
+    w = [c / total for c in counts]
+    n_arrays = len(weights_list[0])
+    return [
+        sum(w[i] * weights_list[i][a] for i in range(len(weights_list)))
+        for a in range(n_arrays)
+    ]
 ```
-
----
-
-### ✅ 11. `INCENTIVE_CONFIG` comment and chaincode still say "DB-BOA weight"
-
-**Files**: `db_boa_framework/config.py:137`, `db_boa_fabric/chaincode/lib/db_boa_chaincode.js`
-
-**Fix applied**:
-- `config.py`: `"federation_pool": 20,  # shared by Shapley contribution weight`
-- `chaincode.js` header comment: "Federation participation +20 tokens shared by Shapley contribution weight"
-- `chaincode.js` `recordFederationRound` docstring: updated to say Shapley-weighted aggregation, not DB-BOA Job 3
-
----
-
-### ✅ 12. The federation simulation is not ecologically valid federated learning
-
-**File**: `db_boa_framework/data/data_loader.py` (`split_for_orgs`)
-
-**Fix applied**: Added "Ecological validity note" to `split_for_orgs` docstring
-acknowledging the single-bank limitation and pointing to the thesis Limitations
-section.  Config.py `ORG_DATA_SPLITS` comment also notes the i.i.d. / FedProx
-context (Issue 13 below).
-
----
-
-### ✅ 13. FedAvg i.i.d. assumption is violated by the data split and is unacknowledged
-
-**File**: `db_boa_framework/config.py` (`ORG_DATA_SPLITS`)
-
-**Fix applied**: Added a multi-line comment after `ORG_DATA_SPLITS`:
-```python
-# Limitation: ULB comes from one bank — this is a controlled simulation.
-# McMahan et al. assume i.i.d. data; this split is mildly non-i.i.d.
-# FedProx (Li et al., MLSys 2020) would be more appropriate for severely
-# heterogeneous distributions.
-```
+Pass org sample counts as `counts`.  OR add a docstring note:
+"This uses equal-weight averaging (unweighted FedAvg).  McMahan et al.'s original
+uses data-size-weighted averaging; with 50/30/20 split the correct weights are
+[0.5, 0.3, 0.2].  The difference is minor but acknowledged."
 
 ---
 
 ## What is genuinely solid (do not touch)
 
-- **1D-CNN** (`adtcn.py:61-87`) — correct PyTorch sequences, real temporal model.
-- **CNN surrogate architecture** (`adtcn.py:91-192`) — matches final model; issues
-  #3 (epoch cap) and #5 (class distribution) now fixed; keep the structure.
-- **DP formula** (`federated_adtcn.py:50-80`) — Gaussian mechanism is correct.
-- **Shapley math** (`federation_manager.py:228-307`) — exact for n=3, formula correct.
+- **1D-CNN** (`adtcn.py:64-86`) — correct PyTorch layer sequence; docstring now
+  honest about ReLU (activation dead-code fixed).
+- **DB-BOA 2D search** (`adtcn.py:113-200`) — epoch removed from search space;
+  `_MIN_FRAUD_ROWS=30` guards against 4-sample surrogate.
+- **DP formula** (`federated_adtcn.py:50-80`) — Gaussian mechanism σ is correct;
+  composition logged after each round.
+- **Shapley math** (`federation_manager.py`) — exact for n=3, formula correct;
+  trusted-aggregator limitation disclosed.
+- **Krum labelling** (`federation_manager.py`) — "outlier-weight rejection" (not
+  "Byzantine fault tolerance"); f=0 correctly explained.
 - **Weighted cross-entropy** (`adtcn.py:259-262`) — correct for 0.17% fraud rate.
-- **graph_features.py docstring** — honest about what the features actually are.
-- **Shapley trusted-aggregator disclosure** — correctly stated in docstring.
-- **Dataset path guard** — `FileNotFoundError` with Kaggle URL is in place.
+- **Feature honesty** (`graph_features.py`) — recurrence features, not graph features.
+- **Activation honesty** (`config.py:93-95`, `adtcn.py:74-75`) — ReLU use disclosed.
+- **FL validity note** (`main.py:286-289`) — no local training between rounds acknowledged.
+- **Incentive limitation** (`main.py:503-508`) — patient attacker vulnerability disclosed.
+- **SEQ_LEN comment** (`adtcn.py:49`) — empirical choice, ablation is future work.
+- **Latency disclosure** (`leader_block.py:221-223`) — simulated, not real Fabric.
+- **Padding bias** (`adtcn.py:398-400`) — 0.003% boundary effect documented.
+- **DP comparison** (`run_baselines.py:138-153`) — FedAvg vs FedAvg+DP printed.
+- **Baseline script** (`run_baselines.py`) — four configurations, comparable.
+- **Dataset path guard** — `FileNotFoundError` with Kaggle URL in place.
 
 ---
 
@@ -212,6 +162,7 @@ context (Issue 13 below).
 | Krum | Blanchard et al., NeurIPS 2017 |
 | Coordinate-wise median (alt. to Krum) | Yin et al., ICML 2018 |
 | Differential privacy (Gaussian mechanism) | Dwork et al., TCC 2006 |
+| DP-SGD (per-example DP) | McMahan et al., ICLR 2018 |
 | DP composition | Dwork et al., TCC 2006 §3.5 (basic); Mironov (2017) for Rényi |
 | FedAvg baseline | McMahan et al., AISTATS 2017 |
 | FedProx (non-i.i.d. FL) | Li et al., MLSys 2020 |

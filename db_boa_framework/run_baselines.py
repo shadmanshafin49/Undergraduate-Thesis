@@ -58,11 +58,23 @@ BASELINE_CONFIGS = [
 ]
 
 
-def _avg_weights(weights_list: list) -> list:
-    """Plain FedAvg: equal-weight average of all org weight lists."""
+def _avg_weights(weights_list: list, counts: list = None) -> list:
+    """
+    FedAvg aggregation.  When counts is provided, uses data-size-weighted
+    averaging (McMahan et al., AISTATS 2017: w_global ← Σ_k (n_k/n)·w_k).
+    Without counts, falls back to equal-weight averaging (unweighted FedAvg).
+    With the 50/30/20 split, the correct McMahan weights are [0.5, 0.3, 0.2].
+    """
+    n = len(weights_list)
+    if counts is not None and len(counts) == n:
+        total = sum(counts)
+        frac  = [c / total for c in counts]
+    else:
+        frac  = [1.0 / n] * n   # equal weights (unweighted FedAvg)
+
     n_arrays = len(weights_list[0])
     return [
-        np.mean([weights_list[i][a] for i in range(len(weights_list))], axis=0)
+        sum(frac[i] * weights_list[i][a] for i in range(n))
         for a in range(n_arrays)
     ]
 
@@ -78,11 +90,13 @@ def run_one_baseline(loader, X_train, X_val, X_test, y_train, y_val, y_test,
 
     org_splits = loader.split_for_orgs(X_train, y_train)
     org_models = {}
+    org_counts = []   # sample counts per org, for McMahan size-weighted FedAvg
     for org_name, (X_org, y_org) in org_splits.items():
         m = FederatedADTCN(cfg=ADTCN_CONFIG)
         m.optimal_params = adtcn_base.optimal_params
         m.fit(X_org, y_org, verbose=False)
         org_models[org_name] = m
+        org_counts.append(len(y_org))
 
     # Federation round
     use_dp   = fed_cfg.get("use_dp", False)
@@ -100,7 +114,8 @@ def run_one_baseline(loader, X_train, X_val, X_test, y_train, y_val, y_test,
         fed_mgr       = FederationManager(n_orgs=3, cfg=fed_cfg)
         global_w, _, _ = fed_mgr._krum_aggregate(weights_list)
     else:
-        global_w = _avg_weights(weights_list)
+        # McMahan et al. size-weighted FedAvg (n_k/n weights)
+        global_w = _avg_weights(weights_list, counts=org_counts)
 
     # Load global model into first org and evaluate
     eval_model = list(org_models.values())[0]
@@ -134,6 +149,23 @@ def main():
         )
         results[label] = m
         print_metrics_table(m, model_name=label)
+
+    # ── DP accuracy cost (answers Q38: "how much does DP cost at ε=1.0?") ──────
+    if "FedAvg" in results and "FedAvg+DP" in results:
+        dp_cost_acc = results["FedAvg"]["Accuracy"] - results["FedAvg+DP"]["Accuracy"]
+        dp_cost_mcc = results["FedAvg"]["MCC"]       - results["FedAvg+DP"]["MCC"]
+        print("\n" + "─" * 70, flush=True)
+        print("DP ACCURACY COST  (ε=1.0, δ=1e-5, basic Gaussian mechanism)",
+              flush=True)
+        print(f"  FedAvg (no DP)  Accuracy={results['FedAvg']['Accuracy']:.5f}%  "
+              f"MCC={results['FedAvg']['MCC']:.5f}", flush=True)
+        print(f"  FedAvg+DP       Accuracy={results['FedAvg+DP']['Accuracy']:.5f}%  "
+              f"MCC={results['FedAvg+DP']['MCC']:.5f}", flush=True)
+        sign_a = "▼" if dp_cost_acc > 0 else "▲"
+        sign_m = "▼" if dp_cost_mcc > 0 else "▲"
+        print(f"  DP cost:  Accuracy {sign_a}{abs(dp_cost_acc):.5f}%  "
+              f"MCC {sign_m}{abs(dp_cost_mcc):.5f}", flush=True)
+        print("─" * 70, flush=True)
 
     print("\n\n" + "=" * 70, flush=True)
     print("PASTE THE FOLLOWING INTO baseline_metrics() in utils/metrics.py")

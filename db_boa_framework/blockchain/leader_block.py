@@ -218,6 +218,11 @@ class ConsortiumBlockchain:
                    f"Transactions: {n_transactions}")
 
         # ── Phase 1: Leader proposes block ───────────────────────────────────
+        # Simulated latency: ct is a normalised node resource score (0-1), not a
+        # real network measurement.  All latency values below are computed from
+        # resource-score arithmetic and time.sleep, not from a live Fabric testnet.
+        # Real cross-bank throughput would require a deployed Hyperledger Fabric
+        # network.  See thesis Limitations section.
         proposal_latency = self.current_leader.ct * 0.1  # seconds (scaled)
         time.sleep(min(proposal_latency, 0.01))  # tiny sleep for demo
 
