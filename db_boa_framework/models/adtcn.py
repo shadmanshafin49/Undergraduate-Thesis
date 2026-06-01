@@ -129,13 +129,16 @@ class _ADTCNObjective:
         normal_idx = np.where(y_opt == 0)[0]
         total      = len(fraud_idx) + len(normal_idx)
         fraud_rate = len(fraud_idx) / total
-        # Minimum of _MIN_FRAUD_ROWS (30) so that with the real 0.17% fraud rate
-        # (which would give only ~3 fraud samples in 2,000 rows) the CNN still
-        # receives enough positive examples for stable gradient estimates.
+        # Minimum of _MIN_FRAUD_ROWS (30) ensures the CNN receives enough
+        # positive examples for stable gradient estimates even when the input
+        # has the real 0.17% fraud rate (which gives only ~5 fraud rows in a
+        # 3,000-row eval subset).  When the fraud pool is smaller than n_f,
+        # we sample with replacement so the selection doesn't raise ValueError.
         n_f = max(self._MIN_FRAUD_ROWS, int(self._SURROGATE_ROWS * fraud_rate))
         n_n = min(len(normal_idx), self._SURROGATE_ROWS - n_f)
+        replace_f = len(fraud_idx) < n_f   # allow repetition when pool is too small
         idx = np.concatenate([
-            rng.choice(fraud_idx,  n_f, replace=False),
+            rng.choice(fraud_idx,  n_f, replace=replace_f),
             rng.choice(normal_idx, n_n, replace=False),
         ])
         rng.shuffle(idx)

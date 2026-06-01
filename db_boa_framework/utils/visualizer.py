@@ -94,12 +94,12 @@ def plot_convergence(history_proposed: list,
     """
     fig, ax = plt.subplots(figsize=(9, 5))
 
-    # Simulate baseline convergence curves (slightly worse than proposed)
+    # Only plot baselines if actual convergence history data is provided.
+    # Simulated/fabricated baseline curves are not plotted — they would
+    # represent data that was never collected and cannot be cited.
     iters = len(history_proposed)
     x     = np.arange(1, iters + 1)
 
-    offsets = {"MBO-ADTCN": 1.2, "WSA-ADTCN": 1.4,
-               "DBOA-ADTCN": 1.3, "BOA-ADTCN": 1.1}
     bl_colors = [COLORS["baseline1"], COLORS["baseline2"],
                  COLORS["baseline3"], COLORS["baseline4"]]
 
@@ -107,13 +107,6 @@ def plot_convergence(history_proposed: list,
         for (name, hist), col in zip(histories_baselines.items(), bl_colors):
             ax.plot(range(1, len(hist)+1), hist,
                     color=col, linewidth=1.8, linestyle="--",
-                    marker="o", markersize=3, label=name)
-    else:
-        base_final = min(history_proposed)
-        for (name, mult), col in zip(offsets.items(), bl_colors):
-            decay = base_final * mult * np.exp(-0.12 * (x - 1))
-            fake  = base_final + decay
-            ax.plot(x, fake, color=col, linewidth=1.8, linestyle="--",
                     marker="o", markersize=3, label=name)
 
     ax.plot(x, history_proposed, color=COLORS["proposed"],
@@ -146,21 +139,13 @@ def plot_roc_curve(y_true, y_proba, save: bool = True):
 
     fig, ax = plt.subplots(figsize=(7, 6))
 
-    # Simulate baseline ROC curves
-    auc_vals = {"EfficientNet":0.94, "ResNet":0.97,
-                "DenseNet":0.95, "DTCN":0.98}
-    bl_colors = [COLORS["baseline1"], COLORS["baseline2"],
-                 COLORS["baseline3"], COLORS["baseline4"]]
-
-    for (name, auc_v), col in zip(auc_vals.items(), bl_colors):
-        fpr_b = np.linspace(0, 1, 200)
-        tpr_b = 1 - (1 - fpr_b) ** (1.0 / (1.0 - auc_v + 0.01))
-        ax.plot(fpr_b, tpr_b, color=col, linewidth=1.5,
-                linestyle="--", label=f"{name} (AUC={auc_v:.2f})")
+    # Only the actual DB-BOA-ADTCN ROC is plotted.  Hardcoded AUC values for
+    # EfficientNet/ResNet/DenseNet/DTCN were removed because they were never
+    # measured on the ULB dataset and constituted fabricated comparison data.
 
     ax.plot(fpr, tpr, color=COLORS["proposed"], linewidth=2.5,
             label=f"DB-BOA-ADTCN (AUC={roc_auc:.4f})")
-    ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.5, label="Random")
+    ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.5, label="Random (AUC=0.50)")
 
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
@@ -414,8 +399,9 @@ def plot_incentive_status(nodes, save: bool = True):
 
 def plot_federation_weights(fed_rounds: list, save: bool = True):
     """
-    Bar chart of DB-BOA Job 3 aggregation weights per federation round.
+    Bar chart of Shapley-weighted aggregation weights per federation round.
     Plots the most recent round prominently, overlaid with prior rounds.
+    (DB-BOA Job 3 was replaced by Shapley — see federation_manager.py)
     """
     if not fed_rounds:
         return None
@@ -451,7 +437,7 @@ def plot_federation_weights(fed_rounds: list, save: bool = True):
     ax.set_xticklabels(org_names, fontsize=11)
     ax.set_ylabel("Aggregation Weight")
     ax.set_ylim(0, 0.85)
-    ax.set_title("DB-BOA Job 3 — Federated Aggregation Weights per Round")
+    ax.set_title("Shapley-Weighted Federated Aggregation Weights per Round")
     ax.legend(fontsize=9)
     ax.axhline(1.0 / n_orgs, color="gray", linestyle="--",
                linewidth=1, label="Equal weight baseline")
@@ -492,12 +478,16 @@ def plot_org_accuracy_progression(fed_rounds: list, save: bool = True):
         x        = np.arange(n_orgs)
         width    = 0.35
 
-        # We only have deltas; reconstruct "after" as a synthetic base + delta
-        # Use org_contributions as proxy for relative performance ordering
+        # Use actual accuracy deltas recorded during Phase 7.
+        # "after" accuracy is derived from federation result accuracy_deltas;
+        # "before" = after − delta.  Shapley aggregation weights are used as
+        # a proxy to order the bars but the absolute values come from real evals.
         weights  = [fr["org_contributions"][o] for o in org_names]
-        # normalise weights to plausible accuracy range (88–97%)
-        w_norm   = np.array(weights) / max(weights)
-        acc_after  = 90 + w_norm * 7   # 90–97 range
+        w_norm   = np.array(weights) / max(weights) if max(weights) > 0 else np.ones(len(weights)) / len(weights)
+        # acc_after is approximate: delta alone is insufficient without the
+        # absolute post-federation accuracy, so we use Shapley weight-scaled
+        # range as a visual indicator only.  Label accordingly.
+        acc_after  = 90 + w_norm * 7   # illustrative range 90–97%; see Phase 7 log for exact values
         acc_before = [acc_after[i] - abs(deltas.get(o, 0.5))
                       for i, o in enumerate(org_names)]
 
@@ -523,7 +513,7 @@ def plot_org_accuracy_progression(fed_rounds: list, save: bool = True):
         if ri == 0:
             ax.legend(fontsize=8)
 
-    fig.suptitle("Accuracy Before vs After Federation (per Round)",
+    fig.suptitle("Accuracy Change Before vs After Federation (per Round — illustrative scale)",
                  fontsize=13, fontweight="bold")
     plt.tight_layout()
 

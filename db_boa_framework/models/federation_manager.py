@@ -78,8 +78,8 @@ class FederationManager:
         """
         Full federation round:
           1. Extract weights from all org models.
-          2. Krum: score each org, select Byzantine-robust global model.
-          3. DB-BOA Job 3: find optimal aggregation weight vector.
+          2. Krum: score each org, select consensus-aligned global model.
+          3. Shapley: compute contribution weights (replaces DB-BOA Job 3).
           4. Return global weights + aggregation metadata.
         """
         org_names = list(org_models.keys())

@@ -110,6 +110,10 @@ def run_one_baseline(loader, X_train, X_val, X_test, y_train, y_val, y_test,
         weights_list = [m.extract_weights() for m in org_models.values()]
 
     use_krum = fed_cfg.get("use_krum", False)
+    # Note: use_shapley is not evaluated here because Shapley affects only
+    # the token-distribution incentive weights, not the global model itself.
+    # The aggregated model is always Krum-selected (use_krum=True) or
+    # FedAvg-averaged (use_krum=False), so accuracy comparison is valid.
     if use_krum:
         fed_mgr       = FederationManager(n_orgs=3, cfg=fed_cfg)
         global_w, _, _ = fed_mgr._krum_aggregate(weights_list)

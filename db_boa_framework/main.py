@@ -301,7 +301,7 @@ def main():
         X_val_shared = X_val[:500]
         y_val_shared = y_val[:500]
 
-        # Run DB-BOA Job 3
+        # Run federation round (Shapley attribution + Krum selection)
         fed_result = fed_manager.run_federation_round(
             org_models  = org_models,
             org_metrics = org_metrics,
@@ -377,7 +377,7 @@ def main():
         print("[ATK]  Scenario: BankC is malicious — always reports isFraud=True",
               flush=True)
         print("[ATK]  Expected outcome: token depletion, reputation fall, "
-              "low DB-BOA Job 3 weight", flush=True)
+              "low Shapley contribution weight", flush=True)
         sep()
 
         # ── Build attacker model (always predicts fraud) ──────────────────────
@@ -451,36 +451,43 @@ def main():
         print(f"[ATK]  Reputation change : 1.000 → {attacker_reputation:.3f} "
               f"({rep_delta:+.3f})", flush=True)
 
-        # ── DB-BOA Job 3 with attacker present ───────────────────────────────
+        # ── Shapley attribution with attacker present ─────────────────────────
+        # (Shapley replaced DB-BOA Job 3 as the aggregation-weight mechanism —
+        #  see FEDERATION_CONFIG['use_shapley']=True and federation_manager.py)
         sep()
-        print("[ATK]  Running DB-BOA Job 3 with attacker in federation …",
+        print("[ATK]  Running Shapley attribution with attacker in federation …",
               flush=True)
-        print("[ATK]  Prediction: DB-BOA assigns BankC near-minimum weight",
-              flush=True)
+        print("[ATK]  Prediction: Shapley assigns BankC near-zero weight "
+              "(attacker hurts coalition Obf2)", flush=True)
 
         atk_org_metrics = {
             name: m.evaluate(X_test, y_test, verbose=False)
             for name, m in attack_models.items()
         }
         atk_fed_manager = FederationManager(n_orgs=3)
+        # Use the training validation split, not X_test, so the test set
+        # remains unseen during all intermediate computations.
         atk_fed_result  = atk_fed_manager.run_federation_round(
             org_models  = attack_models,
             org_metrics = atk_org_metrics,
-            X_val       = X_test[:500],
-            y_val       = y_test[:500],
+            X_val       = X_val[:500],
+            y_val       = y_val[:500],
             round_num   = 99,   # distinguished from normal rounds
             verbose     = False,
         )
 
         sep()
-        print("[ATK]  DB-BOA Job 3 aggregation weights under attack:", flush=True)
+        print("[ATK]  Shapley aggregation weights under attack:", flush=True)
         w = atk_fed_result["aggregation_weights"]
         for i, name in enumerate(["BankA", "BankB", "BankC"]):
             marker = "  ← attacker (suppressed)" if name == attacker_name else ""
             print(f"         {name}: {w[i]:.4f}{marker}", flush=True)
 
-        print(f"[ATK]  Best fitness (Obf2): "
-              f"{-atk_fed_result['best_fitness']:.6f}", flush=True)
+        # Shapley values: per-org marginal contribution; no single best_fitness
+        if atk_fed_result.get("shapley_values"):
+            sv = atk_fed_result["shapley_values"]
+            print("[ATK]  Shapley values: " +
+                  "  ".join(f"{k}={v:.4f}" for k, v in sv.items()), flush=True)
 
         # ── Summary ───────────────────────────────────────────────────────────
         sep("═")
@@ -488,7 +495,7 @@ def main():
         w_attacker = w[["BankA", "BankB", "BankC"].index(attacker_name)]
         if w_attacker < 0.20:
             print(f"  ✔  BankC weight = {w_attacker:.4f} (<0.20) — "
-                  f"attack SUPPRESSED by DB-BOA", flush=True)
+                  f"attack SUPPRESSED by Shapley (low marginal contribution)", flush=True)
         else:
             print(f"  ⚠  BankC weight = {w_attacker:.4f} — "
                   f"attack influence reduced but not fully suppressed", flush=True)

@@ -7,7 +7,7 @@ Adds four capabilities on top of the base ADTCN:
   1. extract_weights()              — serialisable numpy weight list
   2. extract_weights_with_dp()      — ε-DP weight sharing (Dwork et al., 2006)
   3. load_weights(weights)          — reload weights into live model
-  4. evaluate_on_validation(X, y)   — Obf2 score for DB-BOA Job 3 fitness
+  4. evaluate_on_validation(X, y)   — Obf2 score for Shapley coalition eval
 
 The base ADTCN (hyperparameter optimisation, training, prediction) is
 unchanged.  FederatedADTCN inherits everything and adds federated glue.

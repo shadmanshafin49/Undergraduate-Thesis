@@ -113,20 +113,21 @@ class FinancialDataLoader:
         return X_train, X_val, X_test, y_train, y_val, y_test
 
     def get_eval_subset(self, X_train, y_train):
-        """Return a small balanced subset for fast DB-BOA fitness evaluation."""
-        n_eval   = self.cfg["eval_subset"]
-        fraud_idx  = np.where(y_train == 1)[0]
-        normal_idx = np.where(y_train == 0)[0]
+        """
+        Return a stratified random subset for DB-BOA fitness evaluation.
 
-        n_f = min(len(fraud_idx),  n_eval // 2)
-        n_n = min(len(normal_idx), n_eval - n_f)
-
-        chosen = np.concatenate([
-            self.rng.choice(fraud_idx,  n_f, replace=False),
-            self.rng.choice(normal_idx, n_n, replace=False),
-        ])
-        self.rng.shuffle(chosen)
-        return X_train[chosen], y_train[chosen]
+        Uses a stratified sample that preserves the real class distribution
+        (~0.17% fraud), so that _ADTCNObjective sees the correct fraud rate
+        and its _MIN_FRAUD_ROWS guard (30 samples) correctly engages.
+        Balanced 50/50 sampling was previously used here; that caused
+        _ADTCNObjective to calculate fraud_rate ≈ 0.5 and train the surrogate
+        on ~50% fraud rather than the real 0.17% — contradicting the design
+        intent of the surrogate-distribution fix.
+        """
+        n_eval     = self.cfg["eval_subset"]
+        n_eval     = min(n_eval, len(y_train))
+        idx        = self.rng.choice(len(y_train), n_eval, replace=False)
+        return X_train[idx], y_train[idx]
 
     # ── private helpers ───────────────────────────────────────────────────────
 

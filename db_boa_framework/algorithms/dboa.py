@@ -91,9 +91,10 @@ class DBOA:
 
         for it in range(1, self.max_iter + 1):
             for j in range(self.n_pop):
-                # fragrance for butterfly j
+                # fragrance for butterfly j — abs() required: raising a
+                # negative fitness to power b=0.1 returns NaN in Python.
                 J_j = fit[j]
-                g_j = self.d * (J_j ** self.b)
+                g_j = self.d * (abs(float(J_j)) ** self.b)
 
                 s = self.rng.rand()
                 if s < self.rho:          # global search (Eq.3)

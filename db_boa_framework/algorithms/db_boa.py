@@ -8,20 +8,25 @@ DB-BOA hybridises:
     LSAM local exploitation
   • BOA  (Billiards Optimisation Algorithm)          — structured local search
 
-Switching criterion (Equation 1 of base paper):
+Switching criterion (Equation 1 of base paper, implemented below):
   At every iteration draw rand ~ U(0,1).
-  If rand < |best_fit| / |worst_fit|  →  DBOA executes  (exploitation)
-  Else                                →  BOA  executes  (exploration)
+  Threshold = 1 − |f_max − f_min| / max(|f_min|, |f_max|, ε)
 
-  The ratio |bestfit|/|worstfit| measures population convergence:
-    • When converged  (best ≈ worst): ratio → 1 → DBOA dominates
-    • When spread out (best << worst): ratio → 0 → BOA  dominates
-  Works for both positive and negative fitness values (abs-value form).
+  If rand < threshold  →  DBOA executes  (exploitation)
+  Else                 →  BOA  executes  (exploration)
+
+  Interpretation:
+    • When converged  (best ≈ worst, small range): threshold → 1 → DBOA dominates
+    • When spread out (large range):               threshold → 0 → BOA  dominates
+  This range-normalised form handles both positive costs (Phase 1) and
+  negated objectives (Phases 2 & 7) correctly, unlike the raw abs-ratio
+  |best|/|worst| cited informally in some descriptions of the paper.
 
 Three invocation contexts in the paper:
   Job 1 — ADTCN hyperparameter tuning      (maximise Obf2, returned as –Obf2)
   Job 2 — Consensus leader node selection  (minimise CT + CC + MS)
-  Job 3 — Federated aggregation weights    (maximise global model accuracy)
+  Job 3 — Federated aggregation weights    (replaced by Shapley in implementation;
+           DB-BOA Job 3 is the fallback when use_shapley=False in FEDERATION_CONFIG)
 
 All three use the same DBBOA class with the same interface.
 

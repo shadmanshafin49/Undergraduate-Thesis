@@ -25,9 +25,9 @@ Questions reflect the *current* implementation — wrong assumptions from old ve
 
 ## 2. DB-BOA Algorithm
 
-**Q7.** Explain the DB-BOA switching criterion. When does it choose DBOA over BOA, and why? Your implementation uses `1 − |f_max − f_min| / max(|f_min|, |f_max|)` — what does this approach when the population converges, and what does it approach when spread out?
+**Q7.** Explain the DB-BOA switching criterion. When does it choose DBOA over BOA, and why? Your implementation uses `threshold = max(0.0, 1 − |f_max − f_min| / max(|f_min|, |f_max|, ε))` — what does this approach when the population converges, and what does it approach when spread out? Why is this range-normalised form used rather than the raw ratio `|best_fit| / |worst_fit|`?
 
-**Q8.** Prove that the switching threshold `1 − |f_max − f_min| / max(|f_min|, |f_max|)` is always in [0, 1]. Why does this matter for the switching criterion to function correctly?
+**Q8.** Prove that the switching threshold `1 − |f_max − f_min| / max(|f_min|, |f_max|, ε)` is always in [0, 1]. Why does this matter for the switching criterion to function correctly? What would happen if the threshold exceeded 1 or went below 0?
 
 **Q9.** DBOA has two movement equations — global search (Eq.3) and local search (Eq.4). What determines which fires, and what does ρ=0.8 mean for the exploration/exploitation balance?
 
@@ -95,11 +95,11 @@ Questions reflect the *current* implementation — wrong assumptions from old ve
 
 ## 6. Surrogate Evaluation & Class Distribution
 
-**Q34.** The DB-BOA surrogate evaluates ADTCN fitness on a 2,000-row subsample. Originally this used ~50% fraud; now it matches the real 0.17% rate. Why does this matter for the validity of the hyperparameters found?
+**Q34.** The DB-BOA surrogate evaluates ADTCN fitness on a 2,000-row subsample. A previous version used a 50/50 balanced subset (`get_eval_subset` pre-balanced data), causing the surrogate to train on ~50% fraud. The current version uses stratified sampling in `get_eval_subset` so the surrogate sees the real 0.17% distribution (subject to `_MIN_FRAUD_ROWS=30`). Why does matching the real distribution matter for the validity of the hyperparameters found?
 
-**Q35.** With `_SURROGATE_ROWS=2,000` and 0.17% fraud, the raw count would be `int(2000 × 0.0017) = 3` fraud samples. Your code sets `_MIN_FRAUD_ROWS=30`. Why is 30 chosen as the minimum? What happens to the class weight calculation with only 3 fraud samples?
+**Q35.** With `_SURROGATE_ROWS=2,000` and a stratified eval subset of ~3,000 rows at 0.17% fraud, the available unique fraud rows are ~5. Your code sets `_MIN_FRAUD_ROWS=30`. Why is 30 chosen as the minimum? Since the pool has only ~5 fraud rows, how does your code avoid a `ValueError` when requesting 30 fraud samples? (Answer: `replace_f = len(fraud_idx) < n_f` enables sampling with replacement.) What does this mean for the surrogate training data?
 
-**Q36.** With 30 fraud samples in ~2,000 total surrogate rows, the effective fraud rate in the surrogate is ~1.5% rather than 0.17%. Does this still create a mismatch between surrogate and deployment conditions, and how significant is it?
+**Q36.** With 30 fraud samples in ~2,000 total surrogate rows, the effective fraud rate in the surrogate is ~1.5% — about 9× higher than the real 0.17% deployment rate. Does this still create a mismatch, and how significant is it? How does this compare to the old version that used ~50% fraud?
 
 **Q37.** The surrogate trains for `_SURROGATE_EPOCHS=5` regardless of what DB-BOA proposes. Is 5 epochs sufficient for the CNN to converge enough to give a meaningful fitness signal?
 
@@ -383,7 +383,19 @@ Questions reflect the *current* implementation — wrong assumptions from old ve
 
 **Q143.** `run_baselines.py` evaluates the global model by loading it into `list(org_models.values())[0]` — always BankA. Does this introduce a bias in the comparison between configurations? Why or why not?
 
-**Q144.** In `run_baselines.py`, the FedAvg baseline uses `_avg_weights()` which is a plain equal-weight average. The full pipeline uses Shapley-weighted aggregation. Is this comparison fair — is FedAvg in the baselines the same algorithm as the FedAvg described in McMahan et al. (AISTATS 2017)?
+**Q144.** In `run_baselines.py`, the FedAvg baseline uses `_avg_weights(weights_list, counts=org_counts)`. Walk through how `_avg_weights` computes the weighted average. What weights does it assign to BankA, BankB, BankC with the 50/30/20 split, and how does this match McMahan et al. (AISTATS 2017)?
+
+**Q145.** The standalone `dboa.py` class computes fragrance as `g_j = d * (J_j ** b)`. If `J_j` is negative (which happens when the objective returns `−Obf2`), what does Python return for `(-0.8) ** 0.1`? Why is this a bug, and how was it fixed?
+
+**Q146.** The `db_boa.py` module docstring previously stated the switching criterion as `|best_fit| / |worst_fit|`, but the actual implementation uses `1 − |f_max − f_min| / max(|f_min|, |f_max|, ε)`. Prove these are NOT equivalent. Under what conditions would the raw ratio give a threshold > 1, breaking the criterion?
+
+**Q147.** `get_eval_subset()` previously returned a 50/50 balanced subset. Why did this invalidate the surrogate-distribution fix in `_ADTCNObjective`? Trace through the exact computation: with 1,500 fraud and 1,500 normal rows returned by the old `get_eval_subset`, what `fraud_rate` does `_ADTCNObjective` compute, and what `n_f` does it choose?
+
+**Q148.** Your `plot_convergence` function in `visualizer.py` previously plotted simulated convergence curves for "MBO-ADTCN", "WSA-ADTCN", "DBOA-ADTCN", "BOA-ADTCN" using arithmetic decay formulas. Why is plotting fabricated comparison curves in a thesis an academic integrity issue? How was this fixed, and what does the plot now show?
+
+**Q149.** Your `plot_roc_curve` used hardcoded AUC values (EfficientNet=0.94, ResNet=0.97, DenseNet=0.95, DTCN=0.98) for baseline ROC curves. These were never measured on the ULB dataset. An examiner asks: "Where does the ResNet AUC of 0.97 come from?" What is the correct answer, and what should the ROC plot show?
+
+**Q150.** Phase 8 (attack simulation) previously contained `atk_fed_result['best_fitness']`, but `run_federation_round()` does not return this key when Shapley is active. What would an examiner see if they ran `python main.py --attack` before the fix? What does the updated code print in place of `best_fitness`?
 
 ---
 
