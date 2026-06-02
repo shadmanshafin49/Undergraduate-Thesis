@@ -124,10 +124,14 @@ class FinancialDataLoader:
         on ~50% fraud rather than the real 0.17% — contradicting the design
         intent of the surrogate-distribution fix.
         """
-        n_eval     = self.cfg["eval_subset"]
-        n_eval     = min(n_eval, len(y_train))
-        idx        = self.rng.choice(len(y_train), n_eval, replace=False)
-        return X_train[idx], y_train[idx]
+        n_eval = min(self.cfg["eval_subset"], len(y_train) - 1)
+        _, X_sub, _, y_sub = train_test_split(
+            X_train, y_train,
+            test_size=n_eval,
+            stratify=y_train,
+            random_state=self.cfg["random_state"],
+        )
+        return X_sub, y_sub
 
     # ── private helpers ───────────────────────────────────────────────────────
 

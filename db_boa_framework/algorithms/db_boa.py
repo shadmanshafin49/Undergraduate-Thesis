@@ -66,8 +66,8 @@ class DBBOA:
         self.task_name = task_name
 
         cfg = cfg or DB_BOA_CONFIG
-        self.n_pop    = n_pop    or cfg.get("population_size", 20)
-        self.max_iter = max_iter or cfg.get("max_iterations",  30)
+        self.n_pop    = n_pop    if n_pop    is not None else cfg.get("population_size", 20)
+        self.max_iter = max_iter if max_iter is not None else cfg.get("max_iterations",  30)
         self.cfg      = cfg
         self.rng      = np.random.RandomState(seed)
         self.seed     = seed

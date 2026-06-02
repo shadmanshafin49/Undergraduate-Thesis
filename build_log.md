@@ -417,6 +417,153 @@ This directly answers defense Q38: "How much accuracy does DP cost at ε=1.0?"
 
 ---
 
+## ✅ Bug Fix Session — 10 bugs found and fixed (2026-06-02)
+
+---
+
+### BF-1 — `accuracy_deltas` assignment was inside wrong loop (main.py:328)
+
+**Files changed**
+- `db_boa_framework/main.py` — Phase 7 federation loop
+
+**What changed**: `fed_result["accuracy_deltas"] = accuracy_deltas` was indented
+one level too deep, executing on every iteration of the per-org loop rather than
+once after all orgs were evaluated.  During the loop, `fed_result` held a partial
+dict.  Moved the assignment one level out so it runs after all orgs complete.
+
+---
+
+### BF-2 — `n_pop=0` silently fell through to default (db_boa.py:69)
+
+**Files changed**
+- `db_boa_framework/algorithms/db_boa.py` — `DBBOA.__init__`
+
+**What changed**: `n_pop or default` evaluates to `default` when `n_pop=0` because
+`0` is falsy in Python, silently overriding an explicit caller-supplied value.
+Changed to `n_pop if n_pop is not None else default` (and same for `max_iter`)
+so only `None` triggers the fallback.
+
+---
+
+### BF-3 — Dead code `_balance` method and unused `resample` import (adtcn.py)
+
+**Files changed**
+- `db_boa_framework/models/adtcn.py` — removed `_balance()` static method and
+  `from sklearn.utils import resample` import
+
+**What changed**: `_balance` was never called anywhere in the codebase.  Its
+docstring said "kept for API compatibility" but nothing depends on it.  Removing
+it also cleans up the unused `sklearn.utils.resample` import.
+
+---
+
+### BF-4 — `get_eval_subset` claimed stratified but used non-stratified sampling (data_loader.py:129)
+
+**Files changed**
+- `db_boa_framework/data/data_loader.py` — `get_eval_subset()`
+
+**What changed**: The method's docstring stated "Uses a stratified sample that
+preserves the real class distribution", but the implementation used
+`rng.choice(len(y_train), n_eval, replace=False)` which is uniform random, not
+stratified.  At the real 0.17% fraud rate this gave ~5 fraud rows in a 3,000-row
+subset — the `_MIN_FRAUD_ROWS=30` guard compensated, but the code contradicted
+its own documentation.  Replaced with `train_test_split(..., stratify=y_train)`
+so the implementation matches the intent.
+
+---
+
+### BF-5 — Attack simulation: BankC's `predict` override not seen by Shapley coalitions (federation_manager.py)
+
+**Files changed**
+- `db_boa_framework/models/federation_manager.py` — `_shapley_weights()` /
+  `coalition_value()` inner function; added `from utils.metrics import
+  compute_all_metrics, obf2_value` import
+
+**What changed**: In Phase 8, `attack_models['BankC'].predict` is overridden at
+the instance level to always return ones.  But `coalition_value()` computed
+coalition quality by averaging raw weight tensors (extracted via `extract_weights`)
+into a deepcopy of BankA's template and calling `evaluate_on_validation` on it.
+The instance-level `predict` override on BankC never propagated — the Shapley
+values measured BankC's honest CNN weights, not its malicious prediction behaviour,
+so BankC's weight was not actually suppressed by Shapley.
+
+Fix: `coalition_value` now checks whether any org in the coalition has an
+instance-level `predict` attribute (`'predict' in org.__dict__`).  When one is
+detected, it falls back to majority-vote of individual org predictions (which
+correctly exercises each org's actual `predict` method, including any override)
+rather than weight averaging.  The `obf2_value(compute_all_metrics(...))` path
+is reused so the return unit is unchanged.
+
+---
+
+### BF-6 — `get_training_info()` crashed with AttributeError (federated_adtcn.py:126)
+
+**Files changed**
+- `db_boa_framework/models/federated_adtcn.py` — `get_training_info()`
+
+**What changed**: `self.model.hidden_layer_sizes` references a scikit-learn MLP
+attribute that does not exist on `_Conv1dClassifier` (a PyTorch `nn.Module`).
+Any call to `get_training_info()` raised `AttributeError`.  Replaced with
+`str(self.model)` which calls PyTorch's built-in `__repr__` and returns the
+layer summary string.
+
+---
+
+### BF-7 — Path traversal vulnerability in `/api/plots/:filename` (server.js:311)
+
+**Files changed**
+- `db_boa_fabric/api-server/server.js` — `GET /api/plots/:filename` route
+
+**What changed**: `path.join(RESULTS_DIR, req.params.filename)` did not validate
+that the resolved path stayed inside `RESULTS_DIR`.  A request to
+`/api/plots/../../etc/passwd` would resolve outside the results directory.
+Added a `path.resolve` check: if the resolved path does not start with
+`path.resolve(RESULTS_DIR) + path.sep` the server now returns HTTP 400.
+
+---
+
+### BF-8 — `recordFraudResult` called with wrong argument order (server.js:404)
+
+**Files changed**
+- `db_boa_fabric/api-server/server.js` — `POST /api/submit-transaction` route
+
+**What changed**: The chaincode signature is
+`recordFraudResult(ctx, txnId, orgName, isFraud, fraudScore)` (4 params after
+ctx).  The server was calling it with 5 args in the wrong order:
+`[txnId, String(isFraud), fraudScore, JSON.stringify({...}), leaderNode]`.
+This mapped `isFraud` ("true"/"false") into the `orgName` parameter, a float
+into `isFraud`, and a JSON object string into `fraudScore`, silently breaking all
+on-chain fraud recording.  Fixed to the correct 4-arg order with `'DemoNode'` as
+the org name for demo-mode submissions.
+
+---
+
+### BF-9 — Both federation weight fields sent as `org_contributions` (server.js:512)
+
+**Files changed**
+- `db_boa_fabric/api-server/server.js` — `writeFederationToFabric()`
+
+**What changed**: `recordFederationRound` takes separate `aggregationWeightsJson`
+and `orgContributionsJson` arguments, but both were being set to the same
+`JSON.stringify(weights)` variable.  Renamed to `aggregationWeights` and
+`orgContributions` with explicit separate assignments to make the intent clear
+and guard against future divergence between the two fields.
+
+---
+
+### BF-10 — Iterator never closed in chaincode `_queryByDocType` (db_boa_chaincode.js)
+
+**Files changed**
+- `db_boa_fabric/chaincode/lib/db_boa_chaincode.js` — `_queryByDocType()`
+
+**What changed**: The CouchDB rich-query iterator was not closed after iteration,
+leaking a gRPC stream handle on every call to `getNodeStatus`,
+`getAllTransactions`, `getLeaderHistory`, `getConsensusHistory`,
+`getFederationHistory`, and `getOrgModels`.  Wrapped the iteration loop in a
+`try/finally` block that calls `await iter.close()` unconditionally.
+
+---
+
 ## ✅ Fix 29 — FedAvg updated to McMahan size-weighted averaging (2026-05-21)
 
 **Files changed**

@@ -308,9 +308,13 @@ app.get('/api/db-boa-results', (req, res) => {
 
 // Serve plot images
 app.get('/api/plots/:filename', (req, res) => {
-    const filePath = path.join(RESULTS_DIR, req.params.filename);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Plot not found' });
-    res.sendFile(filePath);
+    const resolved   = path.resolve(RESULTS_DIR, req.params.filename);
+    const resultsAbs = path.resolve(RESULTS_DIR);
+    if (!resolved.startsWith(resultsAbs + path.sep) && resolved !== resultsAbs) {
+        return res.status(400).json({ error: 'Invalid filename' });
+    }
+    if (!fs.existsSync(resolved)) return res.status(404).json({ error: 'Plot not found' });
+    res.sendFile(resolved);
 });
 
 // List available plots
@@ -401,12 +405,9 @@ app.post('/api/submit-transaction', async (req, res) => {
         const fraudScore = isFraud ? (0.7 + Math.random() * 0.3).toFixed(4)
                                    : (Math.random() * 0.15).toFixed(4);
 
+        // Chaincode signature: recordFraudResult(ctx, txnId, orgName, isFraud, fraudScore)
         await fabricSubmit('recordFraudResult', [
-            txnId, String(isFraud), fraudScore,
-            JSON.stringify({ note: 'demo-classifier' }),
-            latestResults?.leader_node !== undefined
-                ? `Node-${String(latestResults.leader_node).padStart(2,'0')}`
-                : 'Node-07',
+            txnId, 'DemoNode', String(isFraud), fraudScore,
         ]);
 
         broadcastEvent('transaction_classified', { txnId, isFraud, fraudScore });
@@ -506,12 +507,14 @@ async function writeTofabric(r) {
 async function writeFederationToFabric(fr) {
     if (!contract) return;
     try {
-        const weights = fr.org_contributions || {};
-        const hash    = fr.global_weights_hash || `fed_hash_round_${fr.round_num}`;
+        // aggregationWeightsJson needs {org: weight} dict form for on-chain reward distribution
+        const aggregationWeights = fr.org_contributions || {};
+        const orgContributions   = fr.org_contributions || {};
+        const hash               = fr.global_weights_hash || `fed_hash_round_${fr.round_num}`;
         await fabricSubmit('recordFederationRound', [
             String(fr.round_num),
-            JSON.stringify(weights),
-            JSON.stringify(weights),
+            JSON.stringify(aggregationWeights),
+            JSON.stringify(orgContributions),
             JSON.stringify(fr.db_boa_history || []),
             String(fr.best_fitness || 0),
             hash,

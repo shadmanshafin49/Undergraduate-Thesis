@@ -45,6 +45,7 @@ from math import factorial
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import FEDERATION_CONFIG
+from utils.metrics import compute_all_metrics, obf2_value
 
 
 class FederationManager:
@@ -284,12 +285,28 @@ class FederationManager:
         template_key = org_names[0]
         n_arrays     = len(org_weights_list[0])
 
+        org_list = list(org_models.values())
+
         def coalition_value(indices: tuple) -> float:
             """Equal-weight average of coalition S, evaluated on shared val set.
             Requires a trusted aggregator holding (X_val, y_val) — a labelled
-            holdout set that all orgs implicitly contribute to."""
+            holdout set that all orgs implicitly contribute to.
+
+            When any org in the coalition has an instance-level predict override
+            (e.g. a malicious node that always returns ones), weight-averaging
+            would silently use the underlying honest CNN weights and miss the
+            adversarial behaviour. In that case we fall back to majority-vote of
+            individual org predictions so the coalition value correctly reflects
+            each org's actual prediction behaviour.
+            """
             if not indices:
                 return 0.0
+            # Detect instance-level predict overrides (e.g. attack simulation)
+            has_override = any('predict' in org_list[i].__dict__ for i in indices)
+            if has_override:
+                preds = np.stack([org_list[i].predict(X_val) for i in indices])
+                coalition_pred = (preds.sum(axis=0) * 2 > len(indices)).astype(int)
+                return obf2_value(compute_all_metrics(y_val, coalition_pred))
             avg_w = [
                 np.mean([org_weights_list[i][a] for i in indices], axis=0)
                 for a in range(n_arrays)

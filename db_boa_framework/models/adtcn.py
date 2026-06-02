@@ -35,8 +35,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-from sklearn.utils import resample
-
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config        import ADTCN_CONFIG, DB_BOA_CONFIG, LOG_WIDTH
@@ -424,20 +422,3 @@ class ADTCN:
             axis=0,
         )   # (n, SEQ_LEN, n_raw)
 
-    @staticmethod
-    def _balance(X, y):
-        """Over-sample minority class — kept for API compatibility."""
-        classes, counts = np.unique(y, return_counts=True)
-        n_max = counts.max()
-        X_parts, y_parts = [], []
-        for c in classes:
-            idx = np.where(y == c)[0]
-            if len(idx) < n_max:
-                idx = resample(idx, replace=True, n_samples=n_max,
-                               random_state=42)
-            X_parts.append(X[idx])
-            y_parts.append(y[idx])
-        Xb   = np.vstack(X_parts)
-        yb   = np.concatenate(y_parts)
-        perm = np.random.RandomState(42).permutation(len(yb))
-        return Xb[perm], yb[perm]

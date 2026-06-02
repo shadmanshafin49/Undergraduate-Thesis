@@ -122,8 +122,6 @@ class FederatedADTCN(ADTCN):
         """Return metadata for ledger submission."""
         return {
             "n_samples_trained": getattr(self, "_n_trained", 0),
-            "architecture"     : str(
-                self.model.hidden_layer_sizes if self.model else "untrained"
-            ),
+            "architecture"     : str(self.model) if self.model is not None else "untrained",
             "optimal_params"   : self.optimal_params or {},
         }

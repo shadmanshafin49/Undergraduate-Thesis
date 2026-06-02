@@ -325,7 +325,7 @@ def main():
             print(f"         {name}: {post['Accuracy']:.2f}%  "
                   f"(delta: {delta:+.2f}%)", flush=True)
 
-            fed_result["accuracy_deltas"] = accuracy_deltas
+        fed_result["accuracy_deltas"] = accuracy_deltas
         fed_results.append(fed_result)
         sep("·")
 

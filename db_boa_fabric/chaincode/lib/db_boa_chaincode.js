@@ -522,10 +522,14 @@ class DBBOAContract extends Contract {
         const query   = JSON.stringify({ selector: { docType } });
         const iter    = await ctx.stub.getQueryResult(query);
         const results = [];
-        let res = await iter.next();
-        while (!res.done) {
-            results.push(JSON.parse(res.value.value.toString()));
-            res = await iter.next();
+        try {
+            let res = await iter.next();
+            while (!res.done) {
+                results.push(JSON.parse(res.value.value.toString()));
+                res = await iter.next();
+            }
+        } finally {
+            await iter.close();
         }
         return JSON.stringify(results);
     }
