@@ -1,0 +1,460 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+\usepackage{parskip}
+
+\definecolor{accent}{HTML}{000000}
+\definecolor{soft}{HTML}{000000}
+\definecolor{boxbg}{HTML}{FFFFFF}
+\definecolor{boxline}{HTML}{000000}
+
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{accent}}{}{0em}{}
+\titlespacing*{\section}{0pt}{1.7ex}{0.7ex}
+
+\setlist[itemize]{leftmargin=1.4em,topsep=2pt,itemsep=3pt}
+\setlist[enumerate]{leftmargin=1.7em,topsep=2pt,itemsep=3pt}
+
+% Plain-language definition box
+\newtcolorbox{plain}[1]{
+  colback=boxbg, colframe=boxline, boxrule=0.5pt, arc=2pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt, breakable,
+  title={\small\bfseries In plain terms: #1}, fonttitle=\color{black},
+  coltitle=black, colbacktitle=boxbg, attach title to upper=\hspace{0pt}}
+
+\newcommand{\reportnote}[1]{%
+  \par\vspace{3pt}%
+  {\small\color{soft}$\hookrightarrow$\ \textbf{Where this is in the report:} #1}\par\vspace{2pt}}
+
+\hypersetup{pdftitle={Thesis Brief for Supervisor}}
+
+\begin{document}
+\pagestyle{empty}
+
+\begin{center}
+  {\LARGE\bfseries\color{accent} What Our Research Did --- A Brief for My Supervisor}\\[5pt]
+  {\large Privacy-Preserving, Fairness-Aware Federated Fraud Detection on Hyperledger Fabric}\\[7pt]
+  {\small\itshape This document tells the story of the project in plain language. Technical terms are
+  explained the first time they appear, and again in the glossary at the end. Every section says where
+  the same material lives in the full thesis report. All numbers come from re-running our actual code.}
+\end{center}
+\vspace{0.3em}
+\hrule
+\vspace{0.7em}
+
+%==================================================================
+\section{The problem we started with}
+
+Banks want to catch fraud. The trouble is that any single bank only sees \emph{its own} customers'
+transactions. A fraud pattern that is spread across many banks --- the same stolen card tried at ten
+different institutions --- is almost invisible to each bank on its own. If the banks could combine
+their data, their fraud detectors would get dramatically better.
+
+But they can't simply pool the data. Privacy laws forbid sharing raw customer records; banks are
+commercial rivals who don't want to hand over their data; and there is no neutral, trusted party that
+everyone is willing to let hold the combined dataset. This is the deadlock our project tackles.
+
+\begin{plain}{the deadlock}
+Everyone would benefit from pooling data, but nobody is allowed to, wants to, or trusts anyone enough
+to actually do it. We need the \emph{benefit} of pooling without the \emph{act} of pooling.
+\end{plain}
+
+There is a known idea that promises a way out, called \textbf{federated learning}.
+
+\begin{plain}{federated learning (FL)}
+Instead of sending your data to a central place, each bank trains a model on its own data, in-house,
+and only shares the trained model's \emph{numbers} (its ``weights'') --- never the raw transactions.
+A coordinator combines everyone's numbers into one shared, smarter model. The data never leaves the
+building; only lessons learned from it do.
+\end{plain}
+
+Federated learning sounds like it solves everything. But the moment you try to actually run it between
+banks that distrust each other, four new problems appear that the textbook glosses over:
+
+\begin{enumerate}
+  \item \textbf{Who runs the coordinator, and why trust them?} Whoever combines the models holds a
+  position of power. Rivals won't accept one bank (or a third party) being in charge.
+  \item \textbf{Why contribute good data?} If everyone receives the same final model, a lazy bank can
+  contribute garbage (or nothing) and still get the benefit --- a ``free-rider.'' Good contributors
+  need to be \emph{measured} and \emph{paid} fairly.
+  \item \textbf{The shared numbers still leak.} It turns out a model's weights can, with effort, be
+  reverse-engineered to reveal things about the data they were trained on. So even the numbers need
+  protection.
+  \item \textbf{Someone might sabotage the shared model} on purpose by sending poisoned numbers.
+\end{enumerate}
+
+The tempting pitch is that you can fix all four at once by bolting on four well-known tools ---
+a \emph{blockchain} for trust, \emph{differential privacy} for leakage, \emph{Shapley values} for fair
+payment, and \emph{Krum} for sabotage-resistance (all explained below). The result, in theory, is a
+system that is private, fair, secure, and decentralised all at the same time.
+
+\textbf{Our research question is simply: does that pretty promise actually hold up when you build it for
+real?} We took an existing, published fraud detector (the DB-BOA-ADTCN model of Prabanand \& Thanabal,
+2025) and moved it into this real federated, blockchain setting to find out.
+
+\reportnote{Chapter~1 (Introduction) sets up this problem and lists our objectives; Chapter~2
+(Literature Review) explains where each of the four tools comes from and what gap we fill.}
+
+%==================================================================
+\section{The four tools, in plain language}
+
+Before the story continues, here is what each bolt-on tool actually does. These four names recur
+throughout the report, so it is worth fixing them in mind.
+
+\begin{plain}{blockchain / Hyperledger Fabric}
+A shared digital ledger that no single party controls --- every participant keeps a copy, and entries
+can't be secretly changed. It removes the need for a trusted middleman. \textbf{Hyperledger Fabric} is
+a specific, business-grade blockchain platform; we run a real one, not a pretend one. The small program
+that defines our rules on it (logging results, handing out reward tokens) is called a ``chaincode.''
+\end{plain}
+
+\begin{plain}{differential privacy (DP)}
+A mathematical way to add carefully-calibrated random ``noise'' (small fudge factors) to the numbers a
+bank shares, so that no individual customer's data can be backed out of them --- while the overall
+model is still useful. There is a dial, written $\epsilon$ (epsilon): \emph{small $\epsilon$ = lots of
+noise = strong privacy but blurrier numbers; large $\epsilon$ = little noise = weak privacy but clearer
+numbers.} The whole trade-off in this thesis lives on this dial.
+\end{plain}
+
+\begin{plain}{Shapley values}
+A fair way, borrowed from game theory, to answer ``how much did each player actually contribute to the
+team's success?'' We use it to score how much each bank's data improved the shared model, so rewards
+can be split fairly. We represent each round's scores as a short list of numbers, $\varphi$ (phi).
+\end{plain}
+
+\begin{plain}{Krum}
+A defence against sabotage. When combining everyone's model numbers, instead of naïvely averaging them
+(where one wildly poisoned set can drag the average off), Krum picks the one set of numbers that is
+most ``in agreement'' with the majority and throws out the outlier. It has a mathematical guarantee ---
+but only when there are enough honest participants relative to attackers.
+\end{plain}
+
+\reportnote{Chapter~4 (Proposed Methodology) describes how we wired these four together into one
+pipeline, and Chapter~3 states our ``threat model'' (exactly which attacks we defend against).}
+
+%==================================================================
+\section{What we built}
+
+We didn't just describe this on paper --- we implemented the whole stack and made it run end to end:
+
+\begin{itemize}
+  \item \textbf{The detector.} A fraud-classifier model (ADTCN) whose settings are tuned automatically
+  by a search algorithm called \textbf{DB-BOA}, so a human doesn't have to hand-tune it. The same
+  algorithm also picks which node ``leads'' each blockchain round.
+  \item \textbf{The federation.} Three simulated banks --- BankA, BankB, BankC --- each train locally,
+  and their models are combined through the pipeline: \emph{add privacy noise (DP) $\rightarrow$ reject
+  sabotage (Krum) $\rightarrow$ score contributions (Shapley)}.
+  \item \textbf{The rewards.} Each bank's Shapley contribution score automatically determines its cut of
+  a pool of reward ``tokens,'' recorded on the blockchain. Contribute more, earn more --- no human
+  judgement involved.
+  \item \textbf{The blockchain.} A real Hyperledger Fabric network runs underneath, logging every round
+  and keeping the token accounts.
+\end{itemize}
+
+But the \emph{point} of the project was never just ``assemble the stack.'' The real question was the
+hard one from Section~1: \textbf{when you actually combine privacy, fairness, and security, do they
+cooperate --- or do they get in each other's way?}
+
+\reportnote{Chapter~4 (Proposed Methodology) --- the full pipeline, the DB-BOA tuning, and the chaincode.}
+
+%==================================================================
+\section{The story of what happened (the heart of the thesis)}
+
+Here is the turn that makes this a piece of research rather than just an engineering demo.
+
+When we turned on \emph{strong} privacy --- the privacy dial set to a tight $\epsilon = 1.0$ (lots of
+protective noise) --- and ran the complete system honestly, it didn't just get a bit worse. It
+\textbf{fell apart}. The combined model became useless: it stopped distinguishing fraud from non-fraud
+at all, effectively just labelling everything the same way.
+
+\begin{plain}{why it fell apart}
+The privacy noise was being sprinkled over a \emph{huge} set of numbers (the model's ${\sim}111{,}000$
+weights). At strong privacy, that much noise drowned the real signal entirely. And Krum, the sabotage
+defence, couldn't rescue it --- by design Krum keeps just \emph{one} bank's noisy numbers and discards
+the rest, which throws away the averaging that would otherwise cancel some of the noise out.
+\end{plain}
+
+A weaker project, faced with this, would have quietly turned the privacy dial down until the demo looked
+good again, and never mentioned it. We did the opposite. We decided this failure \emph{was} the finding:
+\textbf{privacy and fairness are fundamentally in tension, and the interesting scientific question is to
+map exactly where, and why, and whether it can be fixed properly.}
+
+So we asked: is privacy itself the problem, or is it \emph{where we were applying the privacy noise}? We
+had been noising the giant pile of model weights and then trying to read each bank's contribution
+through that fog. What if, instead, we left the model weights alone and applied the privacy noise
+\emph{directly to the small contribution scores} ($\varphi$) --- just three numbers instead of a
+hundred thousand?
+
+That one change of \emph{where} the noise goes is the key result of the thesis. Protecting three numbers
+needs far less noise than protecting a hundred thousand, so fair rewards survive at a much stronger
+privacy setting.
+
+\begin{plain}{the fix, in one line}
+Don't blur the whole model to hide a contribution --- just blur the contribution score itself. Same
+privacy promise, a tiny fraction of the damage.
+\end{plain}
+
+\reportnote{Chapter~5 (Result Analysis), \S6.2 (the collapse) and \S6.6 (the privacy-vs-fairness
+characterisation and our fix). The reframed contribution is also stated in Chapter~1.}
+
+%==================================================================
+\section{What we found --- the actual numbers}
+
+Every figure here comes from re-running our code (saved in \texttt{final\_report\_data/}).
+
+\subsection{The detector works (and we report it honestly)}
+On the public ULB credit-card fraud dataset, our detector scored \textbf{99.85\% accuracy}. But accuracy
+is misleading here, because only 0.17\% of transactions are fraud --- a lazy model that says ``never
+fraud'' already scores 99.83\%. So we report \textbf{MCC} instead.
+
+\begin{plain}{MCC (Matthews Correlation Coefficient)}
+A single honest score from $-1$ to $+1$ that only looks good if the model gets \emph{both} fraud and
+non-fraud right. $0$ means ``no better than guessing.'' It can't be fooled by the ``always say normal''
+trick. Our detector scores \textbf{MCC 0.677} --- genuinely useful.
+\end{plain}
+
+Honest caveat we state openly: our \emph{auto-tuned} detector (0.677) is actually a touch \emph{worse}
+than a hand-set default (0.785). So DB-BOA's real value is \emph{removing the manual tuning work}, not
+beating a human expert --- and we say exactly that.
+
+\subsection{The centrepiece result: the privacy-vs-fairness fix}
+Moving the privacy noise from the model weights onto the small contribution scores improves the privacy
+dial at which rewards stay \emph{fair} (in the right order) by about \textbf{60 times}:
+
+\begin{center}
+\small
+\begin{tabularx}{0.92\linewidth}{Xcc}
+\toprule
+& \textbf{Old way (noise on weights)} & \textbf{Our way (noise on scores)} \\
+\midrule
+Privacy needed for fair rewards & $\epsilon^* = 3000$ (basically no privacy) & $\epsilon^* = 50$ (usable privacy) \\
+Reward fairness at $\epsilon=50$ (corr., $-1$ to $1$) & $\approx -0.29$ (rewards backwards!) & $\approx +0.95$ (rewards correct) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+In words: the old approach only gave fair rewards if you switched privacy off almost entirely
+($\epsilon=3000$); our approach gives fair rewards at a genuinely private setting ($\epsilon=50$). The
+``$-0.29$'' is striking --- at that setting the old method actually pays the \emph{worst} contributors
+the \emph{most}. Our method gets it right ($+0.95$, almost perfect ordering).
+
+\subsection{Security holds where it's supposed to}
+We tested Krum against four kinds of sabotage attack, in the conditions where its mathematical guarantee
+is meant to apply (enough honest banks). Krum \textbf{caught and rejected the attacker in all 8 test
+cases}, keeping the shared model at \textbf{$\approx$99.9\%} balanced accuracy. Without Krum, the worst
+attack dragged a plain average down to \textbf{$\approx$87.5\%}. So the security claim is real --- within
+stated limits.
+
+\subsection{Each ingredient's effect, side by side (an honest ablation)}
+\begin{center}
+\small
+\begin{tabularx}{0.95\linewidth}{Xccl}
+\toprule
+\textbf{Setup} & \textbf{Accuracy} & \textbf{MCC} & \textbf{What it tells us} \\
+\midrule
+Plain averaging (FedAvg) & 99.72\% & 0.569 & decent baseline \\
++ Krum (anti-sabotage) & 99.92\% & \textbf{0.776} & best single setup \\
++ strong privacy ($\epsilon{=}1.0$) & 99.83\% & 0.000 & privacy alone collapses it \\
+Full system at $\epsilon{=}1.0$ & --- & ${\approx}0$ & the collapse from Section~4 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+We \emph{show} the collapse rather than hiding it --- it is the evidence for our central point.
+
+\begin{plain}{FedAvg}
+The standard, naïve way to combine models in federated learning: just average everyone's numbers
+together. Simple, but it has no defence against sabotage or privacy leakage on its own --- which is why
+the other tools get added.
+\end{plain}
+
+\subsection{The blockchain numbers are measured, not invented}
+We measured our real Fabric network rather than guessing: each agreement round takes about
+\textbf{2.1 seconds} (a built-in timing floor of the platform), and it sustains about \textbf{40
+transactions per second} before hitting a known congestion limit. (Earlier drafts had quoted made-up
+figures; these replace them.)
+
+\reportnote{Chapter~5 (Result Analysis) --- §6.1 detector, §6.2 ablation, §6.6 the privacy-vs-fairness
+fix, the Byzantine-robustness section (Krum 8/8), and the Fabric-measurement section.}
+
+%==================================================================
+\section{What we can honestly claim as our contribution}
+
+Three things, strongest first, in words that will survive a tough examiner:
+
+\begin{enumerate}
+  \item \textbf{A new privacy-preserving reward mechanism} --- the idea of putting the privacy noise on
+  the \emph{contribution score} instead of the \emph{model weights}, which makes fair rewards survive
+  ${\sim}60\times$ more privacy. \emph{This is the one genuinely new piece.}
+  \item \textbf{A clear characterisation of the privacy-vs-fairness trade-off} --- real evidence that
+  naïvely combining strong privacy with fair-reward scoring makes rewards \emph{worse than random}, plus
+  a map of exactly where that breakdown happens. \emph{A legitimate ``negative result'' finding.}
+  \item \textbf{A complete, working, honestly-measured system} --- all the pieces integrated and running
+  on a real blockchain. \emph{This is integration of known tools, and we label it as such.}
+\end{enumerate}
+
+We are careful \emph{not} to overclaim: we did not invent differential privacy, Krum, Shapley values, or
+Fabric, and we do \emph{not} claim to be ``first'' to put fair rewards on a blockchain --- an earlier
+system (FedCoin, 2020) did that, and we build on it.
+
+\begin{plain}{why ``negative results'' still count as research}
+Showing clearly and with evidence that a popular combination \emph{doesn't} work the way people assume
+--- and explaining why --- is a real scientific contribution. It saves the next team from the same trap
+and points to the right fix. Honesty here is a strength, not a weakness.
+\end{plain}
+
+\reportnote{Chapter~1 (contribution list) and Chapter~6 (Conclusion).}
+
+%==================================================================
+\section{Where we fall short --- our limitations}
+
+We state these plainly in the report. Examiners trust honest limitations far more than a flawless-looking
+story.
+
+\begin{itemize}
+  \item \textbf{The ``three banks'' are really one dataset split three ways.} We didn't have three real
+  banks' data, so we split one public dataset into three portions. That means we never truly tested banks
+  whose data looks genuinely \emph{different} from each other.
+  \item \textbf{The fairness/reward defence only works in some situations.} It can isolate a coordinated
+  \emph{majority} of cheaters, but it does \emph{not} catch a lone attacker or a quiet free-rider (who
+  contributes nothing but isn't actively malicious). Fixing free-riding needs an extra rule we leave for
+  future work.
+  \item \textbf{``Secure'' and ``Scalable'' are bounded claims, not blanket ones.} Krum's guarantee only
+  holds when honest participants sufficiently outnumber attackers; a very subtle attacker that stays close
+  to honest behaviour could still slip through. And ``scalable'' refers to our \emph{contribution-scoring}
+  method, not the blockchain's raw speed (which has a clear ceiling).
+  \item \textbf{Some results are from a simulation, not a live deployment.} The blockchain speed numbers
+  and the leader-picking behaviour come from a single-computer test network, not a real multi-bank,
+  multi-city deployment. The \emph{patterns} transfer; the exact numbers wouldn't.
+  \item \textbf{A small measurement caveat on the contribution scores.} They're computed on held-out data
+  drawn from the same pool as the training data, so there's a minor, disclosed circularity --- not an
+  independent bank's data.
+\end{itemize}
+
+\reportnote{Chapter~5 / Chapter~6 --- the ``Threat model'' paragraph and the ``Limitations and
+disclosures'' block (drafted in \texttt{final\_report\_data/REWRITE\_08\_limitations\_disclosures.md}).}
+
+%==================================================================
+\section{If my supervisor reads only one paragraph}
+
+\begin{quote}
+\itshape
+We built a system that lets rival banks jointly train a fraud detector without sharing raw data, on a
+real blockchain, with privacy protection, fair contribution-based rewards, and sabotage resistance. Our
+central finding is that these good properties \textbf{fight each other}: turn privacy up to a serious
+level and the fair-reward mechanism breaks so badly it pays the worst contributors the most, and the
+model collapses. We pinned down exactly why --- the privacy noise was being applied in the wrong place
+--- and fixed it by noising the small contribution score instead of the huge model, which restores fair
+rewards at roughly $60\times$ stronger privacy. The sabotage defence works as promised within stated
+limits, and our blockchain numbers are measured rather than invented. So the contribution is: one new
+mechanism, one honest characterisation of a real trade-off, and a complete working system --- with its
+limitations (single dataset, conditional reward defence, simulated network) stated openly.
+\end{quote}
+
+%==================================================================
+\section{The whole story in one sitting (a plain walkthrough)}
+
+If the earlier sections still feel like a pile of separate parts, here is the same research told as a
+single, continuous story --- no jargon assumed.
+
+\subsection{The setting}
+Imagine several banks that each want to catch fraudulent transactions. A better fraud detector needs more
+data --- but \textbf{no bank will hand its customers' records to the others} (privacy law, and they are
+rivals). The standard way out is \textbf{federated learning}: each bank trains a model on its
+\emph{own} data and shares only the trained model, never the raw data. A coordinator combines these into
+one stronger shared model. Everyone benefits; nobody exposes raw data.
+
+\subsection{Three things you need at once --- and they fight}
+A real federated system between distrustful banks has to do three jobs at the same time, and they pull
+against each other:
+\begin{enumerate}
+  \item \textbf{Fair pay (incentive).} One bank has excellent data, another has almost none. Pay them
+  equally and the good one walks away. So you must \emph{measure} how much each bank actually helped
+  (\textbf{Shapley value}) and pay it accordingly, recorded tamper-proof on a \textbf{blockchain}.
+  \item \textbf{Privacy.} Even sharing the \emph{model} can leak information about individuals. The
+  defence is \textbf{differential privacy}: add random \emph{noise}. More noise = more privacy.
+  \item \textbf{Security.} A malicious bank might send a poisoned model to wreck the shared one. The
+  defence is \textbf{Krum}, which discards the suspicious outlier instead of blindly averaging.
+\end{enumerate}
+
+\subsection{The conflict at the heart of the thesis}
+Here is the tension everything hangs on: \textbf{privacy sabotages fairness.} To get privacy you add
+noise --- but that same noise scrambles the contribution measurement (Shapley). When the measurement is
+scrambled, the blockchain \textbf{pays the wrong banks}: the free-rider gets rewarded, the hard worker
+gets shortchanged. The incentive becomes a lie. So the honest research question becomes:
+\emph{``When does this reward system actually stay honest, instead of paying the wrong people?''}
+
+\begin{plain}{why this is the novelty}
+All the parts already exist (federated learning, Shapley, privacy, Krum, blockchain). What is new is
+\emph{mapping out exactly when the combination breaks --- and fixing it.} That is a characterisation
+contribution, not a new-algorithm claim.
+\end{plain}
+
+\subsection{What we discovered (the negative result)}
+We measured it. Adding the privacy noise the ``obvious'' way --- onto the \textbf{model weights}
+($\sim$100{,}000 numbers) --- the rewards only stay correct when privacy is \emph{almost switched off}
+($\epsilon\approx3000$). In plain terms: with the obvious design you can have correct rewards \emph{or}
+real privacy, but not both. That is a real, useful finding on its own.
+
+\subsection{What we built (the fix --- the centrepiece)}
+Then the key insight: the noise does so much damage because it is dumped onto 100{,}000 numbers. But you
+do not need to privatise the weights to protect the reward calculation --- you only need to privatise the
+\textbf{contribution scores themselves}, which are just a handful of numbers (one per bank). So we flip
+the order: compute the honest scores on the \emph{clean} models first, \emph{then} add the privacy noise
+to those few numbers before publishing them. Same privacy guarantee, but noising a handful of numbers
+instead of 100{,}000 --- so the damage drops by roughly two orders of magnitude. Honest rewards now
+survive at a genuinely private setting ($\epsilon\approx50$).
+
+\begin{plain}{the punchline}
+\emph{Where} you inject the privacy noise relocates the honesty boundary by about $60\times$. We turned a
+``you can't have both'' negative result into a ``here's how you get both'' positive one.
+\end{plain}
+
+\subsection{Why the other title words are earned}
+\textbf{Secure} --- Krum catches poisoning that plain averaging misses. \textbf{Scalable} --- the exact
+Shapley sum is too expensive, so we use a sampling shortcut that scales, plus we \emph{measured} real
+blockchain throughput. \textbf{Consensus / RL} --- the blockchain integration, with a learning agent
+choosing which node leads each round. These are honest integration and measurement, not new inventions.
+
+\reportnote{This walkthrough condenses Chapters~1, 4 and~5; the fix and its numbers are §6.6.}
+
+%==================================================================
+\section{Glossary (quick reference)}
+
+\begin{description}[leftmargin=0pt,style=nextline,itemsep=3pt]
+  \item[Federated learning (FL)] Training a shared model from many parties' data without any of them
+  sending their raw data --- only model numbers are shared.
+  \item[Hyperledger Fabric] A real, business-grade blockchain platform; we run one as the trusted,
+  no-middleman coordinator. The on-chain rule program is the ``chaincode.''
+  \item[Differential privacy (DP) / $\epsilon$] Adding tuned random noise to shared numbers so no
+  individual can be identified. $\epsilon$ is the dial: small = strong privacy + blurry; large = weak
+  privacy + clear.
+  \item[Shapley value ($\varphi$)] A fair score of how much each participant contributed to the team
+  result; we use it to split rewards.
+  \item[Krum] A defence that picks the most-agreed-with model and discards sabotage outliers, with a
+  guarantee when honest participants are numerous enough.
+  \item[FedAvg] The plain baseline: just average everyone's model numbers, with no built-in defences.
+  \item[MCC] An honest accuracy score ($-1$ to $+1$) that isn't fooled when fraud is rare; $0$ = guessing.
+  \item[ADTCN / DB-BOA] The fraud-detector model, and the search algorithm that auto-tunes it (and picks
+  blockchain leaders), respectively.
+  \item[Byzantine attack] Jargon for a participant deliberately sending bad/poisoned data to wreck the
+  shared model.
+  \item[Free-rider] A participant who takes the shared model's benefit while contributing little or
+  nothing useful.
+\end{description}
+
+\vspace{0.5em}
+\hrule
+\vspace{0.4em}
+{\footnotesize\color{soft}\itshape Full report chapter map: Ch1 Introduction $\cdot$ Ch2 Literature
+Review $\cdot$ Ch3 Requirements, Impacts \& Constraints $\cdot$ Ch4 Proposed Methodology $\cdot$ Ch5
+Result Analysis $\cdot$ Ch6 Conclusion. Verified numbers: \texttt{final\_report\_data/}. Anticipated
+defence questions: \texttt{defense\_questions.md}.}
+
+\end{document}

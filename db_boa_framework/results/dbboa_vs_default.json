@@ -1,0 +1,58 @@
+{
+  "task": "DB-BOA-tuned vs hand-set-default ADTCN (single full run, corrected bounded objective)",
+  "generated": "2026-06-10T15:02:38",
+  "data_split": {
+    "test_size": 0.2,
+    "val_size": 0.1,
+    "stratified": true,
+    "random_state": 42
+  },
+  "test_set": {
+    "n": 56962,
+    "n_fraud": 98
+  },
+  "architecture": "cnn",
+  "epoch_count": 30,
+  "note": "Reproduces the comparison main.py prints (Phase 4) but does not persist. Tuned row cross-checks db_boa_results.json (MCC 0.677).",
+  "hand_set_default": {
+    "hidden_neurons": 128,
+    "steps_per_epoch": 150,
+    "metrics": {
+      "Accuracy": 99.91924440855288,
+      "Precision": 72.80701754379578,
+      "Sensitivity": 84.69387755093399,
+      "Specificity": 99.94548396173307,
+      "NPV": 99.97361384745268,
+      "FPR": 0.054516038266741604,
+      "FNR": 15.306122448963974,
+      "FDR": 27.192982456116496,
+      "F1_Score": 78.3018867924159,
+      "MCC": 0.7848634385328296,
+      "TP": 83.0,
+      "TN": 56833.0,
+      "FP": 31.0,
+      "FN": 15.0
+    }
+  },
+  "dbboa_tuned": {
+    "hidden_neurons": 142,
+    "steps_per_epoch": 76,
+    "metrics": {
+      "Accuracy": 98.77286612127365,
+      "Precision": 11.225806451611454,
+      "Sensitivity": 88.77551020399105,
+      "Specificity": 98.79009566685407,
+      "NPV": 99.98042251766405,
+      "FPR": 1.209904333145749,
+      "FNR": 11.224489795906914,
+      "FDR": 88.77419354837564,
+      "F1_Score": 19.931271477660946,
+      "MCC": 0.31325392722569106,
+      "TP": 87.0,
+      "TN": 56176.0,
+      "FP": 688.0,
+      "FN": 11.0
+    }
+  },
+  "mcc_gap_default_minus_tuned": 0.4716
+}

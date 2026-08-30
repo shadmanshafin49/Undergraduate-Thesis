@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 870" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#374151"/>
+    </marker>
+    <marker id="arrowCrimson" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#BE123C"/>
+    </marker>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1260" height="870" fill="white"/>
+
+  <!-- title -->
+  <text x="630" y="34" text-anchor="middle" font-size="19" font-weight="bold" fill="#111827">Methodology Overview — Blockchain-Integrated Federated Learning for Fraud Detection</text>
+  <text x="630" y="56" text-anchor="middle" font-size="13" fill="#4B5563">FL-ADTCN + DB-BOA on Hyperledger Fabric &#183; three-bank consortium &#183; privacy-preserving, incentive-aligned</text>
+
+  <!-- ================= BANKS ROW ================= -->
+  <circle cx="320" cy="78" r="10" fill="#1D4ED8"/>
+  <text x="320" y="82" text-anchor="middle" font-size="11" font-weight="bold" fill="white">3</text>
+  <text x="338" y="82" font-size="12.5" font-weight="bold" fill="#1D4ED8">LOCAL TRAINING — each bank trains ADTCN on its private shard (raw data never shared)</text>
+
+  <!-- BankA -->
+  <g>
+    <rect x="310" y="90" width="260" height="160" rx="8" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5"/>
+    <text x="440" y="114" text-anchor="middle" font-size="14" font-weight="bold" fill="#111827">BankA &#183; Org1MSP</text>
+    <text x="440" y="134" text-anchor="middle" font-size="11.5" fill="#1F2937">private shard: 50% of ULB dataset</text>
+    <rect x="330" y="148" width="220" height="86" rx="6" fill="white" stroke="#1D4ED8" stroke-width="1"/>
+    <text x="440" y="170" text-anchor="middle" font-size="12" font-weight="bold" fill="#111827">Local ADTCN</text>
+    <text x="440" y="188" text-anchor="middle" font-size="11" fill="#374151">1D-CNN &#183; 10-transaction window</text>
+    <text x="440" y="204" text-anchor="middle" font-size="11" fill="#374151">class-weighted loss &#183; Adam</text>
+    <text x="440" y="220" text-anchor="middle" font-size="11" fill="#374151">DB-BOA-tuned hyperparameters</text>
+  </g>
+
+  <!-- BankB -->
+  <g>
+    <rect x="605" y="90" width="260" height="160" rx="8" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5"/>
+    <text x="735" y="114" text-anchor="middle" font-size="14" font-weight="bold" fill="#111827">BankB &#183; Org2MSP</text>
+    <text x="735" y="134" text-anchor="middle" font-size="11.5" fill="#1F2937">private shard: 30% of ULB dataset</text>
+    <rect x="625" y="148" width="220" height="86" rx="6" fill="white" stroke="#1D4ED8" stroke-width="1"/>
+    <text x="735" y="170" text-anchor="middle" font-size="12" font-weight="bold" fill="#111827">Local ADTCN</text>
+    <text x="735" y="188" text-anchor="middle" font-size="11" fill="#374151">1D-CNN &#183; 10-transaction window</text>
+    <text x="735" y="204" text-anchor="middle" font-size="11" fill="#374151">class-weighted loss &#183; Adam</text>
+    <text x="735" y="220" text-anchor="middle" font-size="11" fill="#374151">DB-BOA-tuned hyperparameters</text>
+  </g>
+
+  <!-- BankC -->
+  <g>
+    <rect x="900" y="90" width="260" height="160" rx="8" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5"/>
+    <text x="1030" y="114" text-anchor="middle" font-size="14" font-weight="bold" fill="#111827">BankC &#183; Org3MSP</text>
+    <text x="1030" y="134" text-anchor="middle" font-size="11.5" fill="#1F2937">private shard: 20% of ULB dataset</text>
+    <rect x="920" y="148" width="220" height="86" rx="6" fill="white" stroke="#1D4ED8" stroke-width="1"/>
+    <text x="1030" y="170" text-anchor="middle" font-size="12" font-weight="bold" fill="#111827">Local ADTCN</text>
+    <text x="1030" y="188" text-anchor="middle" font-size="11" fill="#374151">1D-CNN &#183; 10-transaction window</text>
+    <text x="1030" y="204" text-anchor="middle" font-size="11" fill="#374151">class-weighted loss &#183; Adam</text>
+    <text x="1030" y="220" text-anchor="middle" font-size="11" fill="#374151">DB-BOA-tuned hyperparameters</text>
+  </g>
+
+  <!-- banks -> federation arrows -->
+  <line x1="440" y1="250" x2="440" y2="324" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="735" y1="250" x2="735" y2="324" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1030" y1="250" x2="1030" y2="324" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="600" y="276" width="270" height="20" fill="white"/>
+  <text x="735" y="290" text-anchor="middle" font-size="11.5" font-style="italic" fill="#374151">model weights + metrics only (no raw data)</text>
+
+  <!-- ================= DB-BOA SIDEBAR ================= -->
+  <g>
+    <rect x="30" y="330" width="240" height="200" rx="8" fill="#EDE9FE" stroke="#6D28D9" stroke-width="1.5"/>
+    <text x="150" y="352" text-anchor="middle" font-size="14" font-weight="bold" fill="#111827">DB-BOA OPTIMISER</text>
+    <text x="150" y="369" text-anchor="middle" font-size="10" fill="#4B5563">butterfly exploration + billiards exploitation</text>
+
+    <rect x="42" y="380" width="216" height="58" rx="6" fill="white" stroke="#6D28D9" stroke-width="1"/>
+    <circle cx="58" cy="394" r="9" fill="#6D28D9"/>
+    <text x="58" y="397.5" text-anchor="middle" font-size="10.5" font-weight="bold" fill="white">2</text>
+    <text x="72" y="398" font-size="11.5" font-weight="bold" fill="#111827">Hyperparameter search</text>
+    <text x="52" y="415" font-size="10.5" fill="#374151">filters H, steps/epoch S &#8594; max Obf&#8322;</text>
+    <text x="52" y="429" font-size="10.5" fill="#374151">once at startup &#8594; HYPERPARAMS</text>
+
+    <rect x="42" y="452" width="216" height="58" rx="6" fill="white" stroke="#6D28D9" stroke-width="1"/>
+    <circle cx="58" cy="466" r="9" fill="#6D28D9"/>
+    <text x="58" y="469.5" text-anchor="middle" font-size="10.5" font-weight="bold" fill="white">1</text>
+    <text x="72" y="470" font-size="11.5" font-weight="bold" fill="#111827">Leader selection</text>
+    <text x="52" y="487" font-size="10.5" fill="#374151">min CT &#183; CC &#183; MS + reputation</text>
+    <text x="52" y="501" font-size="10.5" fill="#374151">every consensus round &#8594; ROUND_</text>
+  </g>
+
+  <!-- DB-BOA -> banks (hyperparameters) -->
+  <path d="M150,330 V196 H306" fill="none" stroke="#6D28D9" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="160" y="258" font-size="10.5" fill="#6D28D9">tuned hyperparameters</text>
+  <text x="160" y="272" font-size="10.5" fill="#6D28D9">(H*, S*)</text>
+
+  <!-- DB-BOA <-> Fabric (metrics / leader record) -->
+  <line x1="150" y1="530" x2="150" y2="586" stroke="#6D28D9" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="162" y="550" font-size="10.5" fill="#374151">reads node metrics (CT/CC/MS) + reputation</text>
+  <text x="162" y="565" font-size="10.5" fill="#374151">writes ROUND_ leader election</text>
+
+  <!-- ================= FEDERATION LAYER ================= -->
+  <g>
+    <rect x="310" y="330" width="850" height="200" rx="8" fill="#FEF3C7" stroke="#B45309" stroke-width="1.5"/>
+    <circle cx="336" cy="352" r="10" fill="#B45309"/>
+    <text x="336" y="356" text-anchor="middle" font-size="11" font-weight="bold" fill="white">4</text>
+    <text x="745" y="356" text-anchor="middle" font-size="14" font-weight="bold" fill="#111827">FEDERATION LAYER — every 5 consensus rounds</text>
+    <text x="745" y="374" text-anchor="middle" font-size="11" font-style="italic" fill="#92400E">privacy-preserving, fairness-aware aggregation &#183; noise &#8594; fidelity &#8594; reward-error trade-off characterised</text>
+
+    <!-- step 1: weight DP -->
+    <rect x="320" y="390" width="190" height="100" rx="6" fill="white" stroke="#B45309" stroke-width="1.2"/>
+    <text x="415" y="410" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#111827">Weight-channel DP</text>
+    <text x="415" y="428" text-anchor="middle" font-size="10.5" fill="#374151">L&#8322;-clip + Gaussian noise</text>
+    <text x="415" y="443" text-anchor="middle" font-size="10.5" fill="#374151">(&#949;, &#948;) guarantee —</text>
+    <text x="415" y="458" text-anchor="middle" font-size="10.5" fill="#374151">off at deployment point</text>
+
+    <line x1="510" y1="440" x2="529" y2="440" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- step 2: Krum -->
+    <rect x="535" y="390" width="190" height="100" rx="6" fill="white" stroke="#B45309" stroke-width="1.2"/>
+    <text x="630" y="410" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#111827">Krum robust selection</text>
+    <text x="630" y="428" text-anchor="middle" font-size="10.5" fill="#374151">keeps the most consensus-</text>
+    <text x="630" y="443" text-anchor="middle" font-size="10.5" fill="#374151">aligned update; tolerates</text>
+    <text x="630" y="458" text-anchor="middle" font-size="10.5" fill="#374151">f Byzantine (n &#8805; 2f+3)</text>
+
+    <line x1="725" y1="440" x2="744" y2="440" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- step 3: Shapley -->
+    <rect x="750" y="390" width="190" height="100" rx="6" fill="#FFF1F2" stroke="#BE123C" stroke-width="1.6"/>
+    <text x="845" y="410" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#111827">Exact Shapley values &#966;</text>
+    <text x="845" y="428" text-anchor="middle" font-size="10.5" fill="#374151">marginal contribution,</text>
+    <text x="845" y="443" text-anchor="middle" font-size="10.5" fill="#374151">all 7 coalitions;</text>
+    <text x="845" y="458" text-anchor="middle" font-size="10.5" fill="#374151">v(S) = balanced accuracy</text>
+
+    <line x1="940" y1="440" x2="959" y2="440" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- step 4: output DP -->
+    <rect x="965" y="390" width="190" height="100" rx="6" fill="#FFF1F2" stroke="#BE123C" stroke-width="1.6"/>
+    <text x="1060" y="410" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#111827">Output DP on &#966;</text>
+    <text x="1060" y="428" text-anchor="middle" font-size="10.5" fill="#374151">Gaussian noise on Shapley</text>
+    <text x="1060" y="443" text-anchor="middle" font-size="10.5" fill="#374151">values — deployment</text>
+    <text x="1060" y="458" text-anchor="middle" font-size="10.5" fill="#374151">privacy channel</text>
+
+    <!-- novelty banner -->
+    <rect x="320" y="496" width="835" height="26" rx="4" fill="#FFE4E6" stroke="#BE123C" stroke-width="1"/>
+    <text x="737" y="513.5" text-anchor="middle" font-size="11" font-weight="bold" fill="#9F1239">&#9733; NOVEL CONTRIBUTION — privacy carried on the incentive channel: DP-noised Shapley rewards enforced on-chain</text>
+  </g>
+
+  <!-- federation -> fabric -->
+  <line x1="735" y1="530" x2="735" y2="584" stroke="#BE123C" stroke-width="1.8" marker-end="url(#arrowCrimson)"/>
+  <text x="748" y="550" font-size="11" fill="#9F1239">recordFederationRound:</text>
+  <text x="748" y="566" font-size="11" fill="#9F1239">w* + metrics on-chain &#183; 20-token pool split &#8733; &#966;</text>
+
+  <!-- ================= HYPERLEDGER FABRIC ================= -->
+  <g>
+    <rect x="30" y="590" width="1130" height="175" rx="8" fill="#DCFCE7" stroke="#15803D" stroke-width="1.5"/>
+    <circle cx="60" cy="612" r="10" fill="#15803D"/>
+    <text x="60" y="616" text-anchor="middle" font-size="11" font-weight="bold" fill="white">5</text>
+    <text x="595" y="616" text-anchor="middle" font-size="14" font-weight="bold" fill="#111827">HYPERLEDGER FABRIC — permissioned consortium blockchain</text>
+
+    <rect x="50" y="634" width="350" height="110" rx="6" fill="white" stroke="#15803D" stroke-width="1"/>
+    <text x="225" y="656" text-anchor="middle" font-size="12" font-weight="bold" fill="#111827">DBBOAContract chaincode (Node.js)</text>
+    <text x="225" y="676" text-anchor="middle" font-size="11" fill="#374151">enforces token incentive rules,</text>
+    <text x="225" y="693" text-anchor="middle" font-size="11" fill="#374151">records leader elections,</text>
+    <text x="225" y="710" text-anchor="middle" font-size="11" fill="#374151">logs federation rounds + fraud verdicts</text>
+
+    <rect x="415" y="634" width="350" height="110" rx="6" fill="white" stroke="#15803D" stroke-width="1"/>
+    <text x="590" y="656" text-anchor="middle" font-size="12" font-weight="bold" fill="#111827">Immutable ledger (world state)</text>
+    <text x="590" y="676" text-anchor="middle" font-size="11" fill="#374151">NODE_{id} &#183; ROUND_{n} &#183; FED_{n}</text>
+    <text x="590" y="693" text-anchor="middle" font-size="11" fill="#374151">HYPERPARAMS &#183; token balances</text>
+    <text x="590" y="710" text-anchor="middle" font-size="11" fill="#374151">tamper-proof audit trail</text>
+
+    <rect x="780" y="634" width="350" height="110" rx="6" fill="white" stroke="#15803D" stroke-width="1"/>
+    <text x="955" y="656" text-anchor="middle" font-size="12" font-weight="bold" fill="#111827">Consensus + identity</text>
+    <text x="955" y="676" text-anchor="middle" font-size="11" fill="#374151">Raft ordering service (CFT),</text>
+    <text x="955" y="693" text-anchor="middle" font-size="11" fill="#374151">X.509 certificates via Fabric CA,</text>
+    <text x="955" y="710" text-anchor="middle" font-size="11" fill="#374151">&#8776;2.1 s/tx on single-host testbed</text>
+  </g>
+
+  <!-- return paths (right side) -->
+  <path d="M1160,430 H1192 V196 H1165" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text transform="rotate(-90 1204 320)" x="1204" y="320" text-anchor="middle" font-size="11" fill="#374151">global model redistributed to all banks</text>
+
+  <path d="M1160,655 H1222 V150 H1165" fill="none" stroke="#BE123C" stroke-width="1.8" marker-end="url(#arrowCrimson)"/>
+  <text transform="rotate(-90 1236 400)" x="1236" y="400" text-anchor="middle" font-size="11" font-weight="bold" fill="#BE123C">token rewards &#8733; Shapley weights (chaincode)</text>
+
+  <!-- ================= PHASE STRIP ================= -->
+  <text x="40" y="790" font-size="12" font-style="italic" fill="#4B5563">Methodology process flow (&#167;4.1.7):</text>
+
+  <g>
+    <rect x="40" y="800" width="170" height="44" rx="6" fill="#F9FAFB" stroke="#9CA3AF" stroke-width="1"/>
+    <circle cx="58" cy="822" r="10" fill="#6D28D9"/>
+    <text x="58" y="826" text-anchor="middle" font-size="11" font-weight="bold" fill="white">1</text>
+    <text x="74" y="818" font-size="11" font-weight="bold" fill="#111827">Leader selection</text>
+    <text x="74" y="833" font-size="10.5" fill="#4B5563">DB-BOA &#183; every round</text>
+    <line x1="210" y1="822" x2="222" y2="822" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <rect x="228" y="800" width="170" height="44" rx="6" fill="#F9FAFB" stroke="#9CA3AF" stroke-width="1"/>
+    <circle cx="246" cy="822" r="10" fill="#6D28D9"/>
+    <text x="246" y="826" text-anchor="middle" font-size="11" font-weight="bold" fill="white">2</text>
+    <text x="262" y="818" font-size="11" font-weight="bold" fill="#111827">Hyperparam search</text>
+    <text x="262" y="833" font-size="10.5" fill="#4B5563">DB-BOA &#183; at startup</text>
+    <line x1="398" y1="822" x2="410" y2="822" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <rect x="416" y="800" width="170" height="44" rx="6" fill="#F9FAFB" stroke="#9CA3AF" stroke-width="1"/>
+    <circle cx="434" cy="822" r="10" fill="#1D4ED8"/>
+    <text x="434" y="826" text-anchor="middle" font-size="11" font-weight="bold" fill="white">3</text>
+    <text x="450" y="818" font-size="11" font-weight="bold" fill="#111827">Local training</text>
+    <text x="450" y="833" font-size="10.5" fill="#4B5563">ADTCN per bank</text>
+    <line x1="586" y1="822" x2="598" y2="822" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <rect x="604" y="800" width="170" height="44" rx="6" fill="#FFF1F2" stroke="#BE123C" stroke-width="1.2"/>
+    <circle cx="622" cy="822" r="10" fill="#B45309"/>
+    <text x="622" y="826" text-anchor="middle" font-size="11" font-weight="bold" fill="white">4</text>
+    <text x="638" y="818" font-size="11" font-weight="bold" fill="#111827">Federated aggregation &#9733;</text>
+    <text x="638" y="833" font-size="10.5" fill="#4B5563">DP&#183;Krum&#183;Shapley&#183;&#966;-DP</text>
+    <line x1="774" y1="822" x2="786" y2="822" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <rect x="792" y="800" width="170" height="44" rx="6" fill="#F9FAFB" stroke="#9CA3AF" stroke-width="1"/>
+    <circle cx="810" cy="822" r="10" fill="#15803D"/>
+    <text x="810" y="826" text-anchor="middle" font-size="11" font-weight="bold" fill="white">5</text>
+    <text x="826" y="818" font-size="11" font-weight="bold" fill="#111827">On-chain enforcement</text>
+    <text x="826" y="833" font-size="10.5" fill="#4B5563">tokens &#183; audit records</text>
+    <line x1="962" y1="822" x2="974" y2="822" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <rect x="980" y="800" width="170" height="44" rx="6" fill="#F9FAFB" stroke="#9CA3AF" stroke-width="1"/>
+    <circle cx="998" cy="822" r="10" fill="#374151"/>
+    <text x="998" y="826" text-anchor="middle" font-size="11" font-weight="bold" fill="white">6</text>
+    <text x="1014" y="818" font-size="11" font-weight="bold" fill="#111827">Evaluation</text>
+    <text x="1014" y="833" font-size="10.5" fill="#4B5563">Byzantine attack test</text>
+  </g>
+</svg>

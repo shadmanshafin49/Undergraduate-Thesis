@@ -199,36 +199,67 @@ class FinancialDataLoader:
         X_eng    = np.hstack([X_raw, extra_df.values])
         return X_eng.astype(np.float32)
 
-    def split_for_orgs(self, X_train, y_train):
+    def split_for_orgs(self, X_train, y_train,
+                       org_splits: dict = None,
+                       samples_per_org: int = None):
         """
-        Split training data across 3 orgs using ORG_DATA_SPLITS ratios.
-        Stratified: each org gets proportional fraud/normal samples.
-        No overlap between org datasets.
+        Split training data across orgs.  Stratified: each org gets proportional
+        fraud/normal samples; no overlap between org datasets.
         Returns: dict of {org_name: (X_subset, y_subset)}
+
+        Parameters
+        ----------
+        org_splits : dict, optional
+            {org_name: fraction} controlling each org's share of the pool.
+            Defaults to config.ORG_DATA_SPLITS (the canonical 3-org 50/30/20 split).
+            Pass config.make_org_splits(n) to parameterise the federation size —
+            this is how the scalability sweep scales n_orgs end-to-end.
+        samples_per_org : int, optional
+            **Confound-control / equal-shard mode.**  If given, every org receives
+            exactly this many stratified samples regardless of org_splits, so the
+            per-org data volume is held constant as n_orgs grows.  This isolates the
+            effect of federation size from the data-dilution effect you get when a
+            fixed pool is split ever more thinly (see scalability_sweep regimes).
 
         Ecological validity note
         ------------------------
-        The ULB dataset comes from a single bank's transactions.  All three
-        "orgs" therefore share the same customer population, the same time
-        period, and the same fraud typology.  This is a controlled simulation
-        rather than a true cross-institution federated deployment.  See
-        ORG_DATA_SPLITS comment in config.py and the thesis Limitations section.
+        The ULB dataset comes from a single bank's transactions.  All "orgs"
+        therefore share the same customer population, the same time period, and the
+        same fraud typology.  This is a controlled simulation rather than a true
+        cross-institution federated deployment.  See ORG_DATA_SPLITS comment in
+        config.py and the thesis Limitations section.
         """
         from config import ORG_DATA_SPLITS
         from sklearn.model_selection import train_test_split as tts
 
+        if org_splits is None:
+            org_splits = ORG_DATA_SPLITS
+        orgs = list(org_splits.keys())
+
         splits = {}
         remaining_X = X_train.copy()
         remaining_y = y_train.copy()
-        orgs  = list(ORG_DATA_SPLITS.keys())
 
+        # ── equal-shard mode: each org gets a fixed-size stratified disjoint shard ──
+        if samples_per_org is not None:
+            for i, org in enumerate(orgs):
+                n = min(samples_per_org, len(remaining_y) - 1)
+                X_org, remaining_X, y_org, remaining_y = tts(
+                    remaining_X, remaining_y,
+                    train_size=n, stratify=remaining_y,
+                    random_state=self.cfg['random_state'] + i
+                )
+                splits[org] = (X_org, y_org)
+            return splits
+
+        # ── proportional mode: share the whole pool by org_splits fractions ────────
+        fracs = list(org_splits.values())
         for i, org in enumerate(orgs[:-1]):
-            frac = ORG_DATA_SPLITS[org]
-            n    = int(len(remaining_y) * frac /
-                       sum(list(ORG_DATA_SPLITS.values())[i:]))
+            frac = org_splits[org]
+            n    = int(len(remaining_y) * frac / sum(fracs[i:]))
             X_org, remaining_X, y_org, remaining_y = tts(
                 remaining_X, remaining_y,
-                train_size=n, stratify=remaining_y,
+                train_size=max(1, n), stratify=remaining_y,
                 random_state=self.cfg['random_state'] + i
             )
             splits[org] = (X_org, y_org)

@@ -1,0 +1,1630 @@
+A Blockchain-Integrated Framework for Secure, Incentivized,
+  and Scalable Machine Learning: Integrating Consensus
+        Mechanisms and Reinforcement Learning
+
+
+                                   by
+
+                    MD. ABRAR-UD-DOULA AMIYA
+                             21301567
+                          SHADMAN SAKIB
+                             21301566
+                         NAFI ALIF MAHIN
+                             21201699
+                      MUNTASIR MAHIN SIAM
+                             21301708
+                           MAHIMA ISLAM
+                             21201143
+
+
+
+ A thesis submitted to the Department of Computer Science and Engineering
+           in partial fulfillment of the requirements for the degree of
+                  B.Sc. in Computer Science and Engineering
+
+
+
+
+             Department of Computer Science and Engineering
+                            Brac University
+                             Month Year.
+
+
+
+
+                         © 2024. Brac University
+                           All rights reserved.
+Declaration
+It is hereby declared that
+
+  1. The thesis submitted is my/our own original work while completing degree at
+     Brac University.
+
+  2. The thesis does not contain material previously published or written by a
+     third party, except where this is appropriately cited through full and accurate
+     referencing.
+
+  3. The thesis does not contain material which has been accepted, or submitted,
+     for any other degree or diploma at a university or other institution.
+
+  4. We have acknowledged all main sources of help.
+
+
+
+Student’s Full Name & Signature:
+
+
+
+
+    Md. Abrar-ud-doula Amiya                             Shadman Sakib
+
+              21301567                                      21301566
+
+
+
+
+           Mahima Islam                                 Nafi Alif Mahin
+
+              21201143                                      21201699
+
+
+
+
+                              Muntasir Mahin Siam
+
+                                    21301708
+
+
+
+
+                                         i
+Approval
+The thesis/project titled “ ” submitted by
+
+  1. Md. Abrar-ud-doula Amiya (21301567)
+
+  2. Shadman Sakib (21301566)
+
+  3. Mahima Islam (21201143)
+
+  4. Nafi Alif Mahin (21201699)
+
+  5. Muntasir Mahin Siam (21301708)
+
+of [Semester], [Year] has been accepted as satisfactory in partial fulfillment of the
+requirement for the degree of B.Sc. in Computer Science in [Current Semester] Year.
+
+Examining Committee:
+
+
+Supervisor:
+(Member)
+
+
+
+
+                                   Md. Golam Rabiul Alam
+                                          Professor
+                                      CSE Department
+                                       Brac University
+
+
+
+
+Co-Supervisor:
+(Member)
+
+                                                  Name of Co-Supervisor
+
+                                                        Designation
+                                                        Department
+                                                        Institution
+
+
+
+
+                                         ii
+Thesis Coordinator:
+(Member)
+
+                                Name of Thesis Coordinator
+
+                                       Designation
+                                       Department
+                                      Brac University
+
+
+
+
+Head of Department:
+(Chair)
+
+                                Name of Head of Department
+
+                                       Designation
+                      Department of Computer Science and Engineering
+                                      Brac University
+
+
+
+
+                          iii
+Ethics Statement (Optional)
+This is optional, if you don’t have an ethics statement then omit this page
+
+
+
+
+                                        iv
+Abstract
+The expansion of Machine Learning (ML) is driving innovation in healthcare, fi-
+nance, and IoT, but traditional centralized approaches face security, privacy, and
+trust challenges. Federated Learning (FL) goes for a decentralized approach but is
+struggling with validation overhead, adversarial threats, and trust in model updates.
+Here, the study is integrating blockchain with FL and Reinforcement Learning to
+strengthen security and data integrity. The Blockchain-Integrated Federated Learn-
+ing (B-FL) framework also leverages blockchain’s immutable ledger, Byzantine Fault
+Tolerance (BFT), proof of Deep Learning (PoDL), and smart contracts. Moreover,
+privacy enhancing techniques such as Fragmented Federated Learning (FFL) and
+Additive Homomorphic Encryption (AHE) mitigating attacks such as model poison-
+ing attacks and at the same time ensuring data aggregation. Nonetheless blockchain
+integration may introduce computational overhead, this study also optimizes con-
+sensus mechanisms and incentive structures to create a scalable, privacy- preserving
+ML framework applicable to healthcare, finance and IoT
+
+
+
+Keywords: Blockchain, Machine Learning (ML), Federated Learning (FL), Rein-
+forcement Learning (RL), Blockchain-Integrated Federated Learning (B-FL), Secu-
+rity, Privacy, Data Integrity, Byzantine Fault Tolerance (BFT), Proof of Deep Learn-
+ing (PoDL), Smart Contracts, Fragmented Federated Learning (FFL), Additive Ho-
+momorphic Encryption (AHE), Model Poisoning Attacks, Consensus Mechanisms,
+Incentive Structures, Scalability, Decentralization, Healthcare, Finance, Internet of
+Things (IoT)
+
+
+
+
+                                         v
+Dedication (Optional)
+A dedication is the expression of friendly connection or thanks by the author towards
+another person. It can occupy one or multiple lines depending on its importance.
+You can remove this page if you want.
+
+
+
+
+                                         vi
+Acknowledgement
+
+
+
+
+                  vii
+Table of Contents
+
+Declaration                                                                             i
+
+Approval                                                                               ii
+
+Ethics Statement                                                                      iv
+
+Abstract                                                                               v
+
+Dedication                                                                            vi
+
+Acknowledgment                                                                       vii
+
+Table of Contents                                                                    viii
+
+List of Figures                                                                        x
+
+List of Tables                                                                        xi
+
+Nomenclature                                                                          xi
+
+1 Introduction                                                                         1
+  1.1 Background . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       1
+  1.2 Rational of the Study . . . . . . . . . . . . . . . . . . . . . . . . . . .      1
+  1.3 Problem Statement . . . . . . . . . . . . . . . . . . . . . . . . . . . .        2
+  1.4 Objective . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      3
+  1.5 Methodology in Brief . . . . . . . . . . . . . . . . . . . . . . . . . .         3
+  1.6 Scopes and Challenges . . . . . . . . . . . . . . . . . . . . . . . . . .        4
+
+2 Literature Review                                                                    5
+  2.1 Preliminaries . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      5
+  2.2 Review of Existing Research . . . . . . . . . . . . . . . . . . . . . . .        5
+  2.3 Summary of Key Findings . . . . . . . . . . . . . . . . . . . . . . . .          8
+
+3 Requirements, Impacts and Constraints                                                9
+  3.1 Final Specifications and Requirements . . . . . . . . . . . . . . . . .          9
+  3.2 Societal Impact . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      9
+  3.3 Environmental Impact . . . . . . . . . . . . . . . . . . . . . . . . . .         9
+  3.4 Ethical Issues . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     9
+  3.5 Standards - if applicable . . . . . . . . . . . . . . . . . . . . . . . . .      9
+  3.6 Project Management Plan . . . . . . . . . . . . . . . . . . . . . . . .          9
+
+
+                                         viii
+   3.7   Risk Management . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+   3.8   Economic Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+
+4 Proposed Methodology                                                               11
+  4.1 Design Process or Methodology Overview . . . . . . . . . . . . . . .           11
+  4.2 Preliminary Design or Design (Model) Specification . . . . . . . . . .         16
+  4.3 Data Collection -(If Applicable) . . . . . . . . . . . . . . . . . . . . .     27
+      4.3.1 Data Cleaning . . . . . . . . . . . . . . . . . . . . . . . . . . .      27
+      4.3.2 Data Transformation . . . . . . . . . . . . . . . . . . . . . . .        27
+      4.3.3 Data Integration . . . . . . . . . . . . . . . . . . . . . . . . .       27
+      4.3.4 Data Reduction . . . . . . . . . . . . . . . . . . . . . . . . .         27
+      4.3.5 Summary of Preprocessed Data . . . . . . . . . . . . . . . . .           27
+  4.4 Implementation of Selected Design . . . . . . . . . . . . . . . . . . .        27
+
+5 Result Analysis                                                                    28
+  5.1 Performance Evaluation . . . . . . . . . . . . . . . . . . . . . . . . .       28
+  5.2 Analysis of Design Solutions . . . . . . . . . . . . . . . . . . . . . . .     28
+  5.3 Final Design Adjustments . . . . . . . . . . . . . . . . . . . . . . . .       28
+  5.4 Statistical Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . .   28
+  5.5 Comparisons and Relationships . . . . . . . . . . . . . . . . . . . . .        28
+  5.6 Discussions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    28
+
+6 Conclusion                                                                         29
+
+Bibliography                                                                         32
+
+
+
+
+                                          ix
+List of Figures
+
+ 1.1   Workflow Diagram of the Research Methodology . . . . . . . . . . . .   3
+
+
+
+
+                                      x
+List of Tables
+
+ 4.1  Integrated Architectural Flow . . . . . . . . . . . . . . . . . . . . . .    15
+ 4.2  Comparison of DBOA, BOA, and DB-BOA . . . . . . . . . . . . . . .            17
+ 4.3  Constraints observed in the current stage and planned enhancements
+      for DB-BOA deployment. . . . . . . . . . . . . . . . . . . . . . . . . .     21
+ 4.4 Evolution from DTCN to ADTCN across modeling, attention, data
+      integration, and optimization. . . . . . . . . . . . . . . . . . . . . . .   21
+ 4.5 Layered FL–ADTCN architecture with MJE–TCL–MTTA pipeline. .                   25
+ 4.6 Experimental configuration for FL–ADTCN. . . . . . . . . . . . . . .          25
+ 4.7 FL–ADTCN performance metric definitions. . . . . . . . . . . . . . .          25
+ 4.8 Performance comparison between centralized and federated ADTCN
+      under IID and non-IID conditions. . . . . . . . . . . . . . . . . . . .      25
+ 4.9 Key limitations observed in FL–ADTCN experiments. . . . . . . . . .           26
+ 4.10 Roadmap of future FL–ADTCN enhancements and integration with
+      DB–BOA. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    26
+
+
+
+
+                                       xi
+Chapter 1
+
+Introduction
+
+1.1      Background
+Rapid development of Machine Learning has revolutionized industries including
+healthcare, finance, and smart cities, creating new opportunities for productivity
+and innovation. However, traditional centralized machine learning frameworks have
+significant problems with data security, privacy, and dependability [17]. Federated
+Learning (FL) has become a viable decentralized method in response, allowing model
+training on dispersed devices while maintaining data privacy. Despite its potential,
+FL still faces obstacles such the requirement for efficient incentive systems, validation
+costs, robustness to adversarial assaults, and trust in model updates [17]. Because
+blockchain technology is decentralized and irreversible, researchers are now investi-
+gating how it might be integrated with FL to improve security, transparency, and
+data integrity [10]. Besides FL, blockchain has been used in Reinforcement Learning
+(RL), where Blockchain-enabled Federated Reinforcement Learning (B-FRL) allows
+multiple agents to learn together while being transparent and trusted. But there
+is a trade-off between security and performance. The field has advanced further
+with recent work on data heterogeneity and poisoning attacks, such as Fragmented
+Federated Learning (FFL) and privacy-preserving FL models that use Gaussian Mix-
+ture Models (GMM) and Additive Homomorphic Encryption (AHE). These show
+how blockchain can change machine learning, but we still have communication over-
+head, collusion attacks and computational cost. As blockchain and machine learning
+continue to develop together, they have the potential to influence the direction of
+decentralised intelligence in a variety of fields, including healthcare, finance, the In-
+ternet of Things, and more.
+
+
+
+1.2      Rational of the Study
+Even though the fast evolution of Machine Learning (ML) caused immense amounts
+of progress in various fields, we still know that the conventional frameworks of
+Machine Learning depend on centralized data processing which lead to situations
+where these frameworks have to face challenges related to data privacy, security, and
+trustworthiness. Federated Learning (FL) plays a major role in solving this problem
+as it enables decentralized model training while at the same time preserving data
+confidentiality. Nonetheless, there still remains struggles as Federated Learning (FL)
+
+                                           1
+has issues regarding validation overhead, adversarial threats, trust in model updates,
+demanding more robust security and incentive mechanisms.
+Blockchain technology is a solution to enhance trust and security within FL systems
+by introducing the decentralized, immutable, and transparent ledger mechanisms.
+The integration of Federated Learning with Blockchain shows us that it has a vivid
+potential to mitigate threats like model poisoning attacks, unauthorised data ma-
+nipulation, and privacy threats. Although promising, there are still challenges like
+trade-offs in computational efficiency and scalability issues, necessitating for better
+and optimized consensus mechanisms and robust privacy strategies.
+The Research goes on addressing the challenges through developing and evaluating a
+Blockchain-integrated Federated Learning Framework that improves the accuracy of
+the model, mitigates validation overhead, protects the privacy of the participants and
+also ensures strengthening defense mechanisms against adversarial threats. Through
+connecting the gaps between the Federated Learning and Blockchain, this research
+also plays a vital role in the enhancement of secure and decentralized Machine
+Learning models, which are significant for applications in healthcare, finance, and
+IoT-driven smart environments.
+
+
+
+1.3      Problem Statement
+The rapid advancement of machine learning (ML) has led to breakthroughs across
+various domains, but traditional ML frameworks rely on centralized data storage
+and processing. This dependence raises serious concerns regarding data privacy,
+security, and trustworthiness. Federated Learning (FL) addresses some of these
+issues by enabling decentralized model training while preserving data confidentiality.
+However, FL still faces significant challenges, including validation overhead, trust in
+model updates, adversarial attacks, and inefficiencies in incentive mechanisms.
+Blockchain technology, with its decentralized and immutable ledger, offers a promis-
+ing solution by enhancing security, transparency, and integrity in FL systems. It
+can mitigate risks such as model poisoning attacks, unauthorized data manipula-
+tion, and privacy threats. Despite these advantages, integrating blockchain into FL
+introduces trade-offs in computational efficiency, scalability, and system complexity.
+Current research lacks an optimized framework that effectively balances security,
+performance, and privacy while ensuring practical deployment.
+This study aims to develop a Blockchain-Integrated Federated Learning (B-FL)
+Framework that enhances security, minimizes validation overhead, and preserves
+participant privacy. By leveraging blockchain’s tamper-proof ledger and smart con-
+tracts, along with lightweight consensus mechanisms such as Byzantine Fault Toler-
+ance (BFT) and Proof of Deep Learning (PoDL), the framework seeks to optimize
+operational efficiency. Additionally, privacy-preserving techniques like Fragmented
+Federated Learning (FFL) and Additive Homomorphic Encryption (AHE) will be
+integrated to defend against poisoning attacks.
+The proposed framework will be evaluated based on security, scalability, and model
+accuracy. Addressing these challenges will contribute to the advancement of secure,
+decentralized ML models applicable to critical areas such as healthcare, finance, and
+IoT-driven smart environments.
+
+
+                                          2
+1.4     Objective
+The study relies on blockchain technology to create secure data protection while
+providing secure model updates and efficient work distribution. The main goal
+is to enhance trust and collaboration systems within Federated Learning (FL) and
+Reinforcement Learning (RL) to handle adversarial threats along with validation in-
+efficiencies. Blockchain implements safe consensus protocols that enhance security
+within both FL model updates and RL agent teamwork which results in more trans-
+parent and dependable operations. The authors propose using incentives tracked
+through tokens and reputation metrics for selecting participants in order to mitigate
+model poisoning attacks and resolve security and incentive problems in FL systems.
+The system uses Fragmented Federated Learning (FFL) with Additive Homomor-
+phic Encryption (AHE) as privacy-protection methods to protect data security and
+stop manipulations. This research produces a decentralized incentive-based scalable
+ML approach for practical healthcare, finance and IoT applications to improve se-
+curity and decentralised intelligence system confidence.
+
+
+
+1.5     Methodology in Brief
+This paper aim to illuminate Blockchain-Integrated Federated Learning framework
+which is designed to implement privacy-preserving incentive mechanism, optimize
+operational efficiency and reduce validation overhead [20]. These inproves defence
+against adversarial attacks. The framework used blockchain’s tamper-proof ledger
+and smart contracts to provided trust and transparency. It make use of lightweight
+mechanism like Byzentine Fault Tolerance (BFT) and Proof of Deep Learning (PoDL),
+improving secirity and efficiency. To preserve privacy, techniques like Fragmented
+Federated Learning (FFL) and Additive Homomorphic Encryption (AHE) are inte-
+grated to prevent malicious poisoning attacks and Secure data integrity. And token
+driven incentive promotes genuine participants. For internal auditing and to miti-
+gate malicious activities, adversarial defences startigies like Gaussian Mixture Model
+(GMM) and random forest based DDoS detection are employed. The performance
+of the framework is examined based on operational efficiency, scalability, model ac-
+curacy and secirity, with future improvements on efficient protocols, applications in
+IoT, healthcare, and finance and quantum-resistant cryptography. The main focus
+of this methodology is to improve the security and practicality of decentralized FL
+systems, focusing on scalability, resistance to attacks and privacy.
+
+
+
+
+           Figure 1.1: Workflow Diagram of the Research Methodology
+
+
+                                         3
+1.6      Scopes and Challenges
+When blockchain and federated Learning (FL) and both integrated, it offers signifi-
+cant potential to improve privacy, secirity and decentralizzation in Machine Learning
+(ML) system. But this integration also brings some new challenges like operational
+inefficiency, scalability limitations, vulnerabilities to adversarial attacks and incen-
+tive misalignment which are required to address. This report aims to establish mech-
+anism to stabilize these trade-off including lightweight consensus protocol like Proof
+of Deep Learning (PoDL), Additive Homomorphic Encryption (AHE) for privacy-
+preserving techniques and Fragmented Federated Learning (FFL) for adversarial
+defense strategies. For high quality contribution and fair participation, reputation
+based selection and token based incentive system are suggested. Future goals include
+improving communication efficiency, broadening applications in IoT, healthcare, and
+finance and investigating quantum-resistant cryptography. By solving these prob-
+lems, the study focuses to establish a strong, secure and scalable blockchain-based
+FL system for decentralized intelligence
+
+
+
+
+                                           4
+Chapter 2
+
+Literature Review
+
+2.1      Preliminaries
+The thesis examines how blockchain can be integrated with Machine Learning (ML)
+to strengthen security, privacy, and scalability in Machine Learning based systems.
+By reinforcing data integrity and enabling trusted collaboration, Blockchain en-
+hances Reinforcement Learning(RL) and Federated Learning (FL), tackling issues
+such as inefficiency and trust. Privacy-focused techniques such as FFL and Addi-
+tive Homomorphic Encryption (AHE) are incorporated despite their computational
+cost. The resulting framework enables secure and scalable Machine Learning solu-
+tions with incentives, benefiting industries such as healthcare, finance, and IoT.
+
+
+
+2.2      Review of Existing Research
+The convergence of blockchain technology and machine learning (ML) has gained
+significant attention in recent research, offering novel solutions to critical issues such
+as security, privacy, and scalability. Traditional ML frameworks, often centralized,
+remain susceptible to data breaches, adversarial attacks, and single points of fail-
+ure [15]. Recognizing these vulnerabilities, researchers have explored blockchain’s
+decentralized architecture to establish a more secure and transparent ecosystem for
+data sharing and model training. Various studies have proposed frameworks that
+integrate blockchain with ML, seeking to optimize their interplay while addressing
+inherent limitations. In this context, Federated Learning (FL) has emerged as a
+prominent decentralized ML technique, allowing models to be trained across dis-
+tributed edge devices while preserving data privacy.
+Despite its advantages, FL is not without its challenges, particularly concerning
+trust, data integrity, and susceptibility to model poisoning attacks [20]. To miti-
+gate these risks, blockchain has been positioned as a security-enhancing layer in FL,
+leveraging its immutable ledger to verify global model updates and detect malicious
+alterations [24]. Researchers emphasize the role of smart contracts and consensus
+mechanisms in fostering trust among participating nodes [18], ensuring that only
+legitimate contributions are integrated into the training process. While such ad-
+vancements bolster the security of FL, concerns remain regarding node selection in-
+efficiencies and workload distribution [16]. Blockchain-based incentive mechanisms,
+such as Proof of Useful Work (PoUW) [10]. Blockchain-based incentive mecha-
+
+                                            5
+nisms, such as token-based bidding systems, have been introduced to optimize these
+processes by rewarding reliable and resource-efficient nodes [22]. Beyond FL, Rein-
+forcement Learning (RL) presents another avenue where blockchain’s decentralized
+nature could mitigate computational bottlenecks and security concerns. Conven-
+tional RL frameworks rely heavily on centralized training, limiting their scalability
+and exposing them to data integrity risks.
+Blockchain-enabled Federated Reinforcement Learning (B-FRL) has been proposed
+as a solution, enabling multiple agents to learn collaboratively while ensuring data
+security [12]. By utilizing an immutable ledger, B-FRL verifies updates from differ-
+ent agents, reducing the likelihood of model corruption. However, the integration of
+blockchain in RL introduces a trade-off between computational efficiency and secu-
+rity, necessitating careful optimization to maintain practical feasibility [8]. Consen-
+sus mechanisms play a pivotal role in determining the effectiveness of blockchain-
+integrated ML frameworks. While traditional mechanisms such as Proof of Work
+(PoW) are computationally intensive and unsuitable for ML applications, alternative
+approaches like Proof of Deep Learning (PoDL) [12] and Byzantine Fault Tolerance
+(BFT)-based protocols have been proposed to enhance efficiency. These mecha-
+nisms not only uphold network integrity but also incentivize honest participation by
+rewarding high-quality data and model contributions. Parallel to this, researchers
+highlight the significance of incentive structures in blockchain-ML systems, partic-
+ularly for data providers and model contributors. Token-based reward models and
+smart contract-based compensation systems have been explored as viable strategies
+to ensure a steady supply of high-quality datasets while safeguarding user privacy
+and ownership rights.
+Expanding on blockchain’s utility, researchers have introduced innovative frame-
+works tailored to specific security and scalability challenges in decentralized envi-
+ronments [7]. One such advancement is the development of a scalable blockchain
+framework designed to enhance the security of Internet of Things (IoT) transac-
+tions. [11] This framework employs a dynamic application block generation (DABG)
+scheme, coupled with group signature-based authentication and time-bound crypto-
+graphic keys, to manage transactions efficiently while ensuring privacy and traceabil-
+ity. Such a model addresses the growing need for secure IoT interactions, reinforcing
+blockchain’s versatility beyond ML applications. Further integrating blockchain into
+FL, researchers have proposed a novel reputation-based miner selection mechanism
+to improve Distributed Denial-of-Service (DDoS) attack detection [17]. By lever-
+aging a blockchain-backed federated learning approach, this framework utilizes a
+random forest model to achieve a 99.1 percent detection accuracy, demonstrating
+its efficacy in safeguarding decentralized systems against poisoning attacks. These
+findings illustrate the potential of blockchain-integrated ML frameworks to fortify
+security in various applications, from AI-driven ecosystems to IoT infrastructures.
+Amid these advancements, the concept of Fragmented Federated Learning (FFL)
+has been introduced to enhance privacy and security in FL systems [15]. By frag-
+menting local model updates and mixing them before transmission. FFL mitigates
+the risk of poisoning attacks while preventing semi-honest servers from extracting
+private data. This approach ensures a balance between model accuracy and privacy
+preservation, facilitating robust global model convergence. However, the additional
+communication overhead introduced by FFL presents a challenge, and the method
+remains vulnerable to collusion attacks involving multiple malicious participants.
+
+
+                                          6
+There’s a need to reduce communication costs without hurting model accuracy, es-
+pecially against collusion [14].
+Future research efforts are directed towards addressing these limitations, improving
+scalability, and fortifying defenses against sophisticated adversarial strategies .Com-
+plementing these efforts, a privacy-preserving federated learning (PPFL) model has
+been proposed to counter model poisoning attacks and address data heterogeneity
+in decentralized systems. By integrating Additive Homomorphic Encryption (AHE)
+for secure gradient aggregation and employing Gaussian Mixture Models (GMM)
+alongside Mahalanobis Distance (MD) for internal auditing, this framework detects
+maliciously encrypted gradients across both IID and non-IID data settings[21]. Un-
+like existing solutions such as ShieldFL, which struggles with encrypted non-IID
+gradients, or TrustFL and SafeFL, which introduce scalability and computational
+burdens, this model enhances cryptographic efficiency while maintaining robust se-
+curity. However, the reliance on AHE introduces computational overhead for large-
+scale deployments, and collusion attacks remain an open challenge. Researchers
+suggest future enhancements, including quantum-resistant cryptographic techniques
+and blockchain integration, to further improve transparency and security [21].
+Recent studies have examined combining Federated Learning with blockchain-based
+crowdfunding to improve data security and build trust [3]. FL enables decentralized
+model training on local data, safeguarding privacy while generating valuable in-
+sights for decision-making. Meanwhile, blockchain secures transactions and funding
+records with immutable ledgers and smart contracts, promoting transparency and
+integrity. However, issues like system interoperability, transaction throughput, and
+energy efficiency persist. Future work should focus on refining these integrations
+and addressing scalability challenges for progress [13].
+The challenge of computational efficiency in Federated Learning is addressed by
+The LVFL, which optimizes Vertical Federated Learning (VFL) by reducing com-
+putational and communication overhead through dual lightweighting ratios [19]. It
+employs structured and unstructured pruning to enhance efficiency while maintain-
+ing convergence. However, its evaluation is limited to the CIFAR-10 dataset, lacks
+real-world deployment considerations, and assumes uniform client ratios. Research
+gaps include optimizing pruning strategies for diverse datasets, addressing network
+latency issues, and improving parameter tuning for heterogeneous environments.
+Future work should focus on enhancing adaptability and testing LVFL on complex,
+high-dimensional data for broader applicability.
+Furthermore, the complexities of secure aggregation in FL are addressed in Light-
+SecAgg, which introduces a lightweight secure aggregation protocol for federated
+learning, optimizing privacy and dropout resilience [6]. Using MDS codes, pseudo-
+random generators, and parallelization, it enhances efficiency while maintaining
+security. However, challenges remain in implementation complexity, quantization
+noise, and limited experimental scope. Research gaps include optimizing MDS code
+selection, extending evaluations to diverse tasks, and assessing long-term training
+impact. Future work should refine security-resilience trade-offs and explore broader
+applications beyond image classification.
+The broader field of lightweight Federated Learning is explored in a recent research
+on lightweight federated learning (TinyFL) that explores frameworks like Tensor-
+Flow Federated, PySyft, and FedML for secure, decentralized model training in IoT
+environments [23]. Techniques such as model pruning, quantization, and knowledge
+
+
+                                          7
+distillation improve efficiency but face challenges like device heterogeneity, energy
+consumption, and security risks. Privacy techniques add complexity, creating gaps in
+secure aggregation and adaptive learning. Future research should focus on optimiz-
+ing communication, improving energy efficiency, and enhancing security measures
+to ensure scalable, practical FL deployment in dynamic IoT systems.
+Together, these studies underscore the transformative potential of blockchain in
+fortifying ML systems against security vulnerabilities while optimizing scalability
+and efficiency. By combining decentralized architectures with advanced consensus
+mechanisms, blockchain and ML form a robust foundation for secure and scalable AI-
+driven ecosystems. The continued evolution of these frameworks will play a crucial
+role in shaping the future of decentralized intelligence across diverse applications,
+from healthcare and finance to IoT and beyond.
+
+
+2.3     Summary of Key Findings
+Research studies demonstrate how blockchain when leveraged with Machine Learn-
+ing (ML) can resolve three main issues affecting decentralized systems such as secu-
+rity problems along with privacy issues and scalability limitations. B-FRL utilizes
+blockchain to establish collaborative learning with secured data processing together
+with scalable performance although operational efficiency remains a concern.
+
+
+
+
+                                         8
+Chapter 3
+
+Requirements, Impacts and
+Constraints
+
+3.1      Final Specifications and Requirements
+This section discusses technical or methodological Requirements, data or resource
+requirements (software), etc.
+
+
+3.2      Societal Impact
+Study and report on project impact on society, health, safety, legal, and cultural
+aspects.
+
+
+3.3      Environmental Impact
+Study and report on project sustainability and environmental impact.
+
+
+3.4      Ethical Issues
+Identify ethical issues and professional responsibilities related to the design solution.
+
+
+3.5      Standards - if applicable
+Write about any standard maintained.
+
+
+3.6      Project Management Plan
+Prepare a project management plan including schedule, budget, and resource man-
+agement.
+
+
+3.7      Risk Management
+Identify project risks and mitigation strategies.
+
+                                           9
+3.8     Economic Analysis
+Conduct economic analysis and cost-benefit estimation.
+
+
+
+
+                                       10
+Chapter 4
+
+Proposed Methodology
+
+4.1      Design Process or Methodology Overview
+4.1.1 Federated Learning: Decentralized Model Training with
+Privacy Preservation
+Federated Learning (FL) represents a paradigm shift in distributed intelligence—one
+that is particularly suited to the financial sector, where regulatory compliance and
+confidentiality are paramount [13]. In traditional financial analytics, models are
+trained using centrally stored customer data, which raises severe privacy and legal
+concerns under frameworks such as GDPR, PCI-DSS, and the Bangladesh Bank
+Data Governance Policy[4]. FL addresses this by allowing institutions—such as
+banks, credit unions, and regulatory agencies—to collaboratively train a shared
+fraud-detection model without sharing their customers’ raw transaction data[13].
+Each financial entity operates as an independent node, locally training an instance
+of the Adaptive Deep Temporal Context Network (ADTCN) on its internal transac-
+tion dataset. After training, the node transmits only model parameters (weights and
+gradients) to the blockchain for global aggregation. [5] This process ensures that sen-
+sitive details—account numbers, transaction histories, or customer metadata—never
+leave institutional boundaries, thus maintaining compliance and protecting compet-
+itive privacy.[9]
+
+Applications and usefulness:
+   • Inter-bank fraud analytics: Federated ADTCN models can detect coordinated
+     fraud patterns across banks without exposing proprietary data.[1]
+   • Credit scoring collaboration: Multiple financial institutions can build a com-
+     mon model for creditworthiness assessment while preserving customer confi-
+     dentiality.[1]
+   • Cross-border compliance: Enables secure model sharing between different ju-
+     risdictions under privacy laws.[4]
+
+Federated Learning workflow within the system:
+  1. Each validator node (bank or financial regulator) trains a local ADTCN model
+     using its transaction data.[13]
+
+                                          11
+  2. The model parameters—not raw data—are transmitted to the blockchain
+     smart contract layer via PoA consensus.[5]
+
+  3. The DB-BOA optimization layer determines the optimal leader node respon-
+     sible for aggregating model parameters and validating their authenticity.[5]
+
+  4. The global model is updated and redistributed to the nodes, improving detec-
+     tion accuracy collaboratively.[13]
+
+4.1.2 Hyperledger Fabric: The Consortium Blockchain Base
+Layer
+The financial sector is characterized by multi-institutional collaboration, requiring
+transparency, auditability, and immutability—core features provided by blockchain.
+While the base paper employed a Private Ethereum Consortium Blockchain (PEC-
+BC), this research implements a similar logic through Hyperledger Fabric (HLF),
+which offers modular and enterprise-ready blockchain infrastructure.[5]
+Hyperledger Fabric acts as the consortium backbone connecting banks, insurance
+companies, and fintech regulators under a permissioned network. Its modular con-
+sensus architecture supports Proof of Authority (PoA), where only authorized val-
+idators (e.g., central banks or designated institutions) can approve transactions and
+model updates.[4]
+Functional Role within the Framework:
+
+   • Provides immutability for transaction logs, ensuring tamper-proof records of
+     financial operations.[2]
+
+   • Hosts smart contracts (chaincode) that manage model updates, consensus re-
+     sults, and incentive mechanisms.[5]
+
+   • Controls identity management and access, ensuring only accredited consortium
+     members can participate.[9]
+
+   • Enables fine-grained auditability, vital for compliance with financial auditing
+     and KYC standards.[1]
+
+Applications and relevance:
+
+   • Inter-bank settlement systems: Each node (bank) operates a Fabric peer, en-
+     suring real-time transaction validation.[1]
+
+   • Regulatory supervision: Central authorities can audit transaction histories or
+     fraud-detection results without direct data access.
+
+   • Insurance claim verification and AML checks: Chaincodes execute logic for
+     detecting abnormal claim behaviors or suspicious money movements.
+
+By combining Fabric’s ledger transparency with Federated Learning’s privacy preser-
+vation, the system ensures that both machine learning outcomes and transaction
+data remain trustworthy.
+
+
+
+                                         12
+4.1.3 DB-BOA: Dynamic Butterfly–Billiards Optimization Al-
+gorithm
+Background and Conceptual Foundation. The Dynamic Butterfly–Billiards
+Optimization Algorithm (DB-BOA) is the hybrid optimization core that ensures
+the efficiency, security, and stability of the blockchain network. It merges two bi-
+ologically and physically inspired algorithms — Dynamic Butterfly Optimization
+Algorithm (DBOA) and Billiards Optimization Algorithm (BOA) — combining the
+adaptive exploration of the former with the deterministic precision of the latter.
+DBOA mimics the foraging and mating behavior of butterflies. Each butterfly’s
+“fragrance” represents the fitness of a solution, guiding others toward global op-
+tima. This ensures global exploration of the solution space.
+BOA draws inspiration from the physical laws of billiards, where the motion and
+collision of balls are modeled mathematically to refine solutions within a constrained
+search space.
+By integrating both, DB-BOA dynamically balances exploration and exploitation,
+reducing the risk of getting trapped in local minima while optimizing high-dimensional,
+multi-objective problems—such as leader selection and hyperparameter tuning in a
+blockchain-driven learning system.
+Functional Role and Mechanism. In the financial consortium, DB-BOA acts
+as an intelligent optimization layer that enhances both blockchain performance and
+model accuracy. Its key roles include:
+
+   • Leader Block Selection: Optimally selects the validator node (leader) respon-
+     sible for block proposal and aggregation, based on trust, response time, and
+     resource metrics.
+
+   • Consensus Optimization: Reduces computation time (CT), communication
+     cost (CC), and memory usage (MS) according to the optimization function:
+
+                           Obf 1 = arg min (CT + CC + M S) .
+                                       Lbbc
+
+
+   • Parameter Tuning: Provides hyperparameter optimization for ADTCN, au-
+     tomatically adjusting learning rate, epochs, and hidden layers to reach high
+     accuracy.
+
+   • Resilience Enhancement: Avoids latency spikes and potential single-point fail-
+     ures by distributing workload intelligently.
+
+Financial Domain Applications.
+
+   • High-Frequency Trading (HFT) Platforms: DB-BOA ensures ultra-low latency
+     transaction validation and leader rotation, reducing delays in block finaliza-
+     tion.
+
+   • Stock Exchange Settlement: Dynamic leader optimization supports fast con-
+     sensus cycles required for trade clearing and matching engines.
+
+   • Inter-bank Transaction Gateways: Minimizes communication cost and verifi-
+     cation time between consortium nodes during peak transactional loads.
+
+
+                                         13
+   • Risk Optimization in Fraud Analysis: Balances exploration (new anomaly pat-
+     terns) and exploitation (known fraud indicators) to improve detection perfor-
+     mance.
+
+DB-BOA thus acts as a meta-optimizer for the entire financial ecosystem, ensuring
+that every component—from smart contracts to model updates—operates under
+minimal delay and maximal accuracy.
+
+4.1.4 ADTCN: Adaptive Deep Temporal Context Network
+Background and Theoretical Foundation. The Adaptive Deep Temporal Con-
+text Network (ADTCN) extends the Deep Temporal Context Network architecture
+by embedding temporal learning and adaptive attention to model long- and short-
+term dependencies in time-series data. In financial systems, where transactions occur
+continuously and exhibit evolving temporal patterns, such a structure enables dy-
+namic detection of anomalies that static models cannot capture. Unlike traditional
+deep networks, ADTCN employs a multi-timescale temporal attention mechanism,
+which allows the model to focus simultaneously on short-term fraud spikes (e.g., mul-
+tiple rapid withdrawals) and long-term deviations (e.g., unusual spending patterns
+over weeks).
+Architecture and Components.
+
+   • Multi-Modal Joint Embedding (MJE): Integrates heterogeneous data — such as
+     transaction amount, merchant category, device type, IP address, and customer
+     risk profile — into a unified latent vector space. This enables cross-dimensional
+     correlation crucial for identifying complex fraud behaviors.
+
+   • Temporal Context Learning (TCL): Learns sequential coherence in transaction
+     streams, correlating event histories to forecast future risk states. It distin-
+     guishes between regular cyclical patterns (e.g., salary deposits) and irregular
+     anomalies (e.g., unusual fund transfers).
+
+   • Multi-Timescale Temporal Attention (MTTA): Applies varying attention win-
+     dows to highlight both micro and macro temporal dependencies. The MTTA
+     layer dynamically adapts its focus depending on evolving transaction behav-
+     iors, strengthening the model’s ability to catch adaptive fraud tactics.
+
+Optimization and Objective. The ADTCN’s learning parameters are dynami-
+cally tuned through DB-BOA according to the multi-objective function:
+                                                                   
+                                                                 1
+          Obf 2 = arg    max          (Acc + Pre + NPV + MCC) +       .
+                      HnD, EpD, SeD                             FPR
+
+This ensures maximum predictive power (accuracy, precision, NPV, MCC) while
+minimizing the false positive rate (FPR), which is critical in finance where false
+alarms can disrupt legitimate transactions.
+Applications and Interpretations.
+
+   • Real-Time Fraud Detection: Identifies fraudulent card usage or synthetic iden-
+     tity fraud in near real-time by analyzing transaction sequences.
+
+
+                                         14
+   • Anti-Money Laundering (AML): Learns temporal relationships between re-
+     peated transfers and hidden intermediaries, flagging suspicious transaction
+     cycles.
+
+   • Credit Risk Analysis: Detects temporal deviations in repayment behavior
+     across clients in microfinance or credit scoring systems.
+
+   • Market Manipulation Detection: Monitors blockchain-based stock trading for
+     wash trades, spoofing, or pump-and-dump patterns by analyzing multi-scale
+     trade intervals.
+
+By continuously learning from federated updates, ADTCN maintains robustness
+across changing financial contexts, adapting to evolving fraud techniques or seasonal
+variations in trading behavior.
+
+ Layer              Technology Used           Core Purpose and Function
+ Consensus Layer    Proof of Authority        Validates transactions and federated updates
+                    (PoA) in Hyperledger      under authorized validators (e.g., central
+                    Fabric                    banks, stock exchange authorities).
+ Optimization       DB-BOA                    Dynamically selects leader nodes, reduces
+ Layer                                        consensus latency, and tunes ADTCN hyper-
+                                              parameters.
+ Learning Layer     Federated ADTCN           Performs decentralized temporal fraud detec-
+                                              tion across banks and institutions.
+ Smart Contract     Chaincode / Solidity      Executes transaction validation, reward allo-
+ Layer                                        cation, and parameter aggregation.
+ Ledger Layer       Fabric World State        Stores immutable records of financial trans-
+                    and      Blockchain       actions, model parameters, and validation
+                    Ledger                    metrics.
+
+                     Table 4.1: Integrated Architectural Flow
+
+
+
+4.1.6 Objectives, Constraints, and Performance Goals
+Performance objectives. The system is designed to minimize end-to-end trans-
+action latency to ≤ 250 ms per block by leveraging DB–BOA for leader selection
+and consensus-time parameter tuning. On the learning side, the federated ADTCN
+aims to achieve robust fraud-detection performance with ≥ 97% overall accuracy
+under cross-institutional training. Consensus reliability is targeted through a block
+validation rate of at least ≥ 95% under Proof of Authority (PoA), ensuring stable
+throughput and predictable finality in a permissioned setting.
+
+Security objectives. Data privacy is enforced by a federated learning (FL) pro-
+tocol in which raw transaction records never leave institutional boundaries; only
+model parameters are shared for aggregation. Smart-contract integrity is maintained
+through immutable PoA-backed records of model updates, parameter aggregations,
+and incentive events, thereby enabling non-repudiable audit trails for all critical
+operations.
+
+
+                                         15
+System constraints. Scalability is intentionally scoped to a consortium environ-
+ment in which validator roles are restricted to accredited financial entities (e.g.,
+banks, regulators, and designated market infrastructures). During the prototyping
+phase, the learning pipeline is trained on a credit-card transaction dataset; subse-
+quent phases will extend to real-time blockchain-native financial data streams to
+capture production-scale heterogeneity and temporal dynamics.
+
+Improvement targets. On the consensus path, the objective is to reduce latency
+by at least 30% relative to baseline BFT-style protocols through DB–BOA-driven
+leader scheduling and communication minimization. From the detection perspec-
+tive, the goal is to strengthen security resilience by improving anomaly-detection
+performance on mixed IID/non-IID federated partitions, with particular emphasis
+on lowering false positives in high-volume payment corridors while preserving recall
+on rare fraud modes.
+
+4.1.7 Methodology Process Flow
+  1. Data Collection: Financial transactions sourced from multiple institutions
+     in the consortium (e.g., banks, payment gateways).
+
+  2. Local Training: Each node trains ADTCN models on its transaction dataset.
+
+  3. Model Parameter Sharing: Weights transmitted securely to blockchain
+     smart contracts under PoA.
+
+  4. Leader Optimization: DB-BOA selects the optimal leader for block creation
+     and aggregation.
+
+  5. Global Optimization: DB-BOA minimizes latency and tunes hyperparam-
+     eters for improved accuracy.
+
+  6. Consensus Validation: PoA ensures only verified model updates and trans-
+     actions are recorded.
+
+  7. Anomaly Detection: ADTCN identifies temporal irregularities in financial
+     patterns.
+
+  8. Ledger Recording: All validated results stored immutably in Hyperledger
+     Fabric’s World State for audit and compliance.
+
+
+4.2     Preliminary Design or Design (Model) Spec-
+        ification
+Present multiple alternative solutions and perform simulations for verification.
+
+
+
+
+                                         16
+4.2.1 Dynamic Butterfly–Billiards Optimization Algorithm
+(DB-BOA): Origin, Design, and Functional Role
+Introduction. The Dynamic Butterfly–Billiards Optimization Algorithm (DB-
+BOA) forms the optimization backbone of the proposed blockchain–learning ar-
+chitecture. It operates as the adaptive intelligence that continuously tunes the
+blockchain’s consensus parameters and the deep-learning model’s hyperparameters
+to maintain both computational efficiency and predictive accuracy. Unlike tradi-
+tional optimization methods with fixed mathematical gradients, DB-BOA is a hybrid
+meta-heuristic algorithm — it learns through simulation and stochastic adaptation,
+not calculus. Its design philosophy combines the broad exploration capacity of bio-
+logical swarm intelligence with the fine precision of physical motion dynamics. The
+outcome is an optimizer capable of balancing speed, stability, and scalability within
+a decentralized network.
+Evolution and Theoretical Lineage. DB-BOA evolved through the fusion of
+two independent optimization paradigms:
+
+   • Dynamic Butterfly Optimization Algorithm (DBOA) — inspired by the olfac-
+     tory behavior of butterflies. Each candidate solution acts like a butterfly that
+     senses “fragrance intensity” proportional to fitness, guiding it toward better
+     regions of the search space.
+     Strengths: excellent at global exploration and avoiding local minima.
+     Weaknesses: higher computational time and slower convergence on large
+     datasets.
+
+   • Billiards Optimization Algorithm (BOA) — derived from the physics of elastic
+     collisions among billiard balls. Each ball represents a solution, and pockets
+     represent optimal targets.
+     Strengths: extremely effective for local exploitation and quick convergence.
+     Weaknesses: prone to premature convergence when diversity in solutions is
+     lost.
+
+The hybrid DB-BOA unites both ideas to exploit their strengths and overcome their
+individual shortcomings. It alternates between DBOA-driven exploration and BOA-
+driven refinement during each iteration. This dual mechanism allows the optimizer
+to search globally during early iterations and converge rapidly as it approaches the
+optimal solution.
+
+ Feature                 DBOA                 BOA                  DB-BOA
+ Inspiration             Butterfly foraging   Billiard physics     Hybrid biological–physical
+                         (biological)         (mechanical)
+ Focus                   Exploration          Exploitation         Adaptive balance
+ Convergence             Slower, global       Faster, local        Balanced
+ Limitation              Time-intensive       Local traps          Requires tuning of switch
+                                                                   probability
+ Application in this     Broad parameter      Fine leader selec-   Combined blockchain +
+ work                    search               tion                 model tuning
+
+               Table 4.2: Comparison of DBOA, BOA, and DB-BOA
+
+
+                                         17
+Mathematical Structure. The DB-BOA workflow begins with a randomly ini-
+tialized population of candidate solutions
+
+                                Y = {y1 , y2 , . . . , yn }.
+
+For each iteration t, a decision rule determines which parent algorithm governs the
+update:                          (
+                                  DBOA(Yt ), if rand < Ps ,
+                         Yt+1 =
+                                  BOA(Yt ),     otherwise,
+where Ps is the switching probability controlled dynamically based on iteration
+progress and fitness stability.
+When the BOA phase is selected, each candidate updates its position according to:
+                              new
+                                                          
+                             yj,e = yj,e + s Qj,e − J yj,e ,
+
+where s ∈ [0, 1] is the step size controlling exploration intensity, Qj,e is the tar-
+get “pocket” (a better solution), and J is a control coefficient regulating rebound
+strength. The optimizer then retains whichever position yields a better fitness score.
+Fitness is evaluated using task-specific objective functions defined at two different
+layers (blockchain and learning).
+
+4.2.2 Objective Functions and Optimization Goals
+(a) Blockchain-Level Optimization. DB–BOA minimizes the combined re-
+source cost of blockchain consensus:
+                                                     
+                        Obf 1 = arg min CT + CC + M S ,
+
+where:
+   • CT (Computation Time): average CPU time to validate and commit a
+     block,
+
+   • CC (Communication Cost): network message load during endorsement
+     and ordering,
+
+   • MS (Memory Size): runtime ledger memory footprint per block.
+This objective promotes the selection of a leader node (or validator subset) that
+yields the lowest operational overhead while sustaining throughput and reliability.
+
+(b) Model-Level Optimization. Simultaneously, DB–BOA maximizes the learn-
+ing performance of the ADTCN model:
+                                                          
+                                                        1
+             Obf 2 = arg max (Acc + Pre + NPV + MCC) +       ,
+                                                       FPR
+where:
+   • Acc: Accuracy,
+
+   • Pre: Precision,
+
+                                            18
+   • NPV: Negative Predictive Value,
+
+   • MCC: Matthews Correlation Coefficient,
+
+   • FPR: False Positive Rate.
+This dual-objective design makes DB–BOA a multi-domain optimizer that simul-
+taneously serves infrastructural (consensus) and analytical (learning) subsystems
+within a single coherent loop.
+
+4.2.3 Role in Blockchain Leader Selection
+Within the Hyperledger Fabric consortium network, DB–BOA functions as the
+leader-selection controller. Each node periodically reports three metrics:
+   • Latency (L): message delay to peers,
+
+   • Resource Load (R): CPU and memory utilization,
+
+   • Network Centrality (N): topological proximity to other peers.
+The algorithm selects the leader that minimizes:
+
+                     Leader∗ = arg min w1 Li + w2 Ri + w3 Ni ,
+                                                            
+                                     i
+
+where w1 , w2 , w3 are adaptive weights adjusted by DB–BOA in real time. This en-
+sures that leadership rotates fairly but consistently favors nodes providing the most
+stable throughput. Unlike fixed PoA systems, DB–BOA continuously re-evaluates
+leaders, producing a self-correcting consensus environment.
+
+4.2.5 Practical Advantages and Observed Behavior
+   • Stability: Rapid convergence within < 50 iterations in simulated blockchain
+     environments.
+
+   • Efficiency: Reduced consensus latency (CT) and communication overhead
+     (CC) under varying transaction loads.
+
+   • Adaptability: Dynamic switching maintains optimizer performance across
+     diverse data distributions.
+
+   • Scalability: Modular design allows seamless integration with other FL or
+     ADTCN frameworks.
+
+4.2.6 Constraints and Further Development
+The DB–BOA algorithm represents a pivotal step in merging optimization intelli-
+gence with permissioned blockchain governance. It originates from two distinct con-
+ceptual streams — biological swarm exploration (DBOA) and physical trajectory
+exploitation (BOA) — and unifies them through a probabilistic control mechanism
+that adapts to network dynamics. Within this research, DB–BOA enables energy-
+aware leader selection, consensus tuning, and deep-learning hyperparameter refine-
+ment under a single adaptive loop. Although the current stage validates functional
+
+                                         19
+feasibility rather than full-scale deployment, it confirms that hybrid optimization
+can effectively act as a bridge between blockchain consensus and machine-learning
+intelligence.
+Next Section (Results). The subsequent section presents quantitative and graphical
+analyses of how DB–BOA optimization influences computational cost (CT), com-
+munication overhead (CC), and model accuracy across varying test conditions.
+
+
+Adaptive Deep Temporal Context Network (ADTCN):
+Design, Structure, and Functional Role
+4.2.7 Introduction
+The Adaptive Deep Temporal Context Network (ADTCN) serves as the intelligence
+layer of the hybrid blockchain–learning framework, enabling temporal anomaly de-
+tection, fraud prevention, and adaptive security control in consortium-based finan-
+cial systems. Unlike static deep learning architectures, ADTCN dynamically learns
+from sequential temporal data and adaptive blockchain feedback. It provides real-
+time context learning for smart contracts, allowing the network to predict abnormal
+behaviors in transactions before consensus finalization.
+Within this architecture, ADTCN functions as the decision brain—processing val-
+idated transaction streams from the blockchain’s leader nodes and determining
+anomaly probability scores. Its structure unifies temporal attention, contextual em-
+bedding, and multi-scale sequence modeling, all tuned by DB–BOA to achieve high
+accuracy (95.45%) and minimal false positive rates (≈ 4.45%) (BASE PAPER).
+
+Theoretical Foundation and Evolution
+ADTCN evolved from the Deep Temporal Context Network (DTCN) paradigm,
+originally designed for temporal sequence prediction tasks. However, conventional
+DTCN suffered from overfitting, fixed time-window rigidity, and lack of adaptability
+to non-IID blockchain data. To address these, the Adaptive DTCN introduces three
+core advances:
+ADTCN thus integrates the multi-modal, temporal, and adaptive learning perspec-
+tives, creating a deep network that continuously synchronizes with blockchain dy-
+namics such as block intervals, validator rotations, and smart contract latency.
+
+4.2.8 Architectural Design
+The ADTCN architecture is composed of three hierarchical modules that operate col-
+laboratively to model temporal dependencies and transaction irregularities (BASE
+PAPER):
+
+   • (a) Multi-Modal Joint Embedding (MJE). Transforms heterogeneous
+     blockchain data (transaction metadata, node trust scores, temporal stamps)
+     into a unified latent vector space. Each feature vector is encoded using a
+     dual-stream feedforward pipeline:
+
+        – User/Node pipeline: captures behavioral and contextual trust metrics.
+
+                                        20
+ Type              Description                           Impact                Planned En-
+                                                                               hancement
+ Dataset           Synthetic/simplified  transac-        Limited realism.      Replace with
+                   tion data used instead of live                              real     consor-
+                   blockchain stream.                                          tium financial
+                                                                               datasets.
+ Computation       Single-node simulation of multi-      No true parallel      Move to dis-
+                   agent optimization.                   search stress-test.   tributed Fabric
+                                                                               testbed.
+ Control     Pa-   Switching probability Ps set empir-   Potential    sub-     Implement
+ rameter           ically.                               optimal switching     reinforcement-
+                                                         rate.                 based adaptive
+                                                                               control.
+ Incentive         Reward mechanism for node per-        Missing economic      Introduce
+ Layer             formance not yet integrated.          feedback loop.        blockchain-
+                                                                               embedded
+                                                                               incentive
+                                                                               model.
+
+Table 4.3: Constraints observed in the current stage and planned enhancements for
+DB-BOA deployment.
+
+
+
+
+ Feature                DTCN                             ADTCN
+ Temporal Modeling      Fixed periodic window            Multi-scale adaptive temporal lay-
+                                                         ers
+ Attention Mecha-       Single-scale self-attention      Multi-Timescale Temporal Atten-
+ nism                                                    tion (MTTA)
+ Data Integration       Static input streams             Federated + Blockchain feedback
+                                                         adaptation
+ Optimization           Manual tuning                    DB-BOA-based hyperparameter
+                                                         optimization
+
+Table 4.4: Evolution from DTCN to ADTCN across modeling, attention, data inte-
+gration, and optimization.
+
+
+
+
+                                          21
+        – Transaction pipeline: encodes temporal-financial attributes using pre-
+          trained ResNet-style encoders.
+
+      Both embeddings are concatenated and normalized using batch dropout to
+      prevent overfitting.
+
+   • (b) Temporal Context Learning (TCL). Builds Past Temporal Context
+     (PTC) and Near Temporal Context (NTC) sequences to understand both long-
+     term and short-term behavioral evolution. This dual representation allows
+     the model to recognize periodic patterns (e.g., recurring trade bursts) and
+     spontaneous deviations (e.g., sudden fraud spikes).
+
+   • (c) Multiple Time-Scale Temporal Attention (MTTA). A hierarchical
+     attention mechanism evaluates context relevance across varying timescales.
+     Each attention head computes weights based on transaction intervals, block
+     validation cycles, and node response time, ensuring ADTCN adapts to network
+     load dynamics.
+
+4.2.9 Mathematical Formulation
+Let X = {x1 , x2 , . . . , xT } represent the sequential input of blockchain transactions
+over time T . For each sequence, ADTCN performs three stages:
+Embedding Stage:
+                                       et = fMJE (xt ; θe ),
+where fMJE encodes multi-modal vectors into latent embeddings.
+Temporal Context Encoding:
+
+                                ht = fTCL (et , ht−1 ; θt ),
+
+combining past context ht−1 with current embeddings for temporal continuity.
+Multi-Scale Attention:
+                                                               T
+                                                               X
+                       αt = softmax(Wa · ht ),         c=            αt ht ,
+                                                               t=1
+
+where c is the context vector summarizing sequence dependencies.
+Adaptive Objective (DB-BOA tuned):
+                                                                   
+                                                                 1
+          Obf 2 = arg    max          (Acc + Pre + NPV + MCC) +       ,
+                      HnD, EpD, SeD                             FPR
+where hyperparameters HnD, EpD, SeD correspond to hidden neurons, epochs,
+and steps per epoch, respectively (BASE PAPER).
+
+4.2.10 Integration with DB-BOA and Blockchain Consensus
+In the consortium blockchain environment (e.g., Hyperledger Fabric), DB–BOA dy-
+namically tunes the ADTCN’s parameters during runtime. The integration follows
+a bi-directional feedback cycle:
+  1. DB–BOA selects the optimal leader node and consensus weights.
+
+                                            22
+  2. ADTCN receives validated transaction streams from the selected leader.
+
+  3. Temporal anomaly scores are computed and fed back to adjust consensus
+     thresholds.
+
+  4. DB–BOA re-optimizes Ps (switching probability) and learning hyperparame-
+     ters based on ADTCN’s output stability.
+
+This coupling allows adaptive control—if network latency rises or false positives
+increase, DB–BOA adjusts ADTCN’s depth or attention granularity automatically.
+Under DB–BOA optimization, the model achieved superior outcomes—95.45% accu-
+racy, 4.45% FPR, and improved throughput by up to 85% compared with BOA–ADTCN
+variants (BASE PAPER).
+
+Practical Advantages and Behavioral Insights
+   • Resilience: Handles high-frequency transaction bursts without degrading ac-
+     curacy.
+
+   • Adaptability: Learns temporal patterns across changing block intervals.
+
+   • Robustness: Maintains stability under adversarial noise up to ±25% varia-
+     tion in network latency (BASE PAPER).
+
+   • Scalability: Efficient across validator scales (1–350 nodes) through adaptive
+     attention and DB-BOA feedback.
+
+
+Federated Adaptive Deep Temporal Context Net-
+work (FL-ADTCN): Design, Evaluation, and Re-
+sults
+Introduction
+The Federated Adaptive Deep Temporal Context Network (FL-ADTCN) is the dis-
+tributed and privacy-preserving extension of the ADTCN model, designed to detect
+financial anomalies and fraudulent activity across consortium blockchain environ-
+ments. It enables collaborative intelligence among multiple participating organiza-
+tions (banks, insurers, payment gateways) without exchanging raw transaction data.
+Unlike centralized deep learning, FL-ADTCN employs the Federated Learning (FL)
+paradigm, where each node (client) locally trains a private model on its own dataset
+and only shares model parameters (not data) with a secure aggregator. This design
+satisfies the privacy and compliance constraints inherent in decentralized blockchain
+systems and financial regulations such as GDPR and PSD2. Through integration
+with DB–BOA, FL–ADTCN achieves adaptive global aggregation and hyperparam-
+eter tuning while maintaining strong predictive performance and transaction-level
+anomaly sensitivity.
+
+
+
+
+                                         23
+Federated Learning Modes
+FL–ADTCN was evaluated under three collaborative learning modes to test its
+generalization and privacy-preserving capability:
+
+(a) Centralized Training (Baseline). All training data are aggregated into a
+single global server. Advantages: maximum accuracy and fast convergence. Disad-
+vantages: high privacy risk and single-point failure.
+
+(b) Federated IID Training. Each client holds Independent and Identically
+Distributed (IID) subsets of the data—e.g., every node gets a balanced mixture
+of legitimate and fraudulent transactions. Ensures stable training and convergence
+close to centralized models, but simulates idealized conditions rarely achievable in
+practice.
+
+(c) Federated non-IID Training. Each client holds Non-Independent and Non-
+Identically Distributed (non-IID) data—reflecting real heterogeneity (e.g., some
+banks see mostly genuine transactions, others see mostly fraud). Introduces realistic
+imbalance and client drift, often causing slower convergence and metric degradation.
+
+Model Architecture Overview
+The FL–ADTCN integrates the same deep temporal context mechanisms as ADTCN
+but operates in a distributed parameter-synchronization framework.
+
+Experimental Configuration
+This configuration simulates distributed nodes within a consortium, where each par-
+ticipant trains on its own encrypted local transaction data and contributes gradients
+to the global aggregator.
+
+4.2.9 Performance Metric Definitions
+Quantitative Results
+Interpretation. Accuracy remains within 2% of centralized, confirming the hy-
+pothesis (H6) of accuracy retention under federated learning. MCC drops by ∼
+9% (IID) and ∼ 30% (non-IID), indicating correlation sensitivity weakens under
+skewed data. FPR slightly increases in IID (∼ 1.7%) but approaches zero in non-
+IID—suggesting higher selectivity but potential recall loss. Precision in non-IID
+training peaks at 0.998, indicating extremely conservative fraud labeling. NPV re-
+mains > 0.97 in all modes, evidencing reliable classification of non-fraud cases.
+
+Graphical Analysis and Interpretations
+Each figure should illustrate the trade-off between privacy, accuracy, and hetero-
+geneity resilience. In particular, MCC and learning-curve volatility under non-IID
+highlight client drift and motivate adaptive regularization.
+
+
+                                         24
+ Module                Description                                  Purpose
+ MJE (Multi-level      Encodes transactional, behavioral, and       Generates shared feature
+ Joint     Embed-      node-level blockchain features into latent   representations for each
+ ding)                 space vectors.                               client.
+ TCL (Temporal         A bidirectional GRU captures sequential      Learns time-aware trans-
+ Context Learn-        temporal dependencies.                       action evolution.
+ ing)
+ MTTA      (Multi-     Multi-head attention identifies critical     Enhances anomaly local-
+ Timescale Tem-        short-, mid-, and long-term transaction      ization and reduces false
+ poral Attention)      patterns.                                    positives.
+
+  Table 4.5: Layered FL–ADTCN architecture with MJE–TCL–MTTA pipeline.
+
+ Parameter                  Description
+ Dataset                    ULB Credit Card Fraud Dataset (30 PCA features)
+ Sequence length            30 timesteps
+ Clients                    20
+ FL Algorithm               FedAvg
+ FL Rounds                  50 (non-IID), 30 (IID)
+ Local Epochs               2
+ Framework                  PyTorch (Colab GPU)
+ Metrics                    Accuracy, MCC, FPR, NPV, Precision
+
+             Table 4.6: Experimental configuration for FL–ADTCN.
+
+ Metric                Meaning                                               Ideal
+ Accuracy (Acc)        Fraction of correctly predicted cases (TP + TN) /     ↑
+                       Total.
+ Matthews Corre-       Balanced correlation considering TP, TN, FP, FN.      ↑
+ lation Coefficient
+ (MCC)
+ False     Positive    Fraction of normal cases wrongly labeled as fraud     ↓
+ Rate (FPR)            (FP / (FP + TN)).
+ Precision (Pre)       Proportion of detected frauds that are truly fraud.   ↑
+ Negative Predic-      Probability that a “normal” prediction is correct.    ↑
+ tive Value (NPV)
+
+             Table 4.7: FL–ADTCN performance metric definitions.
+
+ Model                   Accuracy      MCC           FPR            NPV              Precision
+ Centralized             0.9931        0.9249        0.0069         0.9997           0.8673
+ Federated (IID)         0.9826        0.8314        0.0172         0.9990           0.7207
+ Federated     (non-     0.9738        0.6213        0.00004        0.9734           0.9980
+ IID)
+
+Table 4.8: Performance comparison between centralized and federated ADTCN un-
+der IID and non-IID conditions.
+
+
+                                         25
+Discussion and Constraints
+(a) Achievements. FL–ADTCN preserved accuracy within ±2% of the central-
+ized baseline while maintaining data privacy; demonstrated distributed scalability
+and successful aggregation through FedAvg; and provided empirical evidence that
+federated training can sustain anomaly detection quality in decentralized financial
+systems.
+
+(b) Limitations.
+
+
+ Category           Description                              Impact
+ Dataset    Con-    Substituted blockchain data with         Lacks real-time heterogeneity and
+ straints           Credit Card Fraud Dataset.               inter-organizational dynamics.
+ DB-BOA Exclu-      Optimization layer not yet integrated.   No adaptive consensus or incen-
+ sion                                                        tive feedback loop.
+ Simplified Fed-    Assumes synchronous client updates       Unrealistic for heterogeneous, un-
+ eration            with perfect participation.              reliable networks.
+ Metric Sensitiv-   MCC decreased, indicating imbal-         Global averaging sensitive to
+ ity                ance.                                    client drift.
+ Resource Limi-     Colab GPU limited to short rounds.       Reduced scalability; no dis-
+ tations                                                     tributed node simulation.
+
+        Table 4.9: Key limitations observed in FL–ADTCN experiments.
+
+
+ Challenge                  Proposed Solution
+ MCC drop in non-IID        Adopt adaptive algorithms (FedProx, FedNova).
+ Overfitting on homoge-     Use focal loss and class-weighted sampling.
+ neous clients
+ Slow convergence           Apply gradient compression and FedAdam optimizer.
+ Client fairness            Add validation-weighted aggregation.
+ Explainability             Integrate SHAP and attention visualization modules.
+ Realistic data stream      Replace with blockchain-based federated transaction logs.
+
+Table 4.10: Roadmap of future FL–ADTCN enhancements and integration with
+DB–BOA.
+
+
+
+
+                                        26
+Future Enhancements
+
+4.3     Data Collection -(If Applicable)
+Sources of data and methods of collection.
+
+4.3.1    Data Cleaning
+Techniques used to handle missing values, outliers, and inconsistencies.
+
+4.3.2    Data Transformation
+Methods of normalizing, scaling, or encoding data.
+
+4.3.3    Data Integration
+Combining data from different sources if applicable.
+
+4.3.4    Data Reduction
+Techniques for reducing dimensionality or selecting relevant features.
+
+4.3.5    Summary of Preprocessed Data
+Description of the final dataset used for analysis and design.
+
+
+4.4     Implementation of Selected Design
+Describe the implementation process.
+
+
+
+
+                                         27
+Chapter 5
+
+Result Analysis
+
+5.1      Performance Evaluation
+This section discusses evaluation criteria: key metrics or criteria -accuracy, effi-
+ciency, reliability, Testing Methods
+
+
+5.2      Analysis of Design Solutions
+Description of solutions, evaluation criteria - accuracy, efficiency, feasibility, cost,
+performance, strengths and weaknesses.
+
+
+5.3      Final Design Adjustments
+Make necessary adjustments to the design based on performance evaluation.
+
+
+5.4      Statistical Analysis
+Mention the specific statistical tests or techniques applied
+
+
+5.5      Comparisons and Relationships
+In this section, compare different approaches, compare with existing works, solu-
+tions, or results, and analyze their relative effectiveness.
+
+
+5.6      Discussions
+Write about the interpretation, implications, and limitations of the results.
+
+
+
+
+                                          28
+Chapter 6
+
+Conclusion
+
+This research seeks to develop a federated learning framework that balances model
+accuracy, security, and efficiency while preserving data privacy. By integrating
+blockchain with optimized consensus mechanisms, privacy-preserving incentives, and
+adversarial defense strategies, this study aims to enhance the practicality and secu-
+rity of FL deployments. Future work will focus on refining consensus mechanisms,
+improving scalability, and exploring quantum-resistant cryptographic techniques to
+further strengthen security in decentralized ML environments.
+
+
+
+
+                                         29
+Bibliography
+
+ [1] W. Zhang, R.-S. Chen, Y.-C. Chen, S.-Y. Lu, N. Xiong, and C.-M. Chen, “An
+     effective digital system for intelligent financial environments,” IEEE Access,
+     vol. 7, pp. 155 965–155 976, 2019. doi: 10.1109/ACCESS.2019.2943907.
+ [2] H. Choi and S. C. Seo, “Fast implementation of sha-3 in gpu environment,”
+     IEEE Access, vol. 9, pp. 144 574–144 586, 2021. doi: 10.1109/ACCESS.2021.
+     3122466.
+ [3] K. Yamina, C. Yacine, and H. Leila, “Clusterchain: Decentralized and trust-
+     worthy clustering over blockchain,” in 2021 International Conference on Net-
+     working and Advanced Systems (ICNAS), 2021, pp. 1–6. doi: 10.1109/ICNAS53565.
+     2021.9628967.
+ [4] A. Bicaku, M. Zsilak, P. Theiler, M. Tauber, and J. Delsing, “Security standard
+     compliance verification in system of systems,” IEEE Systems Journal, vol. 16,
+     no. 2, pp. 2195–2205, 2022. doi: 10.1109/JSYST.2021.3064196.
+ [5] R. Nourmohammadi and K. Zhang, “An on-chain governance model based
+     on particle swarm optimization for reducing blockchain forks,” IEEE Access,
+     vol. 10, pp. 118 965–118 980, 2022. doi: 10.1109/ACCESS.2022.3221419.
+ [6] J. So et al., Lightsecagg: A lightweight and versatile design for secure aggrega-
+     tion in federated learning, 2022. arXiv: 2109.14236 [cs.LG]. [Online]. Avail-
+     able: https://arxiv.org/abs/2109.14236.
+ [7] S. Basudan, “A scalable blockchain framework for secure transactions in iot-
+     based dynamic applications,” IEEE Open Journal of the Communications So-
+     ciety, vol. 4, pp. 1931–1945, 2023. doi: 10.1109/OJCOMS.2023.3307337.
+ [8] S. Chowdhury, A. Mukherjee, and R. Halder, “FedRLChain: Secure federated
+     deep reinforcement learning with blockchain,” IEEE Transactions on Services
+     Computing, vol. 16, no. 6, pp. 3865–3878, 2023. doi: 10 . 1109 / TSC . 2023 .
+     3294063.
+ [9] D. Jung, J. Shin, C. Lee, K. Kwon, and J. T. Seo, “Cyber security controls
+     in nuclear power plant by technical assessment methodology,” IEEE Access,
+     vol. 11, pp. 15 229–15 241, 2023. doi: 10.1109/ACCESS.2023.3244991.
+[10] Y. Zou, Z. Jin, Y. Zheng, D. Yu, and T. Lan, “Optimized consensus for
+     blockchain in internet of things networks via reinforcement learning,” Ts-
+     inghua Science and Technology, vol. 28, no. 6, pp. 1009–1022, 2023. doi:
+     10.26599/TST.2022.9010045.
+
+
+
+
+                                         30
+[11] T. Alam, R. Gupta, A. Ullah, and S. Qamar, “Blockchain-enabled federated
+     reinforcement learning (b-frl) model for privacy preservation service in iot
+     systems,” Wireless Personal Communications, vol. 136, no. 4, pp. 2545–2571,
+     2024.
+[12] H. He, J. Shen, Z. Cao, X. Dong, and H. Wu, “ Proof of Privacy-Preserving
+     Machine Learning: A Blockchain Consensus Mechanism with Secure Deep
+     Learning Process,” in 2024 IEEE International Conference on Blockchain
+     (Blockchain), Los Alamitos, CA, USA: IEEE Computer Society, Aug. 2024,
+     pp. 193–200. doi: 10.1109/Blockchain62396.2024.00033. [Online]. Available:
+     https://doi.ieeecomputersociety.org/10.1109/Blockchain62396.2024.00033.
+[13] M. K. Hussin Chowdhury, S. Muhammad Imtiyaj Uddin, J. Moon-il, and
+     H. C. Kim, “Integrating federated machine learning in blockchain crowdfund-
+     ing ecosystem for increased security and transparency,” in 2024 30th Interna-
+     tional Conference on Mechatronics and Machine Vision in Practice (M2VIP),
+     2024, pp. 1–3. doi: 10.1109/M2VIP62491.2024.10746050.
+[14] N. M. Jebreel, J. Domingo-Ferrer, A. Blanco-Justicia, and D. Sánchez, “En-
+     hanced security and privacy via fragmented federated learning,” IEEE Trans-
+     actions on Neural Networks and Learning Systems, vol. 35, no. 5, pp. 6703–
+     6717, 2024. doi: 10.1109/TNNLS.2022.3212627.
+[15] G. Machhale, P. B.R., and C. N. Modi, “Enhancing data security and pri-
+     vacy through blockchain and machine learning,” in 2024 MIT Art, Design
+     and Technology School of Computing International Conference (MITADTSo-
+     CiCon), 2024, pp. 1–10. doi: 10.1109/MITADTSoCiCon60330.2024.10575309.
+[16] A. Qammar, A. Naouri, J. Ding, and H. Ning, “Blockchain-based optimized
+     edge node selection and privacy preserved framework for federated learning,”
+     Cluster Computing, vol. 27, no. 3, pp. 3203–3218, 2024.
+[17] D. Saveetha, G. Maragatham, V. Ponnusamy, and N. Zdravković, “An inte-
+     grated federated machine learning and blockchain framework with optimal
+     miner selection for reliable ddos attack detection,” IEEE Access, vol. 12,
+     pp. 127 903–127 915, 2024. doi: 10.1109/ACCESS.2024.3413076.
+[18] V. T. Truong, H. D. Le, and L. B. Le, “Trust-free blockchain framework for
+     ai-generated content trading and management in metaverse,” IEEE Access,
+     vol. 12, pp. 41 815–41 828, 2024. doi: 10.1109/ACCESS.2024.3376509.
+[19] H. Wang, J. Bian, and L. Wang, Computation and communication efficient
+     lightweighting vertical federated learning, 2024. arXiv: 2404 . 00466 [cs.LG].
+     [Online]. Available: https://arxiv.org/abs/2404.00466.
+[20] Q. Yang et al., “Blockchain-based decentralized federated learning with on-
+     chain model aggregation and incentive mechanism for industrial iot,” IEEE
+     Open Journal of the Communications Society, vol. 5, pp. 6420–6429, 2024.
+     doi: 10.1109/OJCOMS.2024.3471621.
+[21] A. Yazdinejad, A. Dehghantanha, H. Karimipour, G. Srivastava, and R. M.
+     Parizi, “A robust privacy-preserving federated learning model against model
+     poisoning attacks,” IEEE Transactions on Information Forensics and Security,
+     vol. 19, pp. 6693–6708, 2024. doi: 10.1109/TIFS.2024.3420126.
+
+
+                                        31
+[22] Y. Zhao, Y. Qu, Y. Xiang, F. Chen, and L. Gao, “Long-term proof-of-contribution:
+     An incentivized consensus algorithm for blockchain-enabled federated learn-
+     ing,” IEEE Transactions on Services Computing, vol. 17, no. 5, pp. 2558–2570,
+     2024. doi: 10.1109/TSC.2024.3399653.
+[23] P. Qi, D. Chiaro, and F. Piccialli, “Small models, big impact: A review on
+     the power of lightweight federated learning,” Future Generation Computer
+     Systems, vol. 162, p. 107 484, 2025, issn: 0167-739X. doi: https://doi.org/10.
+     1016/j.future.2024.107484. [Online]. Available: https://www.sciencedirect.
+     com/science/article/pii/S0167739X24004400.
+[24] C. Ying et al., “Bit-fl: Blockchain-enabled incentivized and secure federated
+     learning framework,” IEEE Transactions on Mobile Computing, vol. 24, no. 2,
+     pp. 1212–1229, 2025. doi: 10.1109/TMC.2024.3477616.
+
+
+
+
+                                        32
+

@@ -1,0 +1,32 @@
+# Claude / editor
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+
+# Large dataset — exceeds GitHub's 100 MB limit; download from Kaggle
+creditcard.csv
+datasets/creditcard.csv
+
+# Hyperledger Fabric binaries — re-download via the official install script
+fabric/fabric-samples/bin/
+
+# LaTeX build artifacts — regenerated on compile (main.pdf is kept)
+*.aux
+*.bcf
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.nlo
+*.out
+*.run.xml
+*.toc
+*.synctex.gz
+
+# Windows "downloaded from internet" metadata
+*:Zone.Identifier

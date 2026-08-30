@@ -33,7 +33,7 @@ warnings.filterwarnings("ignore")
 # ── project imports ────────────────────────────────────────────────────────────
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config                  import (RESULTS_DIR, DB_BOA_CONFIG,
+from config                  import (RESULTS_DIR, DB_BOA_CONFIG, DATA_CONFIG,
                                      LEADER_BLOCK_CONFIG, ADTCN_CONFIG,
                                      FEDERATION_CONFIG, INCENTIVE_CONFIG,
                                      LOG_WIDTH)
@@ -41,7 +41,7 @@ from data.data_loader        import FinancialDataLoader
 from models.adtcn            import ADTCN
 from models.federated_adtcn  import FederatedADTCN
 from models.federation_manager import FederationManager
-from blockchain.leader_block import ConsortiumBlockchain
+from blockchain.leader_block import ConsortiumBlockchain, compare_leader_methods
 from utils.metrics           import (compute_all_metrics,
                                      print_metrics_table, baseline_metrics)
 from utils.visualizer        import generate_all_plots
@@ -99,11 +99,19 @@ def main():
 
     # ── quick-mode overrides ──────────────────────────────────────────────────
     if args.quick:
-        print("[INFO]  QUICK MODE — reduced population and iterations", flush=True)
-        DB_BOA_CONFIG["population_size"] = 10
-        DB_BOA_CONFIG["max_iterations"]  = 15
-        LEADER_BLOCK_CONFIG["population_size"] = 8
-        LEADER_BLOCK_CONFIG["max_iterations"]  = 12
+        print("[INFO]  QUICK MODE — reduced population, iterations and epochs "
+              "(for live demo; not for final results)", flush=True)
+        DB_BOA_CONFIG["population_size"] = 6
+        DB_BOA_CONFIG["max_iterations"]  = 8
+        LEADER_BLOCK_CONFIG["population_size"] = 6
+        LEADER_BLOCK_CONFIG["max_iterations"]  = 8
+        # Cap the final-training epochs and DB-BOA fitness subset so a full
+        # end-to-end run (incl. federation + attack) finishes in a few minutes
+        # on CPU.  Full-quality runs (no --quick) keep epoch_count=30.
+        ADTCN_CONFIG["epoch_count"] = 4
+        DATA_CONFIG["eval_subset"]  = 1500
+        FEDERATION_CONFIG["db_boa_fed_pop"]  = 6
+        FEDERATION_CONFIG["db_boa_fed_iter"] = 8
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 0 ── Load Data
@@ -212,19 +220,51 @@ def main():
     # ══════════════════════════════════════════════════════════════════════════
     header("PHASE 5  ─  CONSENSUS SIMULATION (5 ROUNDS)")
 
+    # Leader election method: DB-BOA (myopic optimiser) or RL (sequential policy).
+    # The RL path is the title's "Reinforcement Learning" component — a linear-FA
+    # Q-learning agent that elects leaders to maximise cumulative incentive reward
+    # (blockchain/rl_leader.py).
+    leader_method = LEADER_BLOCK_CONFIG.get("leader_method", "db_boa")
+
     n_rounds = 5
-    for r in range(1, n_rounds + 1):
-        # Rotate leader every 2 rounds to show node communication dynamics
-        if r % 2 == 0:
-            bc.select_leader(verbose=False)
-        bc.simulate_consensus_round(
-            round_num=r,
-            n_transactions=50 + r * 10,
-            verbose=True
-        )
-        sep("·")
+    if leader_method == "rl":
+        print("[CHAIN] Leader election: REINFORCEMENT LEARNING "
+              "(linear-FA Q-learning, ε-greedy)", flush=True)
+        bc.attach_rl_agent(seed=42)
+        for r in range(1, n_rounds + 1):
+            bc.run_rl_round(round_num=r, n_transactions=50 + r * 10, verbose=True)
+            sep("·")
+    else:
+        for r in range(1, n_rounds + 1):
+            # Rotate leader every 2 rounds to show node communication dynamics
+            if r % 2 == 0:
+                bc.select_leader(verbose=False)
+            bc.simulate_consensus_round(
+                round_num=r,
+                n_transactions=50 + r * 10,
+                verbose=True
+            )
+            sep("·")
 
     bc.print_node_status()
+
+    # ── RL vs DB-BOA leader-selection comparison (substantiates the title) ────
+    # Replays the same node population under both election strategies for N
+    # rounds and reports cumulative reward + leadership fairness (Gini).  This
+    # mirrors the default-vs-DB-BOA hyperparameter comparison above (Phase 4).
+    sep()
+    print("[CHAIN] RL vs DB-BOA leader selection (20-round replay) …", flush=True)
+    try:
+        rl_vs_dbboa = compare_leader_methods(n_rounds=20, seed=42)
+        print(f"[CHAIN]  DB-BOA : reward={rl_vs_dbboa['db_boa']['total_reward']:>6.1f}  "
+              f"success={rl_vs_dbboa['db_boa']['success_rate']*100:5.1f}%  "
+              f"fairness(Gini)={rl_vs_dbboa['db_boa']['leader_gini']:.3f}", flush=True)
+        print(f"[CHAIN]  RL     : reward={rl_vs_dbboa['rl']['total_reward']:>6.1f}  "
+              f"success={rl_vs_dbboa['rl']['success_rate']*100:5.1f}%  "
+              f"fairness(Gini)={rl_vs_dbboa['rl']['leader_gini']:.3f}", flush=True)
+    except Exception as e:
+        rl_vs_dbboa = None
+        print(f"[CHAIN]  (comparison skipped: {e})", flush=True)
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 6 ── Save Results & Plots
@@ -244,7 +284,23 @@ def main():
         "leader_ct"           : float(leader_node.ct),
         "leader_cc"           : float(leader_node.cc),
         "leader_ms"           : float(leader_node.ms),
+        "leader_method"       : leader_method,
         "consensus_rounds"    : bc.rounds,
+        "rl_leader_comparison": rl_vs_dbboa,
+        # Persist the DB-BOA-tuned vs hand-set-default comparison (Chapter 6,
+        # Table 6.4) so the number is backed by a saved artifact, not only stdout.
+        "default_comparison"  : {
+            "dbboa_params"  : optimal_params,
+            "default_params": {
+                "hidden_neurons" : ADTCN_CONFIG["hidden_neurons"],
+                "epoch_count"    : ADTCN_CONFIG["epoch_count"],
+                "steps_per_epoch": ADTCN_CONFIG["steps_per_epoch"],
+            },
+            "dbboa_metrics"  : {k: float(v) for k, v in metrics.items()
+                                if isinstance(v, (int, float, np.floating))},
+            "default_metrics": {k: float(v) for k, v in default_metrics.items()
+                                if isinstance(v, (int, float, np.floating))},
+        },
     }
 
     # ══════════════════════════════════════════════════════════════════════════

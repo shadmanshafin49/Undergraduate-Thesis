@@ -91,6 +91,87 @@ class _Conv1dClassifier(nn.Module):
         return self.head(x)       # (batch, 2)
 
 
+# ─── dilated-causal-conv + temporal-attention classifier (B3) ──────────────────
+
+class _DilatedBlock(nn.Module):
+    """
+    One residual TCN block (Bai et al. 2018), lean variant: a single dilated
+    causal Conv1d → BatchNorm → ReLU → dropout, plus a 1×1 residual projection.
+    "Causal" = left-pad by (kernel-1)·dilation so step t only sees ≤ t.
+
+    Single conv (vs two) keeps the param budget close to the plain CNN and
+    reduces over-fitting.  (BatchNorm was tried and removed: under the 0.17%
+    fraud rate its batch statistics are dominated by the normal class and it
+    destabilised training, hurting precision.)
+    """
+    def __init__(self, c_in, c_out, kernel=3, dilation=1, dropout=0.1):
+        super().__init__()
+        self.pad  = (kernel - 1) * dilation
+        self.conv = nn.Conv1d(c_in, c_out, kernel, dilation=dilation)
+        self.relu = nn.ReLU()
+        self.drop = nn.Dropout(dropout)
+        self.down = nn.Conv1d(c_in, c_out, 1) if c_in != c_out else None
+
+    def forward(self, x):
+        y = self.conv(nn.functional.pad(x, (self.pad, 0)))   # left-pad only
+        y = self.drop(self.relu(y))
+        res = x if self.down is None else self.down(x)
+        return y + res
+
+
+class _DilatedAttnClassifier(nn.Module):
+    """
+    Adaptive Deep Temporal Context Network — the architecture the report
+    describes (and the prior _Conv1dClassifier did not implement):
+
+      stack of lean dilated causal conv blocks (dilations 1,2,4 → receptive
+      field 1+(k-1)·Σd = 1+2·7 = 15 ≥ SEQ_LEN, so the model sees the entire
+      window, unlike the k=3 ×2 CNN whose receptive field is only 5)
+        → HYBRID temporal pool: softmax-attention context (learned
+          "most-anomalous-step" weighting — the report's MTTA) CONCATENATED with
+          the global-max activation.  Pure attention averages over steps and
+          dilutes the single-step anomaly peak the max-pool captures; keeping
+          both restores precision while adding the adaptive weighting.
+        → Linear classifier head over [attn_ctx ‖ max_ctx].
+
+    Input : (batch, seq_len, n_features)  Output: (batch, 2) logits.
+    n_filters keeps the same DB-BOA-tuned meaning as in _Conv1dClassifier.
+    """
+    def __init__(self, n_features=N_RAW_FEATURES, n_filters=64,
+                 dilations=(1, 2, 4), dropout=0.1):
+        super().__init__()
+        chans = [n_features] + [n_filters] * len(dilations)
+        self.blocks = nn.ModuleList([
+            _DilatedBlock(chans[i], chans[i + 1], kernel=3,
+                          dilation=d, dropout=dropout)
+            for i, d in enumerate(dilations)
+        ])
+        # temporal attention: score each step, softmax over time, weighted sum
+        self.attn = nn.Conv1d(n_filters, 1, 1)
+        self.head = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(n_filters * 2, 2),       # [attn_ctx ‖ max_ctx]
+        )
+
+    def forward(self, x):
+        x = x.permute(0, 2, 1)             # (batch, n_features, seq_len)
+        for blk in self.blocks:
+            x = blk(x)                     # (batch, n_filters, seq_len)
+        scores  = self.attn(x)             # (batch, 1, seq_len)
+        w       = torch.softmax(scores, dim=-1)
+        ctx_att = (x * w).sum(dim=-1)      # attention-weighted context
+        ctx_max = x.amax(dim=-1)           # peak-anomaly context
+        return self.head(torch.cat([ctx_att, ctx_max], dim=-1))
+
+
+def make_temporal_model(n_features, n_filters, architecture="cnn", dropout=0.1):
+    """Factory: select the temporal classifier by ADTCN_CONFIG['architecture']."""
+    if architecture == "dilated_attn":
+        return _DilatedAttnClassifier(n_features=n_features, n_filters=n_filters,
+                                      dropout=dropout)
+    return _Conv1dClassifier(n_features=n_features, n_filters=n_filters)
+
+
 # ─── fitness wrapper for DB-BOA ───────────────────────────────────────────────
 
 class _ADTCNObjective:
@@ -117,10 +198,12 @@ class _ADTCNObjective:
     _SURROGATE_EPOCHS = 5       # surrogate training epochs (not searched)
     _MIN_FRAUD_ROWS   = 30      # minimum fraud samples; guards against near-zero count at 0.17% rate
 
-    def __init__(self, X_opt, y_opt, random_state: int = 42):
+    def __init__(self, X_opt, y_opt, random_state: int = 42,
+                 architecture: str = "cnn"):
         rng   = np.random.RandomState(random_state)
         n_raw = min(X_opt.shape[1], N_RAW_FEATURES + 3)
         self._n_raw = n_raw
+        self._architecture = architecture
 
         # Subsample preserving the real class distribution (~0.17% fraud)
         fraud_idx  = np.where(y_opt == 1)[0]
@@ -179,7 +262,9 @@ class _ADTCNObjective:
 
         try:
             torch.manual_seed(int(self.rng.randint(0, 2 ** 31)))
-            net       = _Conv1dClassifier(n_features=self._n_raw, n_filters=n_filters)
+            net       = make_temporal_model(n_features=self._n_raw,
+                                            n_filters=n_filters,
+                                            architecture=self._architecture)
             criterion = nn.CrossEntropyLoss(weight=cw)
             optimizer = optim.Adam(net.parameters(), lr=1e-3)
             loader    = DataLoader(
@@ -199,12 +284,18 @@ class _ADTCNObjective:
             return 10.0
 
         m    = compute_all_metrics(y_vl, y_pred)
-        eps  = 1e-8
-        obf2 = (m["Accuracy"]  / 100.0 +
-                m["Precision"] / 100.0 +
-                m["NPV"]       / 100.0 +
-                m["MCC"]              +
-                1.0 / (m["FPR"] / 100.0 + eps))
+        # Bounded fitness.  The original Eq.11 used an unbounded 1/FPR term that
+        # exploded to ~1e8 whenever a candidate reached FPR=0, so every such
+        # candidate tied at the best possible score and the search became
+        # degenerate (it could not rank configurations and picked an arbitrary
+        # one, often worse than the hand-set default).  The low-FPR reward is now
+        # the bounded Specificity term (= 1 - FPR), and MCC -- the primary
+        # imbalance-robust metric -- is weighted to dominate the ranking so the
+        # search actually prefers higher-quality detectors.
+        obf2 = (2.0 * m["MCC"]                +
+                m["Specificity"] / 100.0      +
+                m["Precision"]   / 100.0      +
+                m["NPV"]         / 100.0)
 
         self._call_count += 1
         return -obf2
@@ -246,7 +337,8 @@ class ADTCN:
             _sep()
 
         objective = _ADTCNObjective(X_opt, y_opt,
-                                    random_state=self.cfg["random_state"])
+                                    random_state=self.cfg["random_state"],
+                                    architecture=self.cfg.get("architecture", "cnn"))
 
         lb = np.array([DB_BOA_CONFIG["filter_count_bounds"][0],
                        DB_BOA_CONFIG["steps_per_epoch_bounds"][0]], dtype=float)
@@ -324,9 +416,13 @@ class ADTCN:
             _print(f"Class weights    : normal=1.0  fraud={w_fraud:.1f}")
 
         torch.manual_seed(self.cfg["random_state"])
-        self.model = _Conv1dClassifier(
-            n_features=self._n_raw, n_filters=n_filters
+        arch = self.cfg.get("architecture", "cnn")
+        self.model = make_temporal_model(
+            n_features=self._n_raw, n_filters=n_filters,
+            architecture=arch, dropout=self.cfg.get("dropout_rate", 0.2),
         )
+        if verbose:
+            _print(f"Architecture     : {arch}")
         criterion  = nn.CrossEntropyLoss(weight=class_weight)
         optimizer  = optim.Adam(
             self.model.parameters(),

@@ -102,6 +102,27 @@ def obf2_value(metrics: dict) -> float:
             1.0 / (metrics["FPR"] / 100.0 + eps))
 
 
+def coalition_score(metrics: dict) -> float:
+    """
+    Bounded scalar quality score for federated aggregation / Shapley attribution.
+
+    Returns **balanced accuracy** = (Sensitivity + Specificity) / 2, in [0, 1].
+
+    Why not obf2_value() here?
+    -------------------------
+    obf2_value() (Eq.11) contains an unbounded 1/FPR term that explodes to ~1e8
+    whenever a coalition reaches FPR=0.  Using it as a Shapley coalition value
+    makes marginal contributions numerically degenerate and the resulting
+    aggregation weights meaningless.  Balanced accuracy is bounded, robust to the
+    0.17% class imbalance, and gives interpretable contribution attribution:
+    a model that catches fraud (high sensitivity) without over-flagging normal
+    transactions (high specificity) scores near 1.0, while an always-fraud
+    attacker scores ~0.5 (sensitivity 1.0, specificity 0.0) and *lowers* any
+    coalition it joins — so Shapley correctly assigns it a near-zero weight.
+    """
+    return (metrics["Sensitivity"] / 100.0 + metrics["Specificity"] / 100.0) / 2.0
+
+
 def print_metrics_table(metrics: dict, model_name: str = "DB-BOA-ADTCN"):
     """Pretty-print a metrics table matching Table 4 of the paper."""
     border = "═" * 55

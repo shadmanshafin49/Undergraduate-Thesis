@@ -42,7 +42,7 @@ warnings.filterwarnings("ignore")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config                  import ADTCN_CONFIG, FEDERATION_CONFIG
+from config                  import ADTCN_CONFIG, FEDERATION_CONFIG, RESULTS_DIR
 from data.data_loader        import FinancialDataLoader
 from models.adtcn            import ADTCN
 from models.federated_adtcn  import FederatedADTCN
@@ -153,6 +153,19 @@ def main():
         )
         results[label] = m
         print_metrics_table(m, model_name=label)
+
+    # ── Persist a verifiable artifact (provenance for the §6.2 ablation table) ─
+    out_path = os.path.join(RESULTS_DIR, "baselines.json")
+    artifact = {
+        "task": "federated ablation (FedAvg / +Krum / +DP / proposed) on ULB test set",
+        "dp_epsilon": 1.0,
+        "dp_delta": 1e-5,
+        "optimal_params": getattr(adtcn_base, "optimal_params", None),
+        "results": {label: {k: float(v) for k, v in m.items()} for label, m in results.items()},
+    }
+    with open(out_path, "w") as f:
+        json.dump(artifact, f, indent=2)
+    print(f"\nSaved ablation artifact -> {out_path}", flush=True)
 
     # ── DP accuracy cost (answers Q38: "how much does DP cost at ε=1.0?") ──────
     if "FedAvg" in results and "FedAvg+DP" in results:

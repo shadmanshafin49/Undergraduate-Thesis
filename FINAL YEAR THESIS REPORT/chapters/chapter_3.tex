@@ -11,21 +11,21 @@ Fabric's built-in ordering service (RAFT-based) provides deterministic, low-late
 
 Fabric chaincode (smart contracts written in Node.js) manages leader election records, fraud verdict logging, consensus round tracking, federation round aggregation, and token-based incentive allocation across all consortium nodes.
 
-The Dynamic Butterfly-Billiards Optimization Algorithm (DB-BOA) is applied across three distinct roles: (1) leader block selection among consortium nodes, minimizing computation time, communication cost, and memory size; (2) ADTCN hyperparameter optimization, tuning hidden neuron count, epoch count, and steps per epoch; and (3) per-organization aggregation weight computation for federated rounds.
+The Dynamic Butterfly--Billiards Optimization Algorithm (DB-BOA) is applied to two tasks: (1) ADTCN hyperparameter optimisation — tuning the convolutional filter count and steps per epoch (a two-dimensional search; the epoch count is fixed); and (2) consensus leader-node selection — minimising computation time, communication cost, and memory size with a reputation discount. The federated aggregation layer is handled separately by three dedicated mechanisms: differentially private weight sharing (Gaussian mechanism), Krum robust model selection, and exact / Monte-Carlo Shapley-value contribution attribution, with the Shapley weights driving the on-chain token incentive.
 
-Adaptive Deep Temporal Context Networks (ADTCN) — comprising Multi-modal Joint Embedding (MJE), Temporal Context Learning (TCL), and Multiple Time-scale Temporal Attention (MTTA) — serve as the core fraud detection model, capturing both periodic and non-periodic temporal patterns in financial transaction sequences.
+Adaptive Deep Temporal Context Networks (ADTCN) — realised as a temporal one-dimensional convolutional network over a sliding window of recent transactions, with global max-pooling over time and a linear fraud/normal classifier — serve as the core detection model, capturing temporal patterns in financial transaction sequences.
 
-A token-based incentive structure enforced on-chain rewards accurate fraud verdicts (+10 tokens), low-latency consensus (+15 tokens), and successful leader rounds (+10 tokens), while penalizing incorrect verdicts and failed rounds (−2 tokens each) and distributing a federation participation pool (+20 tokens shared by DB-BOA weight).
+A token-based incentive structure enforced on-chain rewards accurate fraud verdicts (+10 tokens), low-latency consensus (+15 tokens), and successful leader rounds (+10 tokens), while penalizing incorrect verdicts and failed rounds (-2 tokens each) and distributing a federation participation pool (+20 tokens shared in proportion to the Shapley contribution weights).
 
 \subsubsection*{Software and Resource Requirements}
 
 \begin{itemize}
-\item \textbf{Machine Learning Implementation:} Python with TensorFlow/Keras used to develop the \textbf{ADTCN} model and the \textbf{DB-BOA} optimization algorithm across all three optimization tasks.
-\item \textbf{Blockchain Infrastructure:} \textbf{Hyperledger Fabric} (via the official Fabric samples and Docker-based network) for the permissioned consortium blockchain, with the Fabric Node.js SDK for application-layer interaction.
-\item \textbf{Smart Contract Logic:} \textbf{Node.js chaincode} (\texttt{DBBOAContract}) deployed on Fabric peers, implementing all on-chain state management, incentive enforcement, and ledger operations deterministically.
+\item \textbf{Machine Learning Implementation:} Python 3 with \textbf{PyTorch} for the \textbf{ADTCN} detector and \textbf{NumPy/scikit-learn} for the \textbf{DB-BOA} optimiser, the DP/Krum/Shapley federation layer, and the evaluation metrics.
+\item \textbf{Blockchain Infrastructure:} \textbf{Hyperledger Fabric 2.5} (Docker test-network) for the permissioned consortium blockchain, with the \textbf{\texttt{fabric-network} 2.2 Node.js SDK} (wallet-based) for application-layer interaction.
+\item \textbf{Smart Contract Logic:} \textbf{Node.js chaincode} (\texttt{DBBOAContract}) using \texttt{fabric-contract-api}/\allowbreak\texttt{fabric-shim} 2.5, deployed as a Chaincode-as-a-Service on the consortium peers, implementing all on-chain state management, incentive enforcement, and ledger operations deterministically.
 \item \textbf{Incentive and Security Mechanism:} Token-based scoring system enforced via chaincode, with reputation deltas applied on-chain per consensus round outcome.
-\item \textbf{Dataset:} Synthetically generated financial transaction data modelled after the Credit Card Fraud dataset structure (20,000 samples, 30 features — V1–V28, Amount, Time — with a 5% fraud rate), distributed heterogeneously across the three consortium banks.
-\item \textbf{Development Environment:} Local workstation utilizing \textbf{Python 3}, \textbf{Node.js}, and \textbf{Docker} for Fabric network deployment; no specialized mining hardware required.
+\item \textbf{Dataset:} the public \textbf{ULB Credit Card Fraud} dataset (284{,}807 transactions; features V1--V28, Amount, and Time; 492 fraudulent cases, $0.17\%$), partitioned 50/30/20 across the three consortium banks by stratified sampling that preserves the global fraud rate in each shard.
+\item \textbf{Development Environment:} Local workstation utilizing \textbf{Python 3}, \textbf{Node.js 18}, and \textbf{Docker} for Fabric network deployment; no specialized mining hardware required.
 \end{itemize}
 
 \section{Societal Impact}
@@ -35,7 +35,7 @@ The framework improves financial security and trust for individuals and SMEs thr
 The framework maintains a low environmental footprint by running entirely on existing commodity hardware within a permissioned Hyperledger Fabric network, avoiding the energy-intensive proof-of-work mining of public blockchains. Fabric's RAFT-based ordering service and deterministic chaincode execution require minimal computational resources per transaction. DB-BOA's efficient metaheuristic search reduces unnecessary model evaluations during optimization, and federated learning performs gradient updates locally at each bank, eliminating large-scale data transfers to cloud servers. The token penalty mechanism discourages wasteful re-proposals and failed consensus rounds, further reducing redundant computation. Overall, the framework maximizes the utility of existing banking infrastructure, extends device lifecycles through software-based security enhancement, and promotes sustainable computing practices in the financial sector.
 
 \section{Ethical Issues}
-The framework prioritizes ethical data handling throughout its design. Hyperledger Fabric's permissioned architecture restricts network participation to authenticated consortium members (BankA, BankB, BankC), ensuring that transaction records and model outputs remain confidential and inaccessible to unauthorized parties. Federated learning preserves each bank's data sovereignty by keeping raw transaction records local — only DB-BOA-weighted model parameters are shared across organizations. The chaincode enforces incentive and penalty rules transparently and without discretion, providing an auditable on-chain record of all consensus decisions and token allocations that any consortium member can verify. The reputation system promotes fair and honest participation without exploiting resource-constrained members, as penalties are proportional and bounded. All processing and ledger state remain within the consortium's controlled infrastructure, aligning with privacy-by-design principles and giving participants full oversight of how their contributions are recorded and rewarded — balancing strong fraud detection capability with respect for privacy, transparency, and institutional accountability.
+The framework prioritizes ethical data handling throughout its design. Hyperledger Fabric's permissioned architecture restricts network participation to authenticated consortium members (BankA, BankB, BankC), ensuring that transaction records and model outputs remain confidential and inaccessible to unauthorized parties. Federated learning preserves each bank's data sovereignty by keeping raw transaction records local — only differentially private, contribution-weighted model parameters are shared across organizations. The chaincode enforces incentive and penalty rules transparently and without discretion, providing an auditable on-chain record of all consensus decisions and token allocations that any consortium member can verify. The reputation system promotes fair and honest participation without exploiting resource-constrained members, as penalties are proportional and bounded. All processing and ledger state remain within the consortium's controlled infrastructure, aligning with privacy-by-design principles and giving participants full oversight of how their contributions are recorded and rewarded — balancing strong fraud detection capability with respect for privacy, transparency, and institutional accountability.
 
 \section{Standards}
 The proposed framework adheres to established best practices and emerging standards in permissioned blockchain and privacy-preserving machine learning. The Hyperledger Fabric network follows the Hyperledger Foundation's recommended patterns for enterprise consortium deployments, including certificate authority-based identity management, channel-level data isolation, and deterministic chaincode execution requirements. Chaincode implementation follows Fabric's determinism rules — no \texttt{Math.random()} or \texttt{new Date()} in state-mutating functions; timestamps are read from \texttt{ctx.stub.getTxTimestamp()} to ensure identical execution across all endorsing peers. The federated learning pipeline complies with privacy principles in IEEE 2986-2023 (Recommended Practice for Privacy and Security in Federated Machine Learning), ensuring local data processing and minimal parameter sharing. The DB-BOA optimization and ADTCN training pipeline follows the methodology established in Prabanand and Thanabal \cite{prabanand2025}, providing a reproducible baseline for comparative evaluation. Open-source tools (Hyperledger Fabric, Python, Node.js) promote reproducibility and community-vetted development standards.
@@ -46,21 +46,21 @@ The project follows a structured, phase-driven execution plan to ensure timely d
 \subsubsection*{Schedule}
 
 \begin{itemize}
-\item \textbf{Literature Review & Problem Analysis} \
+\item \textbf{Literature Review \& Problem Analysis}
 Review of the base paper \cite{prabanand2025} and related blockchain-FL financial security literature; identification of gaps addressed by migrating to Hyperledger Fabric and adding a federated learning pipeline.
 
 
 \item \textbf{Framework Design \& Architecture Development} \\
-Design of the DB-BOA-ADTCN architecture on Hyperledger Fabric, including the three-bank consortium topology, chaincode data model, and DB-BOA role decomposition (leader selection, hyperparameter tuning, federation weights).
+Design of the DB-BOA-ADTCN architecture on Hyperledger Fabric, including the three-bank consortium topology, chaincode data model, DB-BOA task decomposition (hyperparameter tuning and leader selection), and the DP/Krum/Shapley federated aggregation layer.
 
 \item \textbf{Model Development \& Integration} \\
 Implementation of the ADTCN model in Python, the DB-BOA optimizer, the Fabric chaincode (\texttt{DBBOAContract}), and the Node.js API server bridging the Python simulation layer with the on-chain ledger.
 
 \item \textbf{Optimization \& Security Enhancement} \\
-Integration of the three DB-BOA optimization phases, the token-based on-chain incentive mechanism, and the adversarial resilience simulation (Byzantine BankC attack scenario).
+Integration of the two DB-BOA optimisation phases (hyperparameter tuning and leader selection), the DP/Krum/Shapley federated aggregation layer, the token-based on-chain incentive mechanism, and the adversarial resilience simulations (weight-level poisoning countered by Krum, and a colluding-majority scenario countered by economic isolation).
 
 \item \textbf{Experimental Evaluation \& Analysis} \\
-Performance evaluation against baselines from the base paper (MBO-ADTCN, WSA-ADTCN, DBOA-ADTCN, BOA-ADTCN, EfficientNet, ResNet, DenseNet, DTCN) using accuracy, MCC, FPR, NPV, sensitivity, specificity, F1-score, and throughput/latency metrics.
+Performance evaluation of the federated pipeline against FedAvg, FedAvg+Krum, and FedAvg+DP baselines using accuracy, MCC, FPR, NPV, sensitivity, specificity, F1-score, and throughput/latency metrics, followed by the privacy--incentive characterisation suite.
 
 \item \textbf{Documentation \& Thesis Preparation} \\
 Result interpretation, comparison with base paper findings, discussion of Fabric-specific implementation decisions, identification of limitations, and formulation of future work directions.
@@ -84,7 +84,28 @@ Result interpretation, comparison with base paper findings, discussion of Fabric
 \section{Risk Management}
 Several technical and operational risks were identified during the development of the DB-BOA-ADTCN framework on Hyperledger Fabric. Corresponding mitigation strategies were incorporated into the system design to ensure robustness, security, and scalability. Table~\ref{tab:risk_management} summarizes the key risks, their potential impacts, and the adopted mitigation measures.
 
-
+\begin{table}[!htbp]
+\centering
+\caption{Key risks and mitigations}
+\label{tab:risk_management}
+\begin{tabular}{p{4cm}p{4.5cm}p{5.5cm}}
+\toprule
+\textbf{Risk} & \textbf{Impact} & \textbf{Mitigation (as implemented)} \\
+\midrule
+Model poisoning by an organisation & Corrupted global model & Krum consensus-aligned selection ($n\ge 2f+3$) + Shapley down-weighting + on-chain token/reputation penalty \\
+\midrule
+Privacy leakage via shared weights & Re-identification risk & Differentially private (Gaussian-mechanism) weight sharing \\
+\midrule
+Privacy noise corrupting incentives & Mispaid, immutable on-chain rewards & Output-channel perturbation of the contribution statistic rather than the weights, restoring rank-faithful rewards at lower budget \\
+\midrule
+Non-deterministic chaincode & Endorsement mismatch / consensus failure & All optimisation and randomness kept off-chain; only finalised results written on-chain \\
+\midrule
+Extreme class imbalance (0.17\%) & Trivial all-normal classifier & Weighted cross-entropy loss; MCC and ROC-AUC as primary metrics \\
+\midrule
+Single-source dataset & Limited ecological validity & Stated as a limitation; future work uses real multi-bank streams \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 Overall, the risk mitigation mechanisms are embedded directly into the system architecture — through on-chain chaincode enforcement, off-chain optimization constraints, and deterministic Fabric deployment practices — ensuring that security, privacy, and performance are core design principles rather than post-deployment considerations.
 

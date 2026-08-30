@@ -45,7 +45,7 @@ from math import factorial
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import FEDERATION_CONFIG
-from utils.metrics import compute_all_metrics, obf2_value
+from utils.metrics import compute_all_metrics, obf2_value, coalition_score
 
 
 class FederationManager:
@@ -93,10 +93,12 @@ class FederationManager:
         use_dp    = self.cfg.get("use_dp", False)
         dp_eps    = self.cfg.get("dp_epsilon", 1.0)
         dp_delta  = self.cfg.get("dp_delta",   1e-5)
+        dp_adapt  = self.cfg.get("dp_adaptive_clip", False)
 
         if use_dp:
             org_weights_list = [
-                m.extract_weights_with_dp(epsilon=dp_eps, delta=dp_delta)
+                m.extract_weights_with_dp(epsilon=dp_eps, delta=dp_delta,
+                                          adaptive_sensitivity=dp_adapt)
                 for m in org_models.values()
             ]
             if verbose:
@@ -162,6 +164,23 @@ class FederationManager:
             shapley_vals   = None
             coalition_vals = None
 
+        # 3b. Private-incentive mechanism (B1): output-perturbation DP on the
+        #     contribution vector φ, decoupled from model-weight privacy.  Only
+        #     the token split is privatised; with Krum on (default) the global
+        #     model is unaffected.  (With use_krum=False, w also drives the
+        #     weighted-average model — not the intended decoupled use.)
+        use_priv_inc = self.cfg.get("use_private_incentive", False)
+        w_clean = w
+        if use_priv_inc and use_shapley and shapley_vals is not None:
+            inc_eps   = self.cfg.get("incentive_epsilon", 10.0)
+            inc_delta = self.cfg.get("incentive_delta", 1e-5)
+            inc_clip  = self.cfg.get("incentive_clip", None)
+            w = self._privatise_incentive(shapley_vals, inc_eps, inc_delta, inc_clip)
+            if verbose:
+                wt = "  ".join(f"{n}={w[i]:.3f}" for i, n in enumerate(org_names))
+                print(f"[FED]  Private incentive    : ε={inc_eps} (output-pert) "
+                      f"→ {wt}", flush=True)
+
         # 4. Global model: Krum selection (security) or Shapley-weighted avg (fairness)
         if use_krum:
             global_weights = krum_weights
@@ -169,8 +188,10 @@ class FederationManager:
                 print(f"[FED]  Aggregation : Krum → {krum_selected_org}", flush=True)
         else:
             n_arrays = len(org_weights_list[0])
+            # model uses the CLEAN contribution weights; only the token split (w)
+            # carries the private-incentive perturbation (decoupled channels).
             global_weights = [
-                sum(w[i] * org_weights_list[i][a] for i in range(self.n_orgs))
+                sum(w_clean[i] * org_weights_list[i][a] for i in range(self.n_orgs))
                 for a in range(n_arrays)
             ]
             if verbose:
@@ -196,6 +217,10 @@ class FederationManager:
                 name: float(krum_scores[i]) for i, name in enumerate(org_names)
             },
             "krum_selected_org" : krum_selected_org,
+            "private_incentive"     : use_priv_inc,
+            "incentive_epsilon"     : (self.cfg.get("incentive_epsilon")
+                                       if use_priv_inc else None),
+            "clean_aggregation_weights": w_clean.tolist(),
             "dp_enabled"        : use_dp,
             "dp_epsilon"        : dp_eps   if use_dp else None,
             "dp_delta"          : dp_delta if use_dp else None,
@@ -250,7 +275,97 @@ class FederationManager:
 
     # ── Shapley-value contribution attribution ────────────────────────────────
 
+    def _build_coalition_value(
+        self,
+        org_models:       dict,
+        org_weights_list: list,
+        X_val:            np.ndarray,
+        y_val:            np.ndarray,
+    ):
+        """
+        Build a memoised coalition-value function v(S) shared by both Shapley
+        estimators (exact and Monte-Carlo).
+
+        v(S) = equal-weight average of coalition S, evaluated on the shared val
+        set.  Requires a trusted aggregator holding (X_val, y_val) — a labelled
+        holdout set that all orgs implicitly contribute to.
+
+        When any org in the coalition has an instance-level predict override
+        (e.g. a malicious node that always returns ones), weight-averaging would
+        silently use the underlying honest CNN weights and miss the adversarial
+        behaviour.  In that case we fall back to majority-vote of individual org
+        predictions so the coalition value reflects each org's actual behaviour.
+
+        Two efficiency choices make the estimators comparable and the MC variant
+        genuinely cheaper for large n:
+          • a single reused scratch model (load_weights overwrites the state_dict
+            in place) instead of deepcopy-per-coalition — same numerical result;
+          • an LRU-style dict cache so a coalition is evaluated at most once.
+        The cache is created fresh per call, so each estimator pays for exactly
+        the distinct coalitions it touches — that is what the wall-clock sweep
+        measures (exact touches all 2^n; MC touches only the sampled prefixes).
+
+        Returns (coalition_value, cache) where cache[()] = 0.0 is pre-seeded.
+        """
+        n_arrays     = len(org_weights_list[0])
+        org_names    = list(org_models.keys())
+        template_key = org_names[0]
+        org_list     = list(org_models.values())
+        scratch      = copy.deepcopy(org_models[template_key])
+        cache: dict  = {(): 0.0}
+
+        def coalition_value(indices: tuple) -> float:
+            key = tuple(sorted(indices))
+            cached = cache.get(key)
+            if cached is not None:
+                return cached
+            if not key:
+                cache[key] = 0.0
+                return 0.0
+            has_override = any('predict' in org_list[i].__dict__ for i in key)
+            if has_override:
+                preds = np.stack([org_list[i].predict(X_val) for i in key])
+                coalition_pred = (preds.sum(axis=0) * 2 > len(key)).astype(int)
+                val = coalition_score(compute_all_metrics(y_val, coalition_pred))
+            else:
+                avg_w = [
+                    np.mean([org_weights_list[i][a] for i in key], axis=0)
+                    for a in range(n_arrays)
+                ]
+                scratch.load_weights(avg_w)
+                val = scratch.evaluate_on_validation(X_val, y_val)
+            cache[key] = val
+            return val
+
+        return coalition_value, cache
+
     def _shapley_weights(
+        self,
+        org_models:       dict,
+        org_weights_list: list,
+        X_val:            np.ndarray,
+        y_val:            np.ndarray,
+        verbose:          bool = True,
+    ) -> tuple:
+        """
+        Dispatcher: pick the exact or Monte-Carlo Shapley estimator from
+        ``cfg['shapley_method']`` ('exact' default, 'mc' for the scalable variant).
+        Signature is unchanged so run_federation_round / main.py need no edits.
+        """
+        method = self.cfg.get("shapley_method", "exact")
+        if method == "mc":
+            return self._shapley_weights_mc(
+                org_models, org_weights_list, X_val, y_val,
+                n_samples  = self.cfg.get("shapley_mc_samples", 200),
+                truncation = self.cfg.get("shapley_mc_truncation", True),
+                tol        = self.cfg.get("shapley_mc_tol", 1e-3),
+                verbose    = verbose,
+            )
+        return self._shapley_weights_exact(
+            org_models, org_weights_list, X_val, y_val, verbose=verbose
+        )
+
+    def _shapley_weights_exact(
         self,
         org_models:       dict,
         org_weights_list: list,
@@ -262,14 +377,14 @@ class FederationManager:
         Exact Shapley-value contribution weights (Wang et al., FedSV 2020).
 
         For n orgs, evaluates all 2^n - 1 non-empty coalitions.
-        Coalition value v(S) = Obf2 of the equally-averaged model from
-        orgs in S on the validation set.
 
         Shapley formula
         ---------------
             φ_i = Σ_{S ⊆ N\\{i}} [|S|!(n-|S|-1)!/n!] · [v(S∪{i}) - v(S)]
 
         For n=3: 7 coalition evaluations, exact weights, O(2^n) complexity.
+        This is exact but exponential — it is the anti-scalable baseline the
+        Monte-Carlo estimator (_shapley_weights_mc) is benchmarked against.
 
         Aggregation weights: w_i = max(0, φ_i) / Σ max(0, φ_j)
         Negative Shapley values (org hurts coalition) are clipped to zero.
@@ -280,47 +395,16 @@ class FederationManager:
         shapley_vals   : np.ndarray  — raw Shapley value per org
         coalition_vals : dict        — v(S) for every coalition (ledger log)
         """
-        n            = self.n_orgs
-        org_names    = list(org_models.keys())
-        template_key = org_names[0]
-        n_arrays     = len(org_weights_list[0])
-
-        org_list = list(org_models.values())
-
-        def coalition_value(indices: tuple) -> float:
-            """Equal-weight average of coalition S, evaluated on shared val set.
-            Requires a trusted aggregator holding (X_val, y_val) — a labelled
-            holdout set that all orgs implicitly contribute to.
-
-            When any org in the coalition has an instance-level predict override
-            (e.g. a malicious node that always returns ones), weight-averaging
-            would silently use the underlying honest CNN weights and miss the
-            adversarial behaviour. In that case we fall back to majority-vote of
-            individual org predictions so the coalition value correctly reflects
-            each org's actual prediction behaviour.
-            """
-            if not indices:
-                return 0.0
-            # Detect instance-level predict overrides (e.g. attack simulation)
-            has_override = any('predict' in org_list[i].__dict__ for i in indices)
-            if has_override:
-                preds = np.stack([org_list[i].predict(X_val) for i in indices])
-                coalition_pred = (preds.sum(axis=0) * 2 > len(indices)).astype(int)
-                return obf2_value(compute_all_metrics(y_val, coalition_pred))
-            avg_w = [
-                np.mean([org_weights_list[i][a] for i in indices], axis=0)
-                for a in range(n_arrays)
-            ]
-            temp = copy.deepcopy(org_models[template_key])
-            temp.load_weights(avg_w)
-            return temp.evaluate_on_validation(X_val, y_val)
+        n         = self.n_orgs
+        org_names = list(org_models.keys())
+        coalition_value, all_v = self._build_coalition_value(
+            org_models, org_weights_list, X_val, y_val
+        )
 
         # v(S) for all non-empty coalitions
-        all_v: dict = {(): 0.0}
         for size in range(1, n + 1):
             for combo in combinations(range(n), size):
                 v = coalition_value(combo)
-                all_v[combo] = v
                 if verbose:
                     labels = [org_names[i] for i in combo]
                     print(f"[FED]    v({labels}) = {v:.6f}", flush=True)
@@ -337,17 +421,124 @@ class FederationManager:
                     marginal = all_v[S_with_i] - all_v[tuple(sorted(S))]
                     shapley_vals[i] += coeff * marginal
 
-        # Clip negatives → normalise to sum = 1
-        w     = np.maximum(shapley_vals, 0.0)
-        total = w.sum()
-        w     = w / total if total > 1e-8 else np.ones(n) / n
-
-        # Format coalition keys for ledger (tuple → readable string)
+        w = self._normalise_shapley(shapley_vals)
         coalition_vals = {
-            str([org_names[i] for i in k]): float(v)
-            for k, v in all_v.items()
+            str([org_names[i] for i in k]): float(v) for k, v in all_v.items()
         }
         return w, shapley_vals, coalition_vals
+
+    def _shapley_weights_mc(
+        self,
+        org_models:       dict,
+        org_weights_list: list,
+        X_val:            np.ndarray,
+        y_val:            np.ndarray,
+        n_samples:        int  = 200,
+        truncation:       bool = True,
+        tol:              float = 1e-3,
+        seed:             int  = None,
+        verbose:          bool = True,
+    ) -> tuple:
+        """
+        Monte-Carlo permutation Shapley estimator — the *scalable* variant.
+
+        Truncated Monte-Carlo Shapley (TMC-Shapley, Ghorbani & Zou, ICML 2019):
+        sample ``n_samples`` random org permutations; for each, walk left→right
+        accumulating the coalition and credit each org its marginal contribution
+        v(S∪{i}) - v(S).  Average the marginals over permutations.
+
+        Cost is O(n_samples · n) coalition evaluations (with caching, far fewer
+        distinct ones) — independent of 2^n.  This is what makes contribution
+        attribution scale: at n=3 it reproduces the exact weights closely; at
+        n=15 it stays cheap where the exact estimator would need 32 767 evals.
+
+        Truncation: once the running coalition value is within ``tol`` of the
+        grand-coalition value v(N), the remaining orgs in that permutation are
+        assigned ~0 marginal without further evaluation (their contribution is
+        already saturated) — the standard TMC speed-up.
+
+        Returns the same triple as _shapley_weights_exact (weights, raw Shapley
+        estimates, coalition_vals actually evaluated).
+        """
+        n         = self.n_orgs
+        org_names = list(org_models.keys())
+        coalition_value, cache = self._build_coalition_value(
+            org_models, org_weights_list, X_val, y_val
+        )
+        rng = np.random.default_rng(self.seed if seed is None else seed)
+
+        v_full = coalition_value(tuple(range(n)))   # grand coalition v(N)
+        phi    = np.zeros(n)
+
+        for t in range(n_samples):
+            perm   = rng.permutation(n)
+            prev_v = 0.0                              # v(∅)
+            S: tuple = ()
+            for idx in perm:
+                if truncation and abs(v_full - prev_v) < tol:
+                    new_v = prev_v                    # saturated → marginal ≈ 0
+                else:
+                    S_new = tuple(sorted(S + (int(idx),)))
+                    new_v = coalition_value(S_new)
+                phi[idx] += (new_v - prev_v)
+                S      = tuple(sorted(S + (int(idx),)))
+                prev_v = new_v
+            if verbose and (t + 1) % max(1, n_samples // 5) == 0:
+                print(f"[FED]    MC-Shapley permutation {t+1}/{n_samples} "
+                      f"(distinct coalitions cached: {len(cache)})", flush=True)
+
+        shapley_vals = phi / n_samples
+        w = self._normalise_shapley(shapley_vals)
+        coalition_vals = {
+            str([org_names[i] for i in k]): float(v) for k, v in cache.items()
+        }
+        return w, shapley_vals, coalition_vals
+
+    @staticmethod
+    def _normalise_shapley(shapley_vals: np.ndarray) -> np.ndarray:
+        """Clip negative Shapley values to zero and normalise to sum=1
+        (uniform fallback if every org is non-positive)."""
+        n     = len(shapley_vals)
+        w     = np.maximum(shapley_vals, 0.0)
+        total = w.sum()
+        return w / total if total > 1e-8 else np.ones(n) / n
+
+    def _privatise_incentive(
+        self,
+        shapley_vals: np.ndarray,
+        epsilon:      float,
+        delta:        float = 1e-5,
+        clip:         float = None,
+    ) -> np.ndarray:
+        """
+        Output-perturbation DP on the contribution vector (B1 contribution).
+
+        The on-chain token split is driven by the n-dim Shapley vector φ, not by
+        the ~1e5-dim model weights.  Privatising φ *directly* — clip to L2 ≤ C,
+        add Gaussian noise σ = C·√(2ln(1.25/δ))/ε — bounds the released statistic's
+        sensitivity by C and gives an (ε, δ)-DP token split (Gaussian mechanism,
+        Dwork et al. 2006; output perturbation, Chaudhuri et al. JMLR 2011).
+
+        Why this matters: the per-element noise-to-signal ratio is k·√(dim)/ε.
+        For the weight channel dim≈1e5 → ratio≈1620/ε; for this φ channel dim=n
+        → ratio≈k·√n/ε.  The incentive therefore stays rank-faithful at a privacy
+        budget ~√(d/n) smaller (validated: ε*≈50 vs ≈3000 for the weight channel).
+
+        Privacy unit: the *released contribution statistic*.  Model-weight privacy
+        is the separate (off-by-default) use_dp channel.  C=None ⇒ adaptive clip
+        C=‖φ‖₂, so the mechanism converges to the honest split as ε→∞.
+        """
+        from math import sqrt, log
+        phi = np.asarray(shapley_vals, dtype=float)
+        C   = float(np.linalg.norm(phi)) + 1e-12 if clip is None else float(clip)
+        # clip φ to L2 ≤ C (bounds sensitivity of the released statistic)
+        norm = float(np.linalg.norm(phi))
+        if norm > C:
+            phi = phi * (C / norm)
+        k     = sqrt(2 * log(1.25 / delta))
+        sigma = C * k / epsilon
+        phi_priv = phi + np.random.normal(0, sigma, size=phi.shape)
+        return self._normalise_shapley(phi_priv)
 
     # ── DB-BOA Job 3 internals (fallback when use_shapley=False) ─────────────
 

@@ -1,0 +1,174 @@
+# Chapter 2 — Literature Review (FULL UPDATED DRAFT, paste-ready)
+
+> **Status / how to use.** This is the complete, paste-ready replacement for
+> `FINAL YEAR THESIS REPORT/chapters/chapter_2.tex`, per the drafts-before-tex workflow
+> ([[workflow-drafts-before-tex]]). It keeps the existing section structure, narrative voice,
+> and the research-gap table, and adds the literature that scaffolds the methods we *actually*
+> implement (DP + Krum + Shapley + DB-BOA + RL leader selection), so Chapters 4–6 can cite it
+> honestly. Every `\cite{}` key below already exists in `bibliography/references.bib` (verified).
+>
+> **Honesty notes baked in** ([[thesis-honesty-mandate]], [[critique-findings]]):
+> - FedProx is **background only** — the sentence "this thesis employs FedProx" is removed (we do
+>   not implement it).
+> - The Shapley-on-blockchain incentive is framed as **extending** FedCoin / SI-ChainFL, never as
+>   "first to bind Shapley to blockchain incentives" ([[private-incentive-mechanism]]).
+> - DB-BOA is described as automating **hyperparameter tuning + leader selection** (not "three
+>   roles / Job 3 aggregation weights"); the federation weights come from **Shapley**, not DB-BOA.
+> - `zhang2019` and `ahamad2022` are **dropped** — no verifiable source ([[papers-folder-complete]]);
+>   their sentences are recast onto resolved citations.
+> - DB-BOA provenance corrected to **Dynamic Butterfly (Tubishat 2020) + Billiards (Givi 2023)**
+>   to match the approved title "Dynamic Butterfly–Billiards Optimisation Algorithm".
+
+---
+
+```latex
+\section{Preliminaries}
+This thesis examines how a permissioned blockchain can be integrated with Federated Learning (FL) and deep learning to strengthen security, privacy, and fraud detection in financial systems. Centralised approaches to financial fraud detection suffer from single points of failure, data-transparency gaps, and long settlement times. Blockchain reinforces data integrity and enables trusted collaboration across competing financial institutions, while Federated Learning allows those institutions to train a shared detection model without exposing raw transaction data. The resulting framework combines these technologies with the Dynamic Butterfly--Billiards Optimisation Algorithm (DB-BOA) and an Adaptive Deep Temporal Context Network (ADTCN) detector, and binds each participant's measured contribution to an on-chain token incentive. This chapter reviews the four bodies of work the framework rests on --- federated learning under data heterogeneity, blockchain for financial security and blockchain-integrated FL, robust/private/fair aggregation, and metaheuristic and reinforcement-learning optimisation for consensus --- and isolates the specific gap this research fills.
+
+\section{Federated Learning}
+
+\subsection{Federated Learning}
+
+Federated Learning (FL), introduced by McMahan et al.~\cite{mcmahan2017}, is a distributed machine-learning paradigm in which model training occurs across multiple participants without centralising raw data. Each participant trains a local model on its private data and shares only model parameters --- gradients or weight vectors --- with an aggregator, which produces a global model via weighted averaging. The canonical aggregation algorithm, Federated Averaging (FedAvg), weights each participant's contribution proportionally to its dataset size~\cite{mcmahan2017}.
+
+FL has been applied to sensitive financial and infrastructure settings where data cannot leave the institution that owns it. Li et al.~\cite{li2022fdia} applied FL with a secure deep-learning architecture to detect False Data Injection Attacks in smart grids, validating FL's applicability to safety-critical, privacy-constrained data. Despite its promise, FL is not without challenges: trust in model updates, susceptibility to poisoning attacks from dishonest participants, and the absence of verifiable contribution records remain open problems~\cite{10701002}. This thesis addresses all three through blockchain integration, robust aggregation, and a contribution-based incentive mechanism.
+
+\subsection{Non-IID Data Heterogeneity}
+
+A critical challenge in practical FL deployments is data heterogeneity. Real-world institutional data is typically non-Independent and non-Identically Distributed (non-IID): different banks hold different proportions of fraud cases, reflecting their customer demographics and market exposure. McMahan et al.~\cite{mcmahan2017} observed that FedAvg performance degrades under non-IID conditions, and Hsieh et al.~\cite{hsieh2020} characterised this ``non-IID quagmire'' systematically, showing that the accuracy loss is driven primarily by skewed label distributions across nodes and that the choice of aggregation and normalisation strategy matters more than the optimiser. Li et al.~\cite{li2020fedprox} introduced FedProx, a proximal-regularisation technique that constrains local updates to remain close to the global model, stabilising convergence under heterogeneity. This thesis addresses non-IID heterogeneity through stratified partitioning, which preserves the global fraud rate in every institution's shard; proximal methods such as FedProx remain a natural extension for more severely heterogeneous deployments, as discussed in Chapter~\ref{ch:methodology}.
+
+\subsection{Temporal Deep Learning for Sequential Fraud Detection}
+
+Financial transactions are inherently sequential, and the detector used in this thesis exploits that structure. Bai et al.~\cite{bai2018} showed that Temporal Convolutional Networks (TCNs) --- one-dimensional causal, dilated convolutions --- match or exceed recurrent architectures on a broad range of sequence-modelling tasks while training faster and avoiding the vanishing-gradient pathologies of RNNs. The Adaptive Deep Temporal Context Network (ADTCN) adopted here is a TCN-family detector whose receptive field and capacity are tuned per deployment (Chapter~\ref{ch:methodology}). Complementary work on imbalanced fraud detection, such as the GNN-based Pick-and-Choose approach of Liu et al.~\cite{liu2021pickchoose}, highlights the extreme class imbalance (fraud rates well below 1\%) that any financial detector must withstand --- a property of the ULB dataset used in this thesis and a motivation for reporting balanced accuracy rather than raw accuracy.
+
+\section{Blockchain for Financial Security}
+
+\subsection{Consortium Blockchain Architecture}
+
+Al-Shaibani et al.~\cite{abdallah2020} proposed a consortium blockchain architecture for a decentralised stock exchange, demonstrating that permissioned networks reduce settlement inefficiency while preserving trading-logic integrity. Their work established that consortium blockchains are well-suited to financial environments where participants are known and access must be controlled --- a principle directly adopted here.
+
+Tsoulias et al.~\cite{tsoulias2020} extended this direction with a graph-model-based blockchain capable of monitoring and detecting adversarial activity such as dynamic validator attacks. Their contribution motivated the reputation-aware leader-selection mechanism in this framework.
+
+\subsection{Hyperledger Fabric for Enterprise Finance}
+
+Li et al.~\cite{li2023} designed Fabric-SCF, a Hyperledger Fabric-based secure storage and access-control scheme using distributed consensus and attribute-based access control, demonstrating high throughput and dynamic fine-grained access in supply-chain-finance scenarios. Their use of Fabric's permissioned architecture and chaincode-enforced rules directly informs this thesis's deployment environment. Wang and Wang~\cite{wang2022} demonstrated that blockchain-IoT data sharing combined with edge computing can monitor fraudulent financial transactions, identifying intensive computation handling as a remaining challenge --- one this thesis addresses through off-chain model training with on-chain result recording.
+
+The choice of Hyperledger Fabric over other blockchain platforms is architecturally motivated. Fabric is permissioned: only enrolled organisations with valid X.509 certificates issued by a Fabric Certificate Authority can participate, a hard requirement in regulated financial environments. Unlike Ethereum's public network, which allows anonymous participation, Fabric's consortium model aligns with banking compliance requirements. Furthermore, Fabric does not use energy-intensive proof-of-work; its Raft-based ordering service provides deterministic, low-latency consensus, critical for financial settlement, and its CouchDB world state supports the JSON queries required for audit and reporting.
+
+\subsection{Smart Contract Enforcement}
+
+The role of smart contracts in enforcing financial rules without trusted intermediaries is a recurring theme. Ying et al.~\cite{10713281} demonstrated in BIT-FL that blockchain-enabled smart contracts can enforce verifiable FL incentive rules, though their implementation used a simulated environment rather than a real Fabric network. Truong et al.~\cite{10466733} further validated that smart-contract-backed trust mechanisms are essential for AI-generated-content trading in decentralised environments, supporting the use of Fabric chaincode for incentive enforcement here.
+
+\section{Blockchain-Integrated Federated Learning}
+
+\subsection{Security and Trust in Blockchain-FL Systems}
+
+Yang et al.~\cite{10701002} proposed on-chain model aggregation and an incentive mechanism for industrial-IoT federated learning, demonstrating that a blockchain can verify global-model updates and detect malicious alterations. Their work validates the architectural principle adopted here: computation off-chain, verification on-chain. Hussin Chowdhury et al.~\cite{10746050} showed that integrating federated machine learning into a blockchain crowdfunding ecosystem increases both security and transparency, supporting the adoption of FL for financial consortium settings. Saveetha et al.~\cite{10555270} proposed an integrated FL-and-blockchain framework with optimal miner selection for DDoS-attack detection, using metaheuristic optimisation for miner selection --- a conceptual predecessor to this thesis's optimiser-driven leader selection. Their system, however, does not address contribution-fair aggregation or couple economic incentives to a measured contribution signal.
+
+\subsection{Incentive Mechanisms}
+
+Blockchain-based incentive mechanisms reward reliable and resource-efficient contributors to sustain participation. Zhao et al.~\cite{10529180} introduced the Long-Term Proof-of-Contribution algorithm for blockchain-enabled federated learning, demonstrating that incentive structures can sustain honest participation across many rounds. A more principled line of work grounds rewards in cooperative game theory: FedCoin (Liu et al.~\cite{fedcoin2020}) is a peer-to-peer payment system that allocates rewards by Shapley value, and SI-ChainFL (Zhao et al.~\cite{zhao2026sichainfl}) couples Shapley-incentivised rewards with a secure FL pipeline for high-speed-rail data sharing. These works establish that Shapley-value reward allocation on a blockchain is an established idea, not a novelty of this thesis.
+
+What the prior incentive literature does \emph{not} examine is the interaction between the privacy noise required for a deployable FL system and the fidelity of the contribution signal that those rewards are computed from. Because rewards in this thesis are written immutably to a Fabric ledger, even small contribution-ranking errors become permanent, mispaid incentives. Characterising that interaction --- rather than proposing a new reward rule --- is the contribution this thesis builds on top of the FedCoin/SI-ChainFL line, and is developed in Section~\ref{sec:privacy-incentive-tension}.
+
+\section{Robust, Private, and Fair Federated Aggregation}
+\label{sec:robust-aggregation}
+
+Three techniques underpin the aggregation layer of this thesis, and each rests on an established body of work.
+
+\subsection{Differential Privacy}
+
+Differential privacy (DP), formalised by Dwork et al.~\cite{dwork2006}, calibrates noise to the \emph{sensitivity} of a computation: the Gaussian mechanism adds noise $\mathcal{N}(0,\sigma^2)$ with $\sigma = C\sqrt{2\ln(1.25/\delta)}/\epsilon$ after clipping to an $L_2$ bound $C$, yielding an $(\epsilon,\delta)$ guarantee on a released statistic. Two refinements are directly relevant. Chaudhuri et al.~\cite{chaudhuri2011} introduced \emph{output perturbation} for differentially private empirical risk minimisation --- adding calibrated noise to a low-dimensional released output rather than to a high-dimensional parameter vector --- which is the principle this thesis exploits to make the incentive channel private at a tractable budget. Andrew et al.~\cite{andrew2021} showed that the clipping bound $C$ can be learned adaptively rather than fixed, reducing the noise needed for a target $\epsilon$; McMahan et al.~\cite{mcmahan2018} demonstrated DP-SGD at scale for recurrent language models. A recurring lesson from this literature, central to Chapter~\ref{ch:results}, is that the noise required to protect a $d$-dimensional release grows with $\sqrt{d}$, so the dimensionality of the protected channel --- not DP itself --- sets the practical privacy budget.
+
+\subsection{Byzantine-Robust Aggregation}
+
+FedAvg is fragile to adversarial updates: a single poisoned vector can dominate the average if its norm is large enough. Blanchard et al.~\cite{blanchard2017} introduced Krum, a Byzantine-robust aggregation rule that scores each update by the summed squared $L_2$ distance to its $n-f-2$ nearest neighbours and selects the most consensus-aligned update, provably tolerating up to $f$ Byzantine participants when $n \ge 2f+3$. This thesis uses Krum in exactly that regime to defend the aggregation layer against weight-level poisoning, while noting its boundary: a colluding \emph{majority} ($>f$) defeats any statistical filter, which is where the economic incentive layer provides a complementary defence.
+
+\subsection{Contribution Attribution via Shapley Values}
+
+Fair reward allocation requires quantifying how much each participant's data improves the global model. The Shapley value, from cooperative game theory, assigns each participant its average marginal contribution across all coalitions and is the unique attribution satisfying efficiency, symmetry, and the null-player axiom. Wang et al.~\cite{wang2020fedsv} adapted it to federated learning (FedSV), and Ghorbani and Zou~\cite{ghorbani2019} developed Data Shapley together with Monte-Carlo and truncated estimators that make attribution tractable when the exact $O(2^n)$ computation is infeasible. This thesis uses an exact Shapley value at small federation sizes and a Monte-Carlo permutation estimator to keep contribution attribution feasible as the federation grows.
+
+\subsection{The Privacy--Incentive Tension and Closest Related Work}
+\label{sec:privacy-incentive-tension}
+
+Combining DP, Krum, and Shapley exposes a tension that the prior literature treats only in one direction. Li et al.~\cite{li2025shapley} use Shapley values to \emph{guide} where DP noise is injected (Shapley $\rightarrow$ noise), improving the privacy--utility trade-off of the trained model. The coupling this thesis characterises is the reverse: how the DP noise added for privacy degrades the \emph{fidelity} of the Shapley signal and therefore corrupts the on-chain reward (noise $\rightarrow$ Shapley $\rightarrow$ reward error). Closely related, Jaramillo-Velez et al.~\cite{jaramillo2026} study private and robust contribution evaluation in FL, and Commey et al.~\cite{commey2025} design a Bayesian, poison-resilient incentive mechanism; Fraboni et al.~\cite{fraboni2020} formalise free-rider attacks that any contribution-based reward must resist. Against this backdrop, the contribution of this thesis is a \emph{characterisation}: it shows that contribution-based incentives and weight-channel differential privacy are in direct tension, and that applying the privacy noise on the released, low-dimensional contribution channel (output perturbation, after Chaudhuri et al.~\cite{chaudhuri2011}) rather than on the high-dimensional weight channel restores rank-faithful, DP-protected on-chain rewards at roughly two orders of magnitude lower privacy budget. This extends the Shapley-on-blockchain incentive line (FedCoin~\cite{fedcoin2020}, SI-ChainFL~\cite{zhao2026sichainfl}) by bounding \emph{when} such a mechanism remains both private and economically faithful on a deployed Fabric network --- it does not claim a new reward algorithm.
+
+\section{Leader Selection and Consensus Optimisation}
+
+Leader block selection and consensus efficiency are central concerns in permissioned blockchain systems for high-frequency financial transactions. Zhuang et al.~\cite{zhuang2019} proposed Proof of Reputation, a consensus protocol in which high-reputation nodes are selected as block leaders, increasing throughput while maintaining security. This informs the reputation-aware leader selection in this framework, where a reputation discount factor is applied to the optimiser's objective so that previously reliable nodes become more competitive. Nourmohammadi and Zhang~\cite{9945966} proposed an on-chain governance model based on Particle Swarm Optimisation for reducing blockchain forks, establishing a precedent for metaheuristic-based consensus management. Machhale et al.~\cite{10575309} demonstrated that combining blockchain with machine learning enhances data security and privacy, but, like most works in this area, treated the consensus layer and the application layer as independent concerns.
+
+\subsection{Reinforcement Learning for Adaptive Leader Selection}
+
+Where a metaheuristic optimiser selects a leader from a static snapshot of node fitness, a \emph{sequential} policy can adapt as node reliability drifts at runtime. Q-learning, introduced by Watkins and Dayan~\cite{watkins1992} and developed in the standard treatment of Sutton and Barto~\cite{suttonbarto2018}, learns an action-value function online from reward feedback without a model of the environment. This thesis includes a deliberately minimal linear-Q leader-rotation policy that, in simulation, matches the optimiser on reward while adapting to nodes whose reliability degrades over time. It is positioned as a secondary, complementary component to the privacy--incentive contribution, not as a novel RL method.
+
+\section{Metaheuristic Optimisation in Blockchain-AI Systems}
+
+\subsection{Butterfly Optimisation Algorithm}
+
+The Butterfly Optimisation Algorithm (BOA), introduced by Arora and Singh~\cite{arora2019}, models the foraging behaviour of butterflies: each candidate solution emits a ``fragrance'' proportional to its fitness, attracting other solutions toward high-fitness regions. BOA shows strong exploration but is prone to premature convergence when population diversity is lost.
+
+\subsection{Dynamic Butterfly and Billiards Optimisation}
+
+Two extensions address BOA's weaknesses and supply the components of the hybrid used here. Tubishat et al.~\cite{tubishat2020} proposed the Dynamic Butterfly Optimisation Algorithm (DBOA), which augments BOA with a Local Search Adaptive Mutation mechanism that restores diversity when the population converges prematurely, improving exploitation at the cost of slower convergence on high-dimensional problems. Independently, Givi and Hub\'alovsk\'a~\cite{givi2023} introduced the Billiards Optimisation Algorithm, a game-based metaheuristic whose collision-and-rebound dynamics provide an alternative, momentum-driven exploration operator. Together these motivate a hybrid that switches between butterfly-style and billiards-style moves according to population state.
+
+\subsection{DB-BOA: The Hybrid Algorithm}
+
+Prabanand and Thanabal~\cite{prabanand2025} introduced DB-BOA, a Dynamic Butterfly--Billiards hybrid governed by an adaptive switching criterion: at each iteration $t$ a uniform random variable $\mathrm{rand}\sim\mathcal{U}[0,1]$ is compared to the ratio $\mathrm{bestfit}_t/\mathrm{worstfit}_t$ of the best and worst objective values in the current population. When the ratio approaches $1$ (population converging) the exploitation operator dominates; when it is small (population diverse) the exploration operator dominates. This balances exploration and exploitation without manual schedule tuning. In their base paper, Prabanand and Thanabal applied DB-BOA on a \emph{simulated} private-Ethereum consortium to two tasks --- hyperparameter tuning of ADTCN and leader-node selection --- reporting reduced consensus latency relative to random selection. This thesis re-implements DB-BOA for the same two roles (hyperparameter tuning and leader selection) on \emph{real} Hyperledger Fabric infrastructure; the federated aggregation weights, by contrast, are produced by Shapley attribution (Section~\ref{sec:robust-aggregation}), not by DB-BOA.
+
+\section{Summary of Related Work and Research Gap}
+
+Table~\ref{tab:related_work_gap} summarises the prior-work landscape and the specific gap this research fills.
+
+\begin{table}[!htbp]
+\centering
+\caption{Summary of Related Work and Identified Research Gap}
+\label{tab:related_work_gap}
+\begin{tabular}{p{3.8cm}p{4cm}p{6.2cm}}
+\toprule
+\textbf{Prior Work Category} & \textbf{What It Achieves} & \textbf{What It Misses} \\
+\midrule
+Centralised fraud detection with ML & High accuracy, fast training & Privacy loss, single point of failure, no multi-party collaboration \\
+\midrule
+Federated learning for fraud detection & Privacy-preserving collaboration & No verifiable contribution record; FedAvg fragile to poisoning and ignores model quality; no blockchain audit trail \\
+\midrule
+Blockchain for financial data sharing & Transparency and immutability & Consensus layer and application layer treated independently; no ML; no FL \\
+\midrule
+Shapley-on-blockchain incentives (FedCoin, SI-ChainFL) & Game-theoretically fair, on-chain rewards & Privacy noise vs.\ contribution-fidelity interaction left uncharacterised; rewards assumed clean \\
+\midrule
+Robust / private FL (Krum; DP; Shapley-guided noise) & Byzantine tolerance or DP utility, studied in isolation & The \emph{reverse} privacy$\rightarrow$incentive coupling, and which channel to perturb, not examined \\
+\midrule
+Metaheuristic optimisation for blockchain & Improved consensus efficiency & Applied to one objective only; not combined with FL fraud detection \\
+\midrule
+DB-BOA base paper (Prabanand \& Thanabal, 2025)~\cite{prabanand2025} & DB-BOA for hyperparameter tuning and leader selection on a \emph{simulated} consortium & No federated learning; no contribution-fair incentive; no real Hyperledger Fabric implementation \\
+\midrule
+\textbf{This thesis (FL-ADTCN)} & \textbf{Federated ADTCN on real Hyperledger Fabric with DP + Krum + Shapley aggregation and Shapley-weighted, chaincode-enforced on-chain incentives, plus DB-BOA/RL leader selection} & \textbf{Characterises (rather than ignores) the privacy--incentive coupling that the above prior work leaves open} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The specific gap this research fills is: \textit{prior systems either allocate Shapley-based blockchain incentives while assuming a clean contribution signal, or study differential privacy and robust aggregation in isolation; none characterise how the privacy noise required for a deployable FL system corrupts the fidelity of contribution-based, immutable on-chain rewards, nor identify the released-channel perturbation that restores them --- on real Hyperledger Fabric infrastructure}.
+
+\section{Summary of Key Findings}
+
+The reviewed literature highlights three pillars that underpin blockchain-integrated financial-security systems. First, \textbf{permissioned consortium blockchains} --- exemplified by Hyperledger Fabric --- provide the access control, immutability, and smart-contract capability needed to enforce financial rules without intermediaries~\cite{abdallah2020, li2023, prabanand2025}. Second, \textbf{Federated Learning} lets institutions collaboratively train fraud detectors without sharing raw data, though trust, robustness, and verifiable contribution require an external verification layer~\cite{mcmahan2017, li2022fdia, 10701002} and dedicated aggregation machinery --- differential privacy~\cite{dwork2006, chaudhuri2011}, Byzantine-robust selection~\cite{blanchard2017}, and Shapley contribution attribution~\cite{wang2020fedsv, ghorbani2019}. Third, \textbf{optimisation and incentive alignment} are essential for deployment: metaheuristics such as DB-BOA automate leader selection and hyperparameter tuning~\cite{prabanand2025, 9945966}, reinforcement learning adapts leader rotation online~\cite{watkins1992}, and Shapley-based on-chain incentives sustain honest participation~\cite{fedcoin2020, zhao2026sichainfl, 10529180}. The open problem that motivates this thesis sits at the intersection of the second and third pillars: the privacy noise that makes FL deployable and the contribution signal that makes incentives fair are in tension, and that tension --- not a new algorithm --- is what this thesis characterises and resolves at the channel level, implemented end-to-end on a real Hyperledger Fabric consortium and evaluated on the public ULB Credit Card Fraud dataset~\cite{ulb2018}.
+```
+
+---
+
+## Change log vs. the current `chapter_2.tex`
+
+| Area | Change | Why |
+|------|--------|-----|
+| Opening §Preliminaries | Reworded "DB-BOA + ADTCN ... incentive-driven, scalable"; removed implicit "DB-BOA does everything" | Honesty — DB-BOA does HP tuning + leader selection only ([[novelty-direction]]) |
+| FL subsection | Dropped `zhang2019` (unresolved), kept `li2022fdia`, `10701002` | No verifiable source for zhang2019 |
+| Non-IID | Added Hsieh `hsieh2020`; **removed "this thesis employs FedProx"** → stratified partitioning | D3 honesty fix — FedProx not implemented |
+| **New** §Temporal DL | Added Bai TCN `bai2018` + Liu `liu2021pickchoose` | Scaffolds ADTCN detector + class-imbalance framing |
+| Incentive Mechanisms | Dropped `ahamad2022`; added FedCoin `fedcoin2020`, SI-ChainFL `zhao2026sichainfl`; reframed as *extending* not *first* | [[private-incentive-mechanism]], no-priority rule |
+| **New** §Robust/Private/Fair Aggregation | DP (`dwork2006`,`chaudhuri2011`,`andrew2021`,`mcmahan2018`), Krum (`blanchard2017`), Shapley (`wang2020fedsv`,`ghorbani2019`), + privacy–incentive tension (`li2025shapley`,`jaramillo2026`,`commey2025`,`fraboni2020`) | Gives Ch.4–6 a citable foundation; positions B1 ([[critique-findings]]) |
+| **New** §RL leader selection | `watkins1992`, `suttonbarto2018` | Substantiates "Reinforcement Learning" title word ([[rl-leader-integration]]) |
+| Metaheuristic section | Split into BOA / DBOA+Billiards / DB-BOA; corrected provenance to Tubishat `tubishat2020` + Givi `givi2023` | Matches "Butterfly–Billiards" title; honest provenance |
+| Research-gap table | Rewrote rows + final row to the **real** contribution (DP+Krum+Shapley + characterisation), not "DB-BOA three roles" | [[thesis-honesty-mandate]] |
+| Both summary sections | Recentred on the privacy↔incentive characterisation as the gap | Matches abstract framing (REWRITE_00) |
+
+**All `\cite{}` keys used above are present in `references.bib`** (verified 2026-06-08). No new bib entries required — the bibliography rewrite in `REWRITE_02_literature_and_bib.md` and the `all papers/` ingestion are already applied.
+```

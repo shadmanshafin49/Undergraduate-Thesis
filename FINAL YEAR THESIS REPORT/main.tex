@@ -28,11 +28,13 @@
 
 \documentclass[Times,12pt,oneside,openany,print,index]{report}
 \usepackage[a4paper,width=150mm,top=25mm,bottom=25mm]{geometry}
+\setlength{\emergencystretch}{2em} % let TeX loosen lines instead of overflowing the margin (unbreakable \texttt/slash tokens)
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{csquotes} % Provides advanced facilities for in-line and display quotations
 \usepackage{tikz}
-\usepackage{amsmath} % TO use mathematical equations 
+\usepackage{amsmath} % TO use mathematical equations
+\usepackage{amssymb} % blackboard-bold (\mathbb) and relation symbols (\gtrsim)
 \pagestyle{plain} % Just a plain page number. For more http://www.emerson.emory.edu/services/latex/latex_129.html
 
 \usepackage{graphicx} % to use the graphicx package
@@ -41,6 +43,8 @@
 \usepackage{subcaption}   % ✅ ADD HERE
 \usepackage{float}
 \usepackage{array} % The array environment is used to make a table of information, with column alignment (left, center, or right) and optional vertical lines separating the columns
+\usepackage{booktabs} % Provides \toprule, \midrule, \bottomrule for professional tables
+\usepackage{placeins} % Provides \FloatBarrier to keep floats within their section
 
 \usepackage[nottoc]{tocbibind} % The tocbibind package can be used to add the ToC and/or bibliography and/or the index etc., to the Table of Contents listing
 
@@ -68,6 +72,8 @@
 \let\cleardoublepage=\clearpage % removes unwanted doublepages
 
 \begin{document}
+
+\input{core/nomenclature} % nomenclature entries (no visible output here; rendered by \printnomenclature)
 
 \thispagestyle{empty} % removes page number from title page
 \input{core/titlepage} % Add title page
@@ -113,8 +119,9 @@
 \listoffigures % To  generation of the List of Figure
 \listoftables % To  generation of the Tables of Figure
 
-\printnomenclature % TO  generation of the Nomenclature file
+\phantomsection
 \addcontentsline{toc}{chapter}{Nomenclature}
+\printnomenclature % TO  generation of the Nomenclature file
 \cleardoublepage
 
 \pagenumbering{arabic} % To use page number 1,2,3 ..
@@ -131,9 +138,11 @@
 
 
 \chapter{Proposed Methodology}
+\label{ch:methodology}
 \input{chapters/chapter_5.tex}
 
 \chapter{Result Analysis}
+\label{ch:results}
 \input{chapters/chapter_6.tex}
 
 
@@ -144,18 +153,5 @@
 \phantomsection
 \printbibliography % Where the bibliography will be printed
 \addcontentsline{toc}{chapter}{Bibliography}
-
-% ********************************** Appendices ********************************
-%\begin{appendices} % Using appendices environment for more functionality
-\newpage
-\phantomsection
-\addcontentsline{toc}{chapter}{Appendix A How to install \LaTeX}
-\input{appendix/appendix_1}
-
-\newpage
-\phantomsection
-\addcontentsline{toc}{chapter}{Appendix B Overleaf: GitHub for \LaTeX\ projects}
-\input{appendix/appendix_2}
-%\end{appendices}
 
 \end{document}

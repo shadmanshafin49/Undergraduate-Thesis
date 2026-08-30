@@ -1,0 +1,38 @@
+
+\begin{thenomenclature} 
+\nomgroup{A}
+  \item [{ADTCN}]\begingroup Adaptive Deep Temporal Context Network --- the fraud-detection model\nomeqref {0}\nompageref{Title}
+  \item [{API}]\begingroup Application Programming Interface\nomeqref {0}\nompageref{Title}
+  \item [{AUC}]\begingroup Area Under the ROC Curve\nomeqref {0}\nompageref{Title}
+  \item [{BOA}]\begingroup Butterfly Optimisation Algorithm\nomeqref {0}\nompageref{Title}
+  \item [{CA}]\begingroup Certificate Authority (Hyperledger Fabric identity component)\nomeqref {0}\nompageref{Title}
+  \item [{CNN}]\begingroup Convolutional Neural Network\nomeqref {0}\nompageref{Title}
+  \item [{DB-BOA}]\begingroup Dynamic Butterfly--Billiards Optimisation Algorithm\nomeqref {0}\nompageref{Title}
+  \item [{DP}]\begingroup Differential Privacy\nomeqref {0}\nompageref{Title}
+  \item [{DP-SGD}]\begingroup Differentially Private Stochastic Gradient Descent\nomeqref {0}\nompageref{Title}
+  \item [{FedAvg}]\begingroup Federated Averaging --- the baseline aggregation rule\nomeqref {0}\nompageref{Title}
+  \item [{FL}]\begingroup Federated Learning\nomeqref {0}\nompageref{Title}
+  \item [{FL-ADTCN}]\begingroup Federated Adaptive Deep Temporal Context Network --- the proposed framework\nomeqref {0}\nompageref{Title}
+  \item [{FPR}]\begingroup False Positive Rate\nomeqref {0}\nompageref{Title}
+  \item [{IID}]\begingroup Independent and Identically Distributed\nomeqref {0}\nompageref{Title}
+  \item [{MC}]\begingroup Monte Carlo\nomeqref {0}\nompageref{Title}
+  \item [{MCC}]\begingroup Matthews Correlation Coefficient\nomeqref {0}\nompageref{Title}
+  \item [{ML}]\begingroup Machine Learning\nomeqref {0}\nompageref{Title}
+  \item [{MSP}]\begingroup Membership Service Provider (Hyperledger Fabric)\nomeqref {0}\nompageref{Title}
+  \item [{MTTA}]\begingroup Multiple Time-Scale Temporal Attention\nomeqref {0}\nompageref{Title}
+  \item [{NPV}]\begingroup Negative Predictive Value\nomeqref {0}\nompageref{Title}
+  \item [{PCA}]\begingroup Principal Component Analysis\nomeqref {0}\nompageref{Title}
+  \item [{PEC-BC}]\begingroup Private Ethereum Consortium Blockchain (the base paper's simulated ledger)\nomeqref {0}\nompageref{Title}
+  \item [{RL}]\begingroup Reinforcement Learning\nomeqref {0}\nompageref{Title}
+  \item [{ROC}]\begingroup Receiver Operating Characteristic\nomeqref {0}\nompageref{Title}
+  \item [{SDK}]\begingroup Software Development Kit\nomeqref {0}\nompageref{Title}
+  \item [{TP, TN, FP, FN}]\begingroup True positives, true negatives, false positives, false negatives\nomeqref {0}\nompageref{Title}
+  \item [{ULB}]\begingroup Universit\'e Libre de Bruxelles (source of the credit-card fraud dataset)\nomeqref {0}\nompageref{Title}
+\nomgroup{Z}
+  \item [{$\epsilon,\ \delta$}]\begingroup Differential-privacy budget and failure probability\nomeqref {0}\nompageref{Title}
+  \item [{$\epsilon^{\star}$}]\begingroup Largest privacy budget at which the on-chain reward ordering still inverts (boundary of the rank-faithful regime)\nomeqref {0}\nompageref{Title}
+  \item [{$\phi_i$}]\begingroup Shapley contribution weight of organisation $i$\nomeqref {0}\nompageref{Title}
+  \item [{$\rho$}]\begingroup Spearman rank correlation between the DP and noise-free reward orderings\nomeqref {0}\nompageref{Title}
+  \item [{$n,\ f$}]\begingroup Number of federation organisations; number of Byzantine organisations tolerated\nomeqref {0}\nompageref{Title}
+
+\end{thenomenclature}

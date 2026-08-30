@@ -24,7 +24,7 @@ import torch
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.adtcn    import ADTCN
-from utils.metrics   import compute_all_metrics, obf2_value
+from utils.metrics   import compute_all_metrics, obf2_value, coalition_score
 
 
 class FederatedADTCN(ADTCN):
@@ -51,6 +51,7 @@ class FederatedADTCN(ADTCN):
         self,
         epsilon: float = 1.0,
         delta:   float = 1e-5,
+        adaptive_sensitivity: bool = False,
     ) -> list:
         """
         Return model weights with a formal (ε, δ)-differential privacy
@@ -58,7 +59,17 @@ class FederatedADTCN(ADTCN):
 
         Steps
         -----
-        1. Clip each weight tensor to L2 norm ≤ C=1.0 (bounding sensitivity).
+        1. Clip each weight tensor to L2 norm ≤ C (bounding sensitivity).
+           - ``adaptive_sensitivity=False`` (default): fixed C=1.0
+             — the original, deliberately tight bound (see disclosure below).
+           - ``adaptive_sensitivity=True``: per-tensor C = ‖w‖₂, i.e. clip to
+             the tensor's own norm so the clip is a no-op and the weight SCALE
+             is preserved (adaptive clipping, Andrew et al., NeurIPS 2021).
+             This makes the mechanism converge to the un-noised weights as
+             ε→∞ — required for a clean ε-sweep where ε=∞ is the ground truth.
+             Note the per-element noise-to-signal ratio ≈ √(2ln(1.25/δ))·√dim/ε
+             is *independent of C*, so adaptive clipping fixes convergence but
+             does NOT change where the privacy–utility transition sits.
         2. Add i.i.d. Gaussian noise N(0, σ²) where
                σ = C · √(2 · ln(1.25 / δ)) / ε
 
@@ -79,16 +90,21 @@ class FederatedADTCN(ADTCN):
         at a very tight privacy budget; a practical DP-FL deployment would use
         ε≥50 or DP-SGD (McMahan et al., ICLR 2018).  See thesis Limitations.
         """
-        weights     = self.extract_weights()
-        sensitivity = 1.0                                  # clipping norm C
-        sigma       = sensitivity * sqrt(2 * log(1.25 / delta)) / epsilon
+        weights = self.extract_weights()
+        k       = sqrt(2 * log(1.25 / delta))
 
         noised = []
         for w in weights:
-            # L2-clip: scale down if norm exceeds sensitivity bound
-            norm = np.linalg.norm(w)
-            if norm > sensitivity:
-                w = w * (sensitivity / norm)
+            if adaptive_sensitivity:
+                # Per-tensor C = ‖w‖₂: clip is a no-op, scale preserved,
+                # noise tracks the tensor magnitude → converges as ε→∞.
+                sensitivity = float(np.linalg.norm(w)) + 1e-12
+            else:
+                sensitivity = 1.0                          # original fixed bound
+                norm = np.linalg.norm(w)
+                if norm > sensitivity:                     # L2-clip down
+                    w = w * (sensitivity / norm)
+            sigma = sensitivity * k / epsilon
             noised.append(w + np.random.normal(0, sigma, w.shape))
         return noised
 
@@ -109,12 +125,15 @@ class FederatedADTCN(ADTCN):
     def evaluate_on_validation(self, X_val: np.ndarray,
                                 y_val: np.ndarray) -> float:
         """
-        Return Obf2 score for DB-BOA aggregation fitness (Job 3).
-        Obf2 = Acc + Pre + NPV + MCC + 1/FPR  (Eq.11, normalised).
+        Return a bounded quality score for federated aggregation / Shapley
+        contribution attribution: balanced accuracy = (Sens + Spec)/2 ∈ [0,1].
+
+        (Previously returned obf2_value(), whose unbounded 1/FPR term made
+        Shapley coalition values degenerate (~1e8); see coalition_score docstring.)
         """
         y_pred = self.predict(X_val)
         m      = compute_all_metrics(y_val, y_pred)
-        return obf2_value(m)
+        return coalition_score(m)
 
     # ── Metadata ──────────────────────────────────────────────────────────────
 

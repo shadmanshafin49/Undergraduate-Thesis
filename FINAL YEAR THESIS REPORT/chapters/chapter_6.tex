@@ -1,392 +1,652 @@
-\section{DB-BOA Convergence Analysis}
+% ============================================================
+% CHAPTER 5 — RESULT ANALYSIS
+% All numbers from the verified fixed-objective full run
+% (main.py --attack, 2026-06-08) + the characterisation suite.
+% No fabricated tables (8-model comparison, t-tests, 85 TPS,
+% 28/18/4 leader split, 458/312/178 tokens) are retained.
+% ============================================================
 
-\subsection{Job 1: Hyperparameter Optimisation Convergence}
+This chapter describes the practical implementation of the FL-ADTCN framework and reports its measured behaviour. All detector and federation numbers come from a single full-quality run of the current, fixed-objective code on the public ULB Credit Card Fraud dataset; the characterisation experiments (Sections~\ref{sec:privacy-incentive}--\ref{sec:scalability}) are produced by the dedicated sweep scripts, and the optimiser-vs-default comparison of Section~\ref{sec:dbboa-hpo} additionally reports a dedicated paired retraining run. Detection metrics are reported at the \textbf{deployment operating point}, in which differentially private \emph{weight} sharing is disabled and privacy is instead enforced on the incentive (output) channel — the configuration the central contribution (Section~\ref{sec:private-incentive}) shows to be both private and faithful.
 
-Figure~\ref{fig:cost_function_convergence} shows the convergence curve of DB-BOA Job~1. The algorithm converges to $\text{Obf}_2 = 5.82$ within 25 iterations from a random initialisation of $\text{Obf}_2 \approx 3.4$, representing a 71\% fitness improvement. The adaptive switching mechanism (Equation~\ref{eq:switch}) is visible in the convergence curve: early iterations show broad exploratory improvement (BOA-dominated), while later iterations show fine convergence (DBOA-dominated). Pure BOA converges faster but to a lower fitness of 4.91; pure DBOA is slower and converges to 5.21. DB-BOA achieves the highest final fitness (5.82) within the fewest evaluations.
+\section{Implementation}
+\label{sec:implementation}
 
+This section describes the practical realisation of the proposed fraud-detection framework, focusing on the Adaptive Deep Temporal Context Network (ADTCN) and its deployment under both centralised and federated learning paradigms. The implementation addresses three core challenges: temporal dependency modelling, extreme class imbalance, and distributed training under heterogeneous data conditions.
 
+\subsection*{Data Preparation and Sequencing}
 
+Raw transaction records were first transformed into fixed-length temporal sequences using a sliding-window mechanism of length $T=10$. Each sequence represents ten consecutive transactions, where every transaction is encoded by 33 numerical features: the 30 base features (V1--V28, standardised Amount, Time) plus three temporal-amount recurrence features (the recurrence of similar amounts before and after the transaction, and a degree ratio) computed from the discretised Amount stream during preprocessing. This transformation converts the tabular dataset into a three-dimensional tensor of shape $(N, 10, 33)$, enabling the model to learn temporal dependencies across successive transactions.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.65\textwidth]{images/cost_function_convergence.png}
-    \caption{Convergence curve of DB-BOA compared with pure BOA and pure DBOA}
-    \label{fig:cost_function_convergence}
-\end{figure}
+The dataset was split into training, validation, and testing partitions using a stratified $70{:}10{:}20$ strategy (train $199{,}364$, validation $28{,}481$, test $56{,}962$), preserving the global 0.17\% fraud rate in each partition.
 
+\subsection*{Handling Class Imbalance}
 
+The dataset exhibits extreme imbalance, with fraudulent transactions accounting for approximately 0.17\% of all samples. Class imbalance is handled by a \textbf{class-weighted cross-entropy loss}: the positive (fraud) class is weighted by the ratio of normal to fraud samples ($\approx 578$), heavily penalising missed fraud events so that the rare class contributes significantly to gradient updates. No oversampling or synthetic minority resampling is used.
 
-\subsection{Activation Function Comparison}
+\subsection*{Model Initialisation and Architecture}
 
-Figure~\ref{fig:activation} compares the performance of the ADTCN model under four activation functions in the MJE embedding layer: ReLU, Leaky ReLU, ELU, and SELU. The DB-BOA-optimised ADTCN with ReLU activation achieves the highest MCC (0.9249) among the tested configurations, consistent with the base paper's findings.
+The ADTCN model consists of three components: a multi-feature input, a stacked one-dimensional convolutional backbone, and a classification head.
 
-\section{ADTCN Fraud Detection Performance}
+Each transaction in the ten-step window is represented by its 33 input features — the 30 base features (V1--V28, standardised Amount, Time) plus the three temporal-amount recurrence features — the conceptual Multi-Modal Joint Embedding, used directly without a separate learned embedding layer. The temporal backbone (TCL) comprises two \texttt{Conv1d} layers (kernel size 3, padding 1, ReLU) that expand the channels from $F$ to $2F$ over the ordered window. Global max-pooling over the time axis (the conceptual MTTA) produces a salient-timestep summary, and a linear head outputs the two normal/fraud logits.
 
-\subsection{Centralized ADTCN Results}
+The two searched hyperparameters ($H_{nD}^\ast = 142$ filters, $S_{eD}^\ast = 76$ steps per epoch) were determined by DB-BOA prior to training; the epoch count is fixed, not searched.
 
-The centralised ADTCN (trained on the full dataset as a baseline) achieves the results shown in Table~\ref{tab:centralized_results}. The confusion matrix is given in Table~\ref{tab:confusion_matrix}.
+\subsection*{Training Configuration}
 
+Model parameters were optimised using the Adam optimiser with a learning rate of $10^{-3}$ and the class-weighted cross-entropy loss described above, for a fixed 30 epochs. The effective batch size is derived from the DB-BOA-searched steps-per-epoch ($S_{eD}^\ast=76$, i.e.\ $\approx 3{,}000$ sequences per batch). No weight decay, gradient clipping, or learning-rate scheduling is applied; the training configuration is deliberately minimal and is reported here exactly as implemented.
 
+\subsection*{Federated Learning Deployment}
 
-% -------- TABLE 5.1 --------
+To enable privacy-preserving collaborative training across the three-bank consortium, the centralised learning pipeline was extended to the federated setting:
+
+\begin{itemize}
+    \item The global model was initialised with the DB-BOA-tuned hyperparameters and distributed to all three consortium peers.
+    \item At each federation interval (every 5 consensus rounds), each institution trained its local ADTCN and transmitted only updated weight vectors to the Federation Manager (running off-chain in Python), differentially privatised by the Gaussian mechanism before sharing.
+    \item The Federation Manager applied Krum robust selection and computed exact Shapley contribution weights $[w_1^\ast, w_2^\ast, w_3^\ast]$; the global model was computed and redistributed.
+    \item The federation round outcome (Shapley weights, coalition values, Krum scores, timestamp) was recorded on the Fabric ledger via \texttt{recordFederationRound}; token rewards were distributed automatically in proportion to the Shapley weights.
+\end{itemize}
+
+The production partitioning is a stratified volume split — 50/30/20 across the three banks with the global 0.17\% fraud rate preserved in each shard. This stratification is what prevents the degenerate non-IID collapse of raw FedAvg; proximal methods such as FedProx are a documented extension but are not part of the current pipeline.
+
+\subsection*{DBBOAContract Chaincode Implementation}
+
+The \texttt{DBBOAContract} is a Node.js smart contract deployed to the \texttt{mychannel} Fabric channel. It implements the \texttt{fabric-contract-api} interface and provides the following transaction functions:
+
 \begin{table}[H]
 \centering
-\caption{Centralized ADTCN Performance (Validation Set)}
-\label{tab:centralized_results}
-\begin{tabular}{|l|l|r|}
+\caption{DBBOAContract chaincode function summary with incentive logic}
+\label{tab:chaincode_functions}
+\begin{tabular}{|p{4.6cm}|p{9.2cm}|}
 \hline
-\textbf{Metric} & \textbf{Formula} & \textbf{Value} \\
-\hline
-Accuracy (Acc) & (TP+TN)/Total & 0.9931 \\
-\hline
-Precision (Pre) & TP/(TP+FP) & 0.8673 \\
-\hline
-Sensitivity (TPR) & TP/(TP+FN) & 0.8667 \\
-\hline
-Specificity (TNR) & TN/(TN+FP) & 0.9996 \\
-\hline
-NPV & TN/(TN+FN) & 0.9997 \\
-\hline
-FPR & FP/(TN+FP) & 0.0004 \\
-\hline
-FNR & FN/(TP+FN) & 0.1333 \\
-\hline
-MCC & (TP$\times$TN - FP$\times$FN)/denom & 0.9249 \\
-\hline
-ROC-AUC & — & 0.9703 \\
-\hline
-F1-score & 2$\times$Pre$\times$Rec/(Pre+Rec) & 0.8670 \\
-\hline
+\textbf{Chaincode Function} & \textbf{Description and Incentive Logic} \\ \hline
+\texttt{updateNodeMetrics} & Stores CT, CC, MS for each peer; read by DB-BOA leader selection. \\ \hline
+\texttt{recordLeaderSelection} & Records selected leader and Obf$_1$ value for the round. \\ \hline
+\texttt{recordHyperparams} & Stores DB-BOA hyperparameter output (HnD, SeD, fitness). \\ \hline
+\texttt{recordFraudResult} & Records verdict; auto-applies $+10$ if consensus matches, $-2$ if disputed. \\ \hline
+\texttt{recordConsensusRound} & Logs latency and outcome; $+15$ if latency $<$ 300\,ms; $+10$ to leader if success; $-2$ if fail. \\ \hline
+\texttt{recordFederationRound} & Logs the Shapley weights $w_1^\ast, w_2^\ast, w_3^\ast$ and global fitness; distributes $\lfloor 20 \cdot w_i^\ast\rfloor$ tokens to each org. \\ \hline
+\texttt{getNodeStatus} & Queries token balance, reputation, and resource metrics for every consortium node. \\ \hline
+\texttt{updateIncentive} & Credits/debits tokens and reputation for a node; chaincode bounds reputation in $[0.5, 2.0]$ and floors tokens at 0. The off-chain layer applies the policy $+0.02$ on consensus success, $-0.05$ on failure. \\ \hline
 \end{tabular}
 \end{table}
 
-\FloatBarrier
+All chaincode functions avoid \texttt{Math.random()} in state-mutating operations. Timestamps are derived from \texttt{ctx.stub.getTxTimestamp()}, ensuring that all endorsing peers produce identical outputs. Token arithmetic uses integer representations (multiplied by 100) to avoid floating-point non-determinism across peer environments.
 
-% -------- TABLE 5.2 --------
-\begin{table}[H]
-\centering
-\caption{Confusion Matrix — Centralized ADTCN (Validation Set)}
-\label{tab:confusion_matrix}
-\begin{tabular}{|l|r|r|}
-\hline
- & \textbf{Predicted Normal} & \textbf{Predicted Fraud} \\
-\hline
-\textbf{Actual Normal} & 42,693 (TN) & 18 (FP) \\
-\hline
-\textbf{Actual Fraud}   & 10 (FN)     & 65 (TP) \\
-\hline
-\end{tabular}
-\end{table}
+Figure~\ref{fig:fabric_live} shows the deployed stack running: the \texttt{docker ps} listing of the Fabric containers (certificate authorities, CouchDB state databases, Raft orderer, peers, and the chaincode-as-a-service containers), the channel height reported by \texttt{peer channel getinfo}, and a live \texttt{peer chaincode query} returning the consortium node state --- token balances and reputations --- directly from the \texttt{DBBOAContract} world state. Consistent with the scope statement in Section~\ref{sec:validity}, this is the single-host deployment with two peer organisations on which the on-chain measurements were taken; the three-bank consortium of the federated experiments runs in the off-chain simulation layer.
 
-\FloatBarrier
-
-
-
-The confusion matrix reveals an important nuance: despite 99.31\% accuracy, this metric is misleading in the context of extreme class imbalance (0.17\% fraud). A naïve "predict all normal" classifier would achieve 99.83\% accuracy. The MCC of 0.9249 and ROC-AUC of 0.9703 are far more informative metrics: MCC accounts for all four cells of the confusion matrix and is robust to class imbalance, while ROC-AUC measures threshold-independent discrimination ability.
-
-
-% -------- FIGURE 2 --------
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.95\textwidth]{images/fig2.png}
-    \caption{Confusion Matrices: Centralised ADTCN vs FL-ADTCN (Improved)}
+    \includegraphics[width=0.92\textwidth]{images/fabric_live_capture.png}
+    \caption{Live capture of the deployed Hyperledger Fabric network (single-host test-network: CAs, CouchDB, Raft orderer, two peer organisations, CCaaS chaincode containers), the channel block height, and a \texttt{getNodeStatus} chaincode query returning consortium node state from the ledger (output abridged to the first two of ten nodes; container port columns shortened for layout).}
+    \label{fig:fabric_live}
+\end{figure}
+
+\subsection*{Summary of the Implementation Workflow}
+
+The complete implementation pipeline can be summarised as follows:
+\begin{enumerate}
+    \item Deploy Hyperledger Fabric test-network with three organisations; deploy \texttt{DBBOAContract} chaincode.
+    \item Run DB-BOA to determine the ADTCN hyperparameters (filters, steps); write to Fabric ledger.
+    \item Convert raw transactions into temporal sequences; apply stratified partitioning across the consortium.
+    \item Apply the class-weighted cross-entropy loss to address the 578:1 class imbalance.
+    \item At each consensus round, run DB-BOA for leader selection; each institution trains ADTCN locally; fraud verdicts submitted on-chain.
+    \item Every 5 rounds, run the DP/Krum/Shapley federation layer; global model computed and redistributed; token rewards distributed by chaincode in proportion to the Shapley weights.
+    \item Evaluate under normal operation (five simulated consensus rounds, three federation rounds) and under a 15-round Byzantine attack (BankC always-fraud).
+\end{enumerate}
+
+Through this structured implementation, the system achieves robust temporal modelling, resilience to extreme imbalance, distributed learning with mathematically derived incentives, and Byzantine resilience — making it suitable for real-world fraud detection in privacy-sensitive financial ecosystems.
+
+\subsection*{Experimental Configuration}
+
+Table~\ref{tab:fl_adtcn_config} summarises the configuration under which the implementation was evaluated and all results in this chapter were produced.
+
+\begin{table}[H]
+\centering
+\caption{Experimental configuration for the FL-ADTCN consortium evaluation}
+\label{tab:fl_adtcn_config}
+\begin{tabular}{|p{3.8cm}|p{10.0cm}|}
+\hline
+\textbf{Parameter} & \textbf{Description} \\ \hline
+Dataset & Kaggle ULB Credit Card Fraud Detection (284,807 transactions, 31 features, 0.17\% fraud) \\ \hline
+Train/val/test split & 70\% / 10\% / 20\%, stratified (train $199{,}364$, val $28{,}481$, test $56{,}962$); final model trained on train+val ($227{,}845$), evaluated on the held-out 20\% test set. \\ \hline
+Sequence length & 10 transactions (sliding window) \\ \hline
+Consortium nodes & 3 banking organisations (BankA 50\%, BankB 30\%, BankC 20\%), stratified shards \\ \hline
+Aggregation & DP (Gaussian, $\epsilon=1.0$, $\delta=10^{-5}$) + Krum + exact Shapley (7 coalitions) \\ \hline
+Incentive split & 20-token federation pool by Shapley weight \\ \hline
+DB-BOA roles & ADTCN hyperparameters (2-D) and consensus leader selection \\ \hline
+Federation interval & Every 5 consensus rounds \\ \hline
+Framework & PyTorch (CPU); Hyperledger Fabric 2.5 (CCaaS chaincode) \\ \hline
+Metrics & Accuracy, Precision, Sensitivity, Specificity, NPV, FPR, FNR, F1, MCC, ROC-AUC \\ \hline
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+\section{Performance Metric Definitions}
+\label{sec:metric-defs}
+
+Table~\ref{tab:fl_adtcn_metric_defs} defines the evaluation metrics used throughout this chapter.
+
+\begin{table}[H]
+\centering
+\caption{FL-ADTCN performance metric definitions}
+\label{tab:fl_adtcn_metric_defs}
+\begin{tabular}{|p{2.9cm}|p{8.3cm}|p{2.3cm}|}
+\hline
+\textbf{Metric} & \textbf{Meaning} & \textbf{Ideal} \\ \hline
+Accuracy (Acc) & Fraction of correctly predicted cases (TP + TN) / Total. & $\uparrow$ \\ \hline
+Matthews Correlation Coefficient (MCC) & Balanced correlation considering TP, TN, FP, FN. Robust to class imbalance. & $\uparrow$ \\ \hline
+False Positive Rate (FPR) & Fraction of normal cases wrongly labelled as fraud (FP / (FP + TN)). & $\downarrow$ \\ \hline
+Precision (Pre) & Proportion of detected frauds that are truly fraud. & $\uparrow$ \\ \hline
+Negative Predictive Value (NPV) & Probability that a ``normal'' prediction is correct. & $\uparrow$ \\ \hline
+ROC-AUC & Threshold-independent discrimination ability. & $\uparrow$ \\ \hline
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+\section{Centralised ADTCN Detection Performance}
+\label{sec:centralised}
+
+Table~\ref{tab:centralized_results} reports the DB-BOA-tuned ADTCN on the held-out ULB test set (56{,}962 transactions, 98 fraudulent); the confusion matrix is in Table~\ref{tab:confusion_matrix}.
+
+\begin{table}[H]
+\centering
+\caption{Centralised ADTCN fraud-detection performance on the ULB test set (56{,}962 transactions, 98 fraud)}
+\label{tab:centralized_results}
+\begin{tabular}{|l|r|}
+\hline \textbf{Metric} & \textbf{Value} \\ \hline
+Accuracy        & 99.85\% \\ \hline
+Precision       & 54.25\% \\ \hline
+Sensitivity (Recall) & 84.69\% \\ \hline
+Specificity     & 99.88\% \\ \hline
+NPV             & 99.97\% \\ \hline
+FPR             & 0.12\% \\ \hline
+FNR             & 15.31\% \\ \hline
+F1-score        & 66.14\% \\ \hline
+MCC             & 0.677 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Confusion matrix --- centralised ADTCN (test set)}
+\label{tab:confusion_matrix}
+\begin{tabular}{|l|r|r|}
+\hline & \textbf{Predicted Normal} & \textbf{Predicted Fraud} \\ \hline
+\textbf{Actual Normal} & 56{,}794 (TN) & 70 (FP) \\ \hline
+\textbf{Actual Fraud}  & 15 (FN)       & 83 (TP) \\ \hline
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+On the held-out test set, the DB-BOA-tuned ADTCN detects 83 of 98 frauds (84.7\% recall) at a false-positive rate of 0.12\%, yielding an MCC of 0.677. Because the data are extremely imbalanced (0.17\% fraud), accuracy alone is uninformative --- a trivial ``predict normal'' classifier already reaches 99.83\% --- so MCC and the confusion matrix are the meaningful indicators. The 70 false positives against 83 true positives reflect the conservative operating point appropriate to a first-stage fraud screen, where flagged transactions are passed to secondary review rather than blocked outright.
+
+These metrics are reported at the \textbf{operating point used for deployment}, in which differentially private weight sharing is disabled ($\epsilon=\infty$ on the parameter channel). As the ablation in Section~\ref{sec:fed-ablation} and the characterisation in Section~\ref{sec:privacy-incentive} show, the deployment budget $\epsilon=1.0$ adds Gaussian weight noise ($\sigma\approx 4.84$ at $C=1$) that exceeds the weight magnitudes and near-randomises the global model, so any DP-on detection number would reflect noise rather than the detector. Privacy in the deployed system is instead carried by the output (incentive) channel of Section~\ref{sec:private-incentive}: differential privacy is applied to the published Shapley contribution weights, where it protects what is actually written to the immutable ledger, rather than to the shared model parameters where it destroys utility. These are honest numbers for a lightweight one-dimensional CNN on raw PCA features; they are deliberately not the base paper's 95.45\% nor an inflated 99.31\%, neither of which is produced by this implementation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{images/confusion_matrix.png}
+    \caption{Confusion matrix of the centralised ADTCN on the ULB test set.}
     \label{fig:confusion_matrix_fig}
 \end{figure}
 
-\FloatBarrier
-
-% -------- FIGURE 4 --------
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.60\textwidth]{images/Figure4.png}
-    \caption{Full ROC Curves for All ADTCN Model Variants}
-    \label{fig:roc_curves_all_models}
+    \includegraphics[width=0.6\textwidth]{images/roc_curve.png}
+    \caption{ROC curve of the centralised ADTCN detector.}
+    \label{fig:roc_curve}
 \end{figure}
 
 \FloatBarrier
 
+\section{Federated Ablation: the Cost of Each Layer}
+\label{sec:fed-ablation}
 
-\section{Federated ADTCN Performance}
-
-\subsection{Comparison Across Training Modes}
-
-
-Table~\ref{tab:fl_comparison} compares performance across three federated learning configurations: centralised baseline, FL with IID data, and FL with non-IID data (both raw and with fixes applied).
-
-
+Table~\ref{tab:fed_ablation} (produced by \texttt{run\_baselines.py}) compares FedAvg, FedAvg+Krum, FedAvg+DP, and the proposed Krum+DP+Shapley pipeline on the three-bank consortium (test set $n=56{,}962$; the two DP-enabled rows use the deliberately tight deployment budget $\epsilon=1.0$, $\delta=10^{-5}$).
 
 \begin{table}[H]
 \centering
-\caption{Performance Comparison Across Training Modes}
-\label{tab:fl_comparison}
-\begin{tabular}{|p{4.2cm}|r|r|r|r|r|}
-\hline
-\textbf{Model} & \textbf{Acc} & \textbf{MCC} & \textbf{FPR} & \textbf{NPV} & \textbf{ROC-AUC} \\
-\hline
-Centralized ADTCN & 0.9931 & 0.9249 & 0.0004 & 0.9997 & 0.9703 \\
-\hline
-FL-ADTCN (IID) & 0.9826 & 0.8314 & 0.0172 & 0.9990 & 0.9525 \\
-\hline
-FL-ADTCN (non-IID raw) & 0.9738 & 0.1424 & 0.0001 & 0.9734 & 0.1424 \\
-\hline
-\textbf{FL-ADTCN (non-IID + fixes)} & \textbf{0.9738} & \textbf{0.6213} & \textbf{0.0001} & \textbf{0.9980} & \textbf{0.9210} \\
-\hline
-\textbf{FL-ADTCN + DB-BOA (Ours)} & \textbf{0.9786} & \textbf{0.7812} & \textbf{0.0038} & \textbf{0.9993} & \textbf{0.9525} \\
-\hline
+\caption{Federated ablation on the ULB dataset (three-bank consortium, test set $n=56{,}962$). The two DP-enabled rows use the deployment budget $\epsilon=1.0$ and collapse to a degenerate single-class predictor.}
+\label{tab:fed_ablation}
+\begin{tabular}{|p{5.4cm}|r|r|r|r|}
+\hline \textbf{Configuration} & \textbf{Accuracy} & \textbf{MCC} & \textbf{FPR} & \textbf{NPV} \\ \hline
+FedAvg                         & 99.72\% & 0.569 & 0.26\%  & 99.98\% \\ \hline
+FedAvg + Krum                  & 99.92\% & \textbf{0.776} & 0.05\%  & 99.97\% \\ \hline
+FedAvg + DP ($\epsilon=1.0$)   & 99.83\% & 0.000 & 0.00\%  & 99.83\% \\ \hline
+\textbf{Proposed (Krum+DP+Shapley, $\epsilon=1.0$)} & 0.21\% & 0.001 & 99.96\% & 100.00\% \\ \hline
 \end{tabular}
 \end{table}
 
+The ablation isolates the cost of each layer. Adding \textbf{Krum} to FedAvg is purely beneficial here: by selecting the single most consensus-aligned update rather than averaging, it lifts MCC from $0.569$ to $0.776$ and cuts the false-positive rate to $0.05\%$, the strongest configuration in the table. The two \emph{differentially private} configurations, however, both collapse to a degenerate single-class predictor ($\text{MCC}\approx 0$) at the deployment budget $\epsilon=1.0$: the Gaussian weight noise so dominates the signal that each aggregated model predicts a single class for every transaction. The \emph{direction} of the collapse is set by the random noise draw and so varies run-to-run --- in the saved run FedAvg+DP collapses to predict-all-normal ($\text{FPR}=0\%$, recall $0\%$) while the proposed Krum+DP+Shapley pipeline collapses to predict-all-fraud ($\text{FPR}\approx 100\%$) --- but in every case $\text{MCC}\approx 0$, i.e.\ no better than chance. This is not an implementation defect but the direct, expected consequence of the privacy/utility trade-off characterised in Section~\ref{sec:privacy-incentive}: at $\epsilon=1.0$ the noise overwhelms the signal, and Krum does not help because selecting a single noised model forgoes the partial noise-cancellation that averaging provides. The result reinforces the central finding --- $\epsilon=1.0$ is far below the usable budget --- and motivates the DP-SGD / relaxed-$\epsilon$ future work, while justifying the deployment decision to disable weight-channel DP and carry privacy on the incentive channel instead.
 
+Table~\ref{tab:fed_confusion} reports the confusion-matrix counts underlying each ablation row (saved with the run in \texttt{baselines.json}); Figure~\ref{fig:fed_confusion} visualises the four matrices.
 
-\textbf{Key findings:}
-\begin{enumerate}
-  \item Raw non-IID FL fails catastrophically (ROC-AUC = 0.14): extreme label skew creates contradictory gradient directions across clients, causing FedAvg to average into a nearly random global model.
-  \item Stratification + FedProx recovers performance to ROC-AUC = 0.92, demonstrating that simple techniques can address non-IID heterogeneity effectively.
-  \item DB-BOA Job~3 aggregation, replacing equal FedAvg weights, further improves the federated model by assigning higher weight to BankA's stronger model (trained on 50\% of data with more balanced fraud exposure), producing measurable improvements in MCC and NPV.
-\end{enumerate}
+\begin{table}[H]
+\centering
+\caption{Confusion-matrix counts of the federated FL-ADTCN configurations on the ULB test set ($n=56{,}962$: 98 fraud, 56{,}864 normal).}
+\label{tab:fed_confusion}
+\begin{tabular}{|p{5.4cm}|r|r|r|r|}
+\hline \textbf{Configuration} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{TN} \\ \hline
+FedAvg                         & 86 & 146      & 12 & 56{,}718 \\ \hline
+FedAvg + Krum                  & 81 & 30       & 17 & 56{,}834 \\ \hline
+FedAvg + DP ($\epsilon=1.0$)   & 0  & 0        & 98 & 56{,}864 \\ \hline
+\textbf{Proposed (Krum+DP+Shapley, $\epsilon=1.0$)} & 98 & 56{,}843 & 0 & 21 \\ \hline
+\end{tabular}
+\end{table}
 
+The counts make the trade-offs of Table~\ref{tab:fed_ablation} concrete. The Krum-aggregated federated detector --- the configuration representative of the deployment operating point, where weight-channel DP is off --- detects 81 of the 98 test-set frauds while raising only 30 false alarms among 56{,}864 normal transactions. Plain FedAvg catches five more frauds (86) but at nearly five times the false alarms (146), which is what its lower MCC reflects. The two DP rows exhibit the degenerate collapse directly: FedAvg+DP predicts \emph{normal} for every transaction (TP $=$ FP $=0$), while the proposed pipeline at $\epsilon=1.0$ predicts \emph{fraud} for all but 21 transactions --- trivially catching all 98 frauds at the cost of flagging essentially the entire normal class.
 
 \begin{figure}[H]
     \centering
+    \includegraphics[width=0.95\textwidth]{images/confusion_matrix_federated.png}
+    \caption{Confusion matrices of the four federated FL-ADTCN configurations on the ULB test set, rendered from the saved TP/TN/FP/FN counts of the ablation run.}
+    \label{fig:fed_confusion}
+\end{figure}
 
-    % --- Top row (2 side-by-side) ---
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/summary_comparison.png}
+    \caption{Federated ablation: per-configuration metrics on the ULB test set.}
+    \label{fig:fed_ablation_fig}
+\end{figure}
+
+\FloatBarrier
+
+\section{Shapley Contribution Weights and the On-Chain Incentive}
+\label{sec:shapley-weights}
+
+At the deployment operating point (weight-channel DP off), exact Shapley assigns each bank its marginal contribution to the global model's balanced accuracy on a shared validation set. Table~\ref{tab:shapley_weights} reports the per-round weights.
+
+\begin{table}[H]
+\centering
+\caption{Per-round exact Shapley contribution weights at the deployment operating point (three-bank federation, weight-channel DP off). All three banks are stratified volume-splits of the same ULB dataset, so their marginal contributions are near-identical and the split is near-uniform.}
+\label{tab:shapley_weights}
+\begin{tabular}{|c|r|r|r|l|l|}
+\hline
+\textbf{Round} & \textbf{BankA} & \textbf{BankB} & \textbf{BankC} & \textbf{Krum selects} & \textbf{Weight DP} \\ \hline
+1 & 0.336 & 0.332 & 0.332 & BankA & off \\ \hline
+2 & 0.333 & 0.333 & 0.333 & BankA & off \\ \hline
+3 & 0.333 & 0.333 & 0.333 & BankA & off \\ \hline
+\end{tabular}
+\end{table}
+
+Exact Shapley returns a \emph{near-uniform} split ($\approx 0.333$ each, a token allocation of $\approx 6.67$ of the 20-token pool). This is the honest and \emph{correct} behaviour of the mechanism on this data: the three ``banks'' are stratified volume-splits of a single ULB dataset (Section~\ref{sec:validity}), and --- because the pipeline performs no inter-round local training --- every single-bank and coalition model evaluates to essentially the same balanced accuracy ($v(S)\approx 0.50$ for all coalitions $S$), so no bank has a larger marginal contribution than another. Exact Shapley therefore neither invents spurious differentiation nor collapses any bank to zero; it returns the equal split that near-identical contributors deserve, replacing FedAvg's \emph{assumed} equal weighting with a \emph{measured} one. The corollary, stated plainly, is that on genuinely identical contributors the contribution signal carries little information, so the \emph{value} of Shapley attribution --- and the privacy$\rightarrow$fidelity$\rightarrow$reward-error coupling that is this thesis's central contribution --- is demonstrated where contributions actually differ, by inducing a real heterogeneity gradient in the characterisation of Sections~\ref{sec:privacy-incentive} and~\ref{sec:private-incentive}, not on the single-source deployment split shown here.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{images/federation_weights.png}
+    \caption{Exact Shapley contribution weights across federation rounds (near-uniform on single-source data).}
+    \label{fig:federation_weights}
+\end{figure}
+
+\FloatBarrier
+
+\section{DB-BOA Hyperparameter Optimisation vs.\ Default}
+\label{sec:dbboa-hpo}
+
+The DB-BOA objective was corrected before this run: the unbounded $1/\mathrm{FPR}$ term --- which diverged whenever a candidate reached $\mathrm{FPR}=0$ and so could not rank configurations --- was replaced by the bounded, MCC-dominated fitness $\mathrm{Obf}_2 = 2\,\mathrm{MCC} + \mathrm{Spec} + \mathrm{Pre} + \mathrm{NPV}$. Table~\ref{tab:dbboa_vs_default} compares the DB-BOA-tuned configuration against a hand-set default under this corrected objective.
+
+\begin{table}[H]
+\centering
+\caption{DB-BOA-tuned hyperparameters vs.\ a hand-set default under the corrected objective. The default and the paired tuned row come from the same dedicated side-by-side retraining run; the headline tuned row is the full pipeline run that produced Section~\ref{sec:centralised}.}
+\label{tab:dbboa_vs_default}
+\begin{tabular}{|l|c|r|r|}
+\hline
+\textbf{Configuration} & \textbf{Filters / steps} & \textbf{Accuracy} & \textbf{MCC} \\ \hline
+Hand-set default (paired run) & 128 / 150 & 99.92\% & \textbf{0.785} \\ \hline
+DB-BOA-tuned (headline run)   & 142 / 76  & 99.85\% & 0.677 \\ \hline
+DB-BOA-tuned (paired run)     & 142 / 76  & 98.77\% & 0.313 \\ \hline
+\end{tabular}
+\end{table}
+
+\textbf{Honest finding.} With the corrected (non-degenerate) objective, the DB-BOA hyperparameter search did \emph{not} beat the hand-set default on this dataset, and the size of the gap depends on the run: against the headline pipeline run the default is $\approx 0.11$ MCC higher (0.785 vs 0.677), while in the dedicated paired comparison --- both configurations retrained side by side --- the tuned configuration reached only 0.313, a gap of $\approx 0.47$. The spread between the two tuned runs (0.677 vs 0.313 for identical hyperparameters) is itself part of the finding: the searched configuration, whose low steps-per-epoch setting implies very large batches, trains with high run-to-run variance, whereas the hand-set default is stable. The objective fix was still necessary and correct, because it makes the search rank configurations meaningfully rather than tie everything at a $1/\mathrm{FPR}$ ceiling; but it does not, on its own, make DB-BOA the source of detection accuracy here, and we report the gap and the variance openly rather than hide them. The more honest explanation is that the fast validation surrogate used inside the search (a 2{,}000-row subsample trained for five epochs) is a weak proxy for the fully trained model, and that the bounded fitness landscape is genuinely flat near a well-chosen configuration.
+
+The DB-BOA fitness statistics ($\mathrm{Min}=\mathrm{Max}=\mathrm{Mean}=-5.0$, $\mathrm{Std}\approx 0$ from the first iteration) indicate that the bounded objective surface is flat at its ceiling around a well-chosen configuration: the optimiser reaches the maximum immediately and stays there. We therefore do not present this convergence as evidence of a hard search problem; the demonstrated value of DB-BOA is the \emph{automation} of hyperparameter and leader selection (without manual search, though it does not beat the hand-set default on detection accuracy), not the discovery of a non-obvious optimum.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/cost_function_convergence.png}
+    \caption{DB-BOA convergence under the bounded objective: the population reaches the objective ceiling in the first iteration, reflecting a flat fitness landscape near a good configuration rather than a hard search.}
+    \label{fig:cost_function_convergence}
+\end{figure}
+
+\FloatBarrier
+
+\section{Consensus Leader Selection}
+\label{sec:leader}
+
+DB-BOA reputation-aware leader selection runs over a ten-node simulated consortium, minimising the reputation-discounted resource cost $\mathrm{Obf}_1=(\mathrm{CT}+\mathrm{CC}+\mathrm{MS})/\rho_i$ each round. The selection frequencies reported by this layer are computed from node resource scores in simulation (\texttt{leader\_block.py}); the per-round consensus latency is taken from a real but single-host, two-organisation Hyperledger Fabric measurement (mean $\approx 2.1$\,s over 50 transactions, full submit$\to$endorse$\to$order$\to$commit). Both characterise relative behaviour, not production throughput on a live multi-host network (Section~\ref{sec:validity}). A complementary linear-Q reinforcement-learning policy is evaluated for \emph{sequential} leader rotation: in simulation it matches the optimiser on reward while adapting to nodes whose reliability degrades at runtime (Figure~\ref{fig:rl_leader}). This is a deliberately minimal component, secondary to the privacy--incentive contribution.
+
+\begin{figure}[H]
+    \centering
     \begin{subfigure}{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/Fig_ure_1.png}
-        \caption{ROC-AUC Comparison: Centralised vs All Federated ADTCN Variants}
-        \label{fig:roc_curves_all_models}
+        \includegraphics[width=\textwidth]{images/leader_selection.png}
+        \caption{DB-BOA reputation-aware leader selection (simulated).}
+        \label{fig:leader_selection}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/Figure_5_Precision_Recall.png}
-        \caption{Precision–Recall Curves (Primary Metric for Imbalanced Classes)}
-        \label{fig:precision_recall}
+        \includegraphics[width=\textwidth]{images/rl_leader_adaptivity.png}
+        \caption{Linear-Q policy adapting to runtime reliability drift.}
+        \label{fig:rl_leader}
     \end{subfigure}
+    \caption{Consensus leader selection: metaheuristic and reinforcement-learning policies (single-process simulation).}
+\end{figure}
 
-    \vspace{0.5cm} % space between rows
+\FloatBarrier
 
-    % --- Bottom image (full width) ---
-    \begin{subfigure}{0.8\textwidth}
+\section{Privacy--Incentive Characterisation: When Do On-Chain Rewards Stay Honest?}
+\label{sec:privacy-incentive}
+
+This experiment (\texttt{privacy\_incentive\_sweep.py}, 50 noise draws per $\varepsilon$) sweeps the DP weight-sharing budget $\varepsilon$ and measures how the Gaussian noise that buys privacy corrupts the Shapley contribution signal that drives the on-chain token split (tokens $=20\,w_i$). Three banks are given a genuine contribution gradient via training-label noise (BankA 0\%, BankB 10\%, BankC 25\%), so the honest ($\varepsilon=\infty$) Shapley ordering is non-degenerate: weights $[0.619, 0.250, 0.131]$, i.e.\ tokens $[12.38, 5.00, 2.62]$.
+
+\begin{table}[H]
+\centering
+\caption{Privacy budget vs incentive fidelity (3-bank federation, mean over 50 noise draws). $\rho$ = Spearman rank-correlation of the DP reward ordering against the honest $\varepsilon=\infty$ ordering.}
+\label{tab:privacy_incentive}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|r|r|r|r|r|r|}
+\hline
+$\varepsilon$ & Global bal-acc & cosine & Spearman $\rho$ & Token error & Rank-inversion \\
+              & (\%)           & ($w_{DP},w_\infty$) & (reward rank) & (of 20 pool) & rate \\ \hline
+3      & 49.59 & 0.591 & $+0.007$ & 21.04 & 80\% \\ \hline
+10     & 49.74 & 0.544 & $-0.060$ & 22.53 & 78\% \\ \hline
+30     & 50.05 & 0.464 & $-0.232$ & 25.83 & 78\% \\ \hline
+100    & 52.07 & 0.504 & $-0.144$ & 24.57 & 80\% \\ \hline
+300    & 78.49 & 0.923 & $+0.739$ & 12.64 & 42\% \\ \hline
+1000   & 88.83 & 0.953 & $+0.790$ & 8.60  & 42\% \\ \hline
+3000   & 90.75 & 0.989 & $+0.947$ & 3.34  & 10\% \\ \hline
+10000  & 90.78 & 0.999 & $+1.000$ & 1.01  & 0\%  \\ \hline
+$\infty$ & 90.78 & 1.000 & $+1.000$ & 0.00 & 0\% \\ \hline
+\end{tabular}
+\end{table}
+
+The privacy and incentive layers are in direct tension. At the privacy budgets normally called ``private'' for this task ($\varepsilon\le 100$), the Gaussian weight noise destroys the Shapley contribution signal: averaged over 50 noise draws the reward ordering is uncorrelated to inverted relative to the honest split (Spearman $\rho\approx 0$ to $-0.23$), and $21$--$26$ of the $20$-token pool is mis-allocated on an immutable ledger. As $\varepsilon$ grows the global detector recovers first --- balanced accuracy climbs from $\sim$$50\%$ back to $78\%$ by $\varepsilon\approx 300$ and $89\%$ by $\varepsilon=1000$ --- but incentive fairness lags far behind: at $\varepsilon=1000$ the model is effectively recovered yet $42\%$ of reward orderings are still inverted, and only at $\varepsilon\gtrsim 3000$ do rewards approach honesty ($\rho=0.95$, $10\%$ inversions), with the fully trustworthy regime reached only at $\varepsilon\ge 10000$. We define $\varepsilon^\star=3000$ as the largest budget at which the on-chain reward order still flips. The key finding is a \emph{decoupling}: accuracy and incentive-fairness have different privacy thresholds, so a DP-FL system can publish an accurate global model while paying provably wrong, permanent token rewards --- the contribution signal (a differential of near-equal coalition scores) is intrinsically more fragile to noise than the aggregate model.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.62\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/Figure3.png}
-        \caption{Grouped Bar Chart: Six-Metric Comparison Across All Model Configurations}
-        \label{fig:grouped_bar_chart}
+        \includegraphics[width=\textwidth]{images/privacy_incentive_tradeoff.png}
+        \caption{Balanced accuracy, Shapley fidelity, and token error vs $\varepsilon$, with $\varepsilon^\star$ marked.}
+        \label{fig:privacy_tradeoff}
     \end{subfigure}
-
-    \caption{Performance comparison using ROC-AUC, Precision–Recall, and multi-metric evaluation}
+    \hfill
+    \begin{subfigure}{0.36\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/privacy_incentive_reward_bars.png}
+        \caption{Reward ordering inverting under noise.}
+        \label{fig:privacy_bars}
+    \end{subfigure}
+    \caption{Privacy--incentive trade-off: the reward ordering inverts long before detection accuracy is lost.}
 \end{figure}
 
+\FloatBarrier
 
+\section{Private Incentive Mechanism: Moving Privacy off the Weight Channel}
+\label{sec:private-incentive}
 
-\subsection{Privacy-Utility Trade-off}
-
-Table~\ref{tab:privacy_utility} quantifies the privacy-utility frontier. Privacy is defined as the fraction of data processing that occurs locally (1.0 = fully private, 0.0 = fully centralised). Utility is the normalised ROC-AUC (centralised = 1.0).
+Section~\ref{sec:privacy-incentive} established a negative result: at any practical budget, adding DP to the \emph{weight} channel destroys the Shapley signal and pays wrong on-chain rewards. This section --- the thesis's central contribution --- shows the failure is a property of the \emph{channel}, not of DP-plus-Shapley. The incentive split needs only the $n$-dimensional contribution vector $\varphi$, not the $\sim$$10^5$-dimensional weights. We therefore compute Shapley on the clean models and apply the privacy noise directly to the released contribution statistic (\emph{output perturbation}~\cite{chaudhuri2011}: clip $\lVert\varphi\rVert_2\le C$, add Gaussian $\sigma=C\sqrt{2\ln(1.25/\delta)}/\varepsilon$). The per-element noise-to-signal ratio scales as $k\sqrt{\dim}/\varepsilon$, so moving from $\dim=d\approx 111{,}874$ weights to $\dim=n=3$ contributions improves the budget by up to $\sqrt{d/n}\approx 193\times$ in the worst case.
 
 \begin{table}[H]
 \centering
-\caption{Privacy-Utility Trade-off Across Model Configurations}
-\label{tab:privacy_utility}
-\begin{tabular}{|p{5.2cm}|r|r|r|}
+\caption{Head-to-head privacy of the on-chain reward split: DP on the weight channel ($d=111{,}874$) versus on the released contribution channel ($n=3$), mean over 100 noise draws/$\varepsilon$. Honest split: weights $[0.619,0.250,0.131]$, tokens $[12.38,5.00,2.62]$. $\rho$ = Spearman rank-correlation against honest.}
+\label{tab:private_incentive}
+\begin{tabular}{|r|r|r|r|r|r|r|}
 \hline
-\textbf{Model} & \textbf{Privacy} & \textbf{Utility (norm.)} & \textbf{P $\times$ U} \\
-\hline
-Centralized ADTCN & 0.0 & 1.00 & 0.00 \\
-\hline
-FL-ADTCN (IID) & 1.0 & 0.98 & 0.98 \\
-\hline
-FL-ADTCN (Improved, Ours) & 1.0 & 0.98 & 0.98 \\
-\hline
-FL-ADTCN (non-IID raw) & 1.0 & 0.15 & 0.15 \\
-\hline
+& \multicolumn{3}{c|}{\textbf{Weight channel}} & \multicolumn{3}{c|}{\textbf{Output channel (ours)}} \\ \hline
+$\varepsilon$ & Inversion & Token err & $\rho$ & Inversion & Token err & $\rho$ \\ \hline
+1    & 75\% & 19.23 & $+0.06$ & 67\% & 20.49 & $+0.15$ \\ \hline
+5    & 78\% & 20.04 & $+0.01$ & 65\% & 15.53 & $+0.32$ \\ \hline
+10   & 78\% & 21.04 & $-0.05$ & 54\% & 10.90 & $+0.55$ \\ \hline
+30   & 84\% & 25.42 & $-0.25$ & 21\% & 4.62  & $+0.90$ \\ \hline
+50   & 81\% & 26.71 & $-0.29$ & 10\% & 2.89  & $+0.95$ \\ \hline
+100  & 82\% & 24.83 & $-0.27$ & 0\%  & 1.43  & $+1.00$ \\ \hline
+300  & 65\% & 12.20 & $+0.65$ & 0\%  & 0.48  & $+1.00$ \\ \hline
+1000 & 57\% & 8.37  & $+0.71$ & 0\%  & 0.14  & $+1.00$ \\ \hline
+3000 & 20\% & 3.20  & $+0.90$ & 0\%  & 0.05  & $+1.00$ \\ \hline
 \end{tabular}
 \end{table}
 
+Relocating the privacy noise from the weight channel to the released contribution vector moves $\varepsilon^\star$ --- the largest budget at which the published reward ordering still inverts --- from $3000$ (weight) to $50$ (output): a $60\times$ improvement that lands honest, DP-protected incentives inside the practical differential-privacy regime ($\varepsilon\approx 10$--$50$) for the first time. On the output channel the reward ordering is already positively correlated at $\varepsilon=10$ ($\rho=0.55$), rank-faithful with zero inversions by $\varepsilon=100$, and its token error decays monotonically to under one token of the 20-token pool, whereas the weight channel is still inverting four of five orderings at the same budgets. The realised $60\times$ is below the $\sqrt{d/n}\approx 193\times$ dimensional ceiling, as expected: $\varepsilon^\star$ is read off discrete sweep points and is set by the finite inter-organisation signal gaps, not by the worst-case bound. We keep the boundary honest in three ways. First, at $\varepsilon=1$ \emph{both} channels still fail (output noise-to-signal $\approx k\sqrt{n}\approx 8$ exceeds the inter-org gaps), so the mechanism buys roughly two orders of magnitude of budget, not unconditional privacy. Second, the privacy unit is explicitly the \emph{released contribution statistic} --- the quantity written to the immutable ledger --- decoupled from model-weight privacy. Third, the honest ordering is the constructed label-noise gradient (disclosed in Section~\ref{sec:validity}). The result is the thesis's central positive contribution: the privacy$\leftrightarrow$incentive incompatibility of Section~\ref{sec:privacy-incentive} is not intrinsic to combining differential privacy with Shapley incentives but an artefact of privatising the wrong channel, and output perturbation on $\varphi$ restores private, rank-faithful, chaincode-enforced rewards. This extends the Shapley-on-blockchain incentive line (FedCoin~\cite{fedcoin2020}) with a deployed Fabric implementation and a channel-placement result, rather than claiming a new privacy primitive.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/Figure_8_Privacy.png}
-    \caption{Privacy-Utility Frontier: Centralised vs All Federated Configurations}
-    \label{fig:privacy_utility_frontier}
+    \includegraphics[width=0.8\textwidth]{images/private_incentive_channel.png}
+    \caption{Weight- vs output-channel privacy: inversion rate, token error, and Spearman $\rho$ against $\varepsilon$, with $\varepsilon^\star$ marked on each channel ($3000$ vs $50$).}
+    \label{fig:private_incentive}
 \end{figure}
 
-The improved FL-ADTCN achieves a privacy-utility product of 0.98 — the highest achievable without sacrificing data privacy — demonstrating that the framework delivers near-centralized detection performance while maintaining full data sovereignty for each institution.
+\FloatBarrier
 
-\section{Comparative Analysis with Baseline Models}
+\section{Byzantine Resilience: Behavioural Attack on the Headline Pipeline}
+\label{sec:byzantine-headline}
 
-Table~\ref{tab:comparative} presents the full comparative analysis against all baseline models from the base paper \cite{prabanand2025} and standard deep learning alternatives. All results for baselines are taken from \cite{prabanand2025} for comparability.
-
-\begin{table}[!htbp]
-\centering
-\caption{Comprehensive Model Performance Comparison}
-\label{tab:comparative}
-\begin{tabular}{|p{3.6cm}|c|c|c|c|c|c|c|c|}
-\hline
-\textbf{Model} & \textbf{Acc} & \textbf{Pre} & \textbf{Sens} & \textbf{Spec} & \textbf{NPV} & \textbf{FPR} & \textbf{FNR} & \textbf{MCC} \\
-\hline
-DTCN & 88.30 & 87.12 & 86.45 & 89.78 & 88.92 & 10.22 & 13.55 & 0.762 \\
-\hline
-EfficientNet & 87.65 & 86.32 & 85.92 & 88.44 & 87.21 & 11.56 & 14.08 & 0.743 \\
-\hline
-ResNet & 86.42 & 85.78 & 84.12 & 87.93 & 86.54 & 12.07 & 15.88 & 0.721 \\
-\hline
-DenseNet & 87.91 & 86.97 & 86.22 & 88.65 & 87.43 & 11.35 & 13.78 & 0.751 \\
-\hline
-MBO-ADTCN & 90.34 & 89.67 & 88.92 & 91.45 & 90.12 & 8.55 & 11.08 & 0.806 \\
-\hline
-WSA-ADTCN & 88.92 & 87.65 & 86.78 & 89.34 & 88.43 & 10.66 & 13.22 & 0.778 \\
-\hline
-BOA-ADTCN & 91.23 & 90.45 & 89.87 & 92.34 & 91.12 & 7.66 & 10.13 & 0.823 \\
-\hline
-DBOA-ADTCN & 93.12 & 92.78 & 91.45 & 94.23 & 93.01 & 5.77 & 8.55 & 0.864 \\
-\hline
-DB-BOA-ADTCN \cite{prabanand2025} & 95.45 & 95.22 & 94.87 & 96.12 & 95.34 & 3.88 & 5.13 & 0.941 \\
-\hline
-\textbf{FL-ADTCN (Ours)} & \textbf{97.38} & \textbf{96.85} & \textbf{97.12} & \textbf{97.63} & \textbf{97.45} & \textbf{2.37} & \textbf{2.88} & \textbf{0.966} \\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{images/Figure_11_Comparative_Performance.png}
-    \caption{Comparative Performance: DB-BOA ADTCN vs 8 Baseline Classifiers}
-    \label{fig:comparative_performance}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{images/Figure_13_Radar_Chart.png}
-    \caption{Radar Chart: Six-Metric Performance Profile Across All Model Configurations}
-    \label{fig:radar_chart}
-\end{figure}
-
-The FL-ADTCN achieves the highest performance across all metrics, surpassing the original DB-BOA-ADTCN base paper result by approximately 1.9 percentage points in accuracy and 0.025 in MCC. This improvement stems from two sources: the federated learning pipeline allows each institution's model to specialise on its local data distribution before aggregation, producing a global model that generalises better across all three institutions' transaction profiles; and DB-BOA Job~3 weight optimisation ensures that the globally aggregated model reflects each institution's true contribution quality rather than treating all models equally.
-
-\section{Blockchain Performance Analysis}
-
-\subsection{Throughput and Latency}
-
-Figure~\ref{fig:latency_throput} shows blockchain throughput and latency across 50 consensus rounds. Key metrics:
-
-\begin{itemize}
-  \item \textbf{Average throughput:} 85 transactions per second (TPS) under normal operation with three organisations and a 2-of-3 endorsement policy
-  \item \textbf{Average block latency:} 180\,ms (below the 300\,ms threshold, triggering the latency bonus incentive in most rounds)
-  \item \textbf{DB-BOA leader selection improvement:} DB-BOA Job~2 reduces average block latency by 28.4\% compared to random leader selection (from 252\,ms to 180\,ms), consistent with the base paper's reported 30\% improvement \cite{prabanand2025}
-  \item \textbf{Leader selection convergence:} DB-BOA Job~2 consistently identifies the optimal leader within 10-15 iterations, with negligible latency overhead ($<3$\,ms per selection)
-\end{itemize}
-
-
-
-\subsection{Leader Selection Analysis}
-
-Table~\ref{tab:leader_selection} shows leader selection frequencies across 50 rounds. Peer0 (BankA) is selected most frequently due to its superior resource characteristics (lowest CT and CC), with its reputation discount further amplifying its advantage as rounds progress.
+To test adversarial resilience on the headline pipeline, BankC is configured as a Byzantine attacker that always reports fraud regardless of the transaction label (the \texttt{--attack} flag, 15 rounds).
 
 \begin{table}[H]
 \centering
-\caption{Leader Node Selection Frequency (50 Rounds)}
-\label{tab:leader_selection}
-\begin{tabular}{|p{5.2cm}|r|r|r|}
-\hline
-\textbf{Node} & \textbf{Selected} & \textbf{Frequency (\%)} & \textbf{Avg. Latency (ms)} \\
-\hline
-peer0.org1 (BankA) & 28 & 56.0 & 164 \\
-\hline
-peer0.org2 (BankB) & 18 & 36.0 & 189 \\
-\hline
-peer0.org3 (BankC) & 4 & 8.0 & 231 \\
-\hline
+\caption{Byzantine attack: BankC always reports fraud (15 rounds).}
+\label{tab:attack}
+\begin{tabular}{|p{8.4cm}|>{\raggedleft\arraybackslash}p{5.4cm}|}
+\hline \textbf{Outcome} & \textbf{Value} \\ \hline
+Rounds with verdict disputed by consensus & 15 / 15 \\ \hline
+Attacker reputation (start $\to$ end)    & 1.00 $\to$ 0.50 (floor, reached round~10) \\ \hline
+Attacker token balance (start $\to$ end) & 100 $\to$ 70 \\ \hline
+\textbf{Attacker Shapley aggregation weight under attack} & \textbf{0.000} \\ \hline
 \end{tabular}
 \end{table}
 
-
-\section{Incentive Mechanism Analysis}
-
-\subsection{Token Balance Evolution}
-
-Figure~\ref{fig:token_balance_history} shows the token balance evolution of the three organisations over 50 consensus rounds (10 federation rounds). Under normal operation (no Byzantine attack):
-
-\begin{itemize}
-  \item \textbf{BankA}: Balance grows from 100 to approximately 458 tokens, reflecting frequent leader selection, consistently low-latency consensus, accurate fraud verdicts, and high DB-BOA aggregation weights ($w_1^* \approx 0.52$ on average)
-  \item \textbf{BankB}: Balance grows from 100 to approximately 312 tokens, reflecting moderate leader selection frequency and average aggregation weights ($w_2^* \approx 0.32$)
-  \item \textbf{BankC}: Balance grows from 100 to approximately 178 tokens, reflecting infrequent leader selection and lower aggregation weights ($w_3^* \approx 0.16$ due to smaller training dataset)
-\end{itemize}
+Both defence layers penalise the attacker consistently. BankC issues an always-fraud verdict on legitimate transactions, so the honest consensus disputes it in all 15 rounds; the incentive contract debits two tokens per disputed round, draining its balance from 100 to 70, and its reputation decays to the $0.50$ floor by round~10. In parallel, the exact-Shapley aggregation layer assigns the poisoned update a contribution weight of $0.000$, excluding its model from the global aggregate without human intervention. The two mechanisms are complementary: the reputation/token loop makes the attack economically unrewarding, while the Shapley layer makes it technically ineffective. We do not over-read a single-attacker illustration: as the systematic sweep in Section~\ref{sec:economic-byzantine} shows, a \emph{lone} attacker is in any case out-voted by the two honest banks; reputation-floor quorum isolation becomes decisive only against a colluding \emph{majority}. What this run demonstrates is the end-to-end mechanism firing correctly: dispute detection $\to$ token penalty $\to$ reputation decay $\to$ zero Shapley weight.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.60\textwidth]{images/token_balance_history.png}
-    \caption{Token_balance_history}
+    \includegraphics[width=0.65\textwidth]{images/token_balance_history.png}
+    \caption{Token balance evolution: the honest banks earn while the Byzantine attacker's balance is drained.}
     \label{fig:token_balance_history}
 \end{figure}
 
+\FloatBarrier
 
-\subsection{DB-BOA Aggregation Weights Over Rounds}
+\section{Economic Byzantine Tolerance Under \texorpdfstring{$f=0$}{f=0} Krum}
+\label{sec:economic-byzantine}
 
-Figure~\ref{fig:federation_weights} shows the DB-BOA-optimised aggregation weights over 10 federation rounds. The weights stabilise after approximately 4 rounds, converging to $[w_1^*, w_2^*, w_3^*] \approx [0.52, 0.32, 0.16]$. These weights reflect the institutions' data quantities (50/30/20 split) but also their model quality: BankA's model achieves slightly higher per-sample accuracy, further justifying its dominant weight. The sum-to-one constraint is maintained throughout.
-
-\section{Byzantine Resilience Analysis}
-
-\subsection{Attack Scenario}
-
-To test adversarial resilience, BankC is configured as a Byzantine attacker: it always reports fraud (verdict = 1) regardless of the actual transaction label. This scenario is activated via the \texttt{--attack} flag in the main pipeline.
-
-\subsection{Token Balance Depletion}
-
-Under the attack scenario:
-\begin{itemize}
-  \item BankC's verdicts are disputed by the 2-of-3 consensus majority in approximately 99.83\% of rounds (the non-fraud rate), triggering the $-2$ token penalty each time
-  \item BankC's token balance depletes from 100 to negative territory within 8 consensus rounds
-  \item BankC's reputation score drops from 1.0 to the floor value of 0.5 within 12 rounds
-  \item With reputation $\rho_3 = 0.5$, BankC's effective DB-BOA leader selection cost doubles, effectively excluding it from leader selection
-  \item In federation rounds, BankC's poisoned model performs poorly on the shared validation set, causing DB-BOA Job~3 to assign it a near-zero weight ($w_3^* \approx 0.02$), limiting its influence on the global model to near-zero
-\end{itemize}
-
-Figure~\ref{fig:attack_scenario} illustrates the divergence in token balances between the honest organisations (BankA and BankB, which continue to earn) and the Byzantine attacker (BankC, which depletes). The incentive mechanism achieves isolation of the Byzantine participant automatically, without any human monitoring or intervention, demonstrating the self-enforcing nature of the on-chain penalty system.
-
-\subsection{Global Model Robustness Under Attack}
-
-Table~\ref{tab:attack_comparison} compares global model quality with and without the Byzantine attacker across 10 federation rounds.
+In the default $n=3$ deployment Krum runs at $f=0$, so at that size it provides outlier rejection rather than a statistical guarantee. Here we test the \emph{complementary} question: whether the economic loop (Shapley $\to$ tokens $\to$ reputation $\to$ leader-selection exclusion) supplies economic Byzantine resilience. Attackers are behavioural: always-fraud, label-flip, and a passive free-rider. All accuracy is balanced accuracy.
 
 \begin{table}[H]
 \centering
-\caption{Global Model Performance With and Without Byzantine Attack}
-\label{tab:attack_comparison}
-\begin{tabular}{|p{6.2cm}|r|r|r|r|}
+\caption{Economic isolation and consensus-accuracy protection ($n=3$, balanced accuracy). ``WITH'' drops reputation-floored attackers from the voting quorum; ``WITHOUT'' lets all orgs vote.}
+\label{tab:economic_byzantine}
+\begin{tabular}{|l|c|c|r|r|r|}
 \hline
-\textbf{Configuration} & \textbf{Acc} & \textbf{MCC} & \textbf{FPR} & \textbf{ROC-AUC} \\
-\hline
-No attack & 0.9738 & 0.7812 & 0.0038 & 0.9525 \\
-\hline
-Byzantine BankC (early rounds 1-5) & 0.9121 & 0.5234 & 0.0112 & 0.8943 \\
-\hline
-Byzantine BankC (late rounds 6-10) & 0.9612 & 0.7401 & 0.0051 & 0.9387 \\
-\hline
+Strategy & \#Atk & Isolation round & Bal-acc WITH & WITHOUT & Gap \\ \hline
+always-fraud & 1 & never  & 92.29\% & 92.29\% & $+0.00$ \\ \hline
+always-fraud & 2 & r3, r3 & 90.78\% & 50.00\% & $+40.78$ \\ \hline
+label-flip   & 1 & never  & 91.78\% & 91.78\% & $+0.00$ \\ \hline
+label-flip   & 2 & r3, r3 & 90.78\% & 11.26\% & $+79.52$ \\ \hline
+free-rider   & 1 & never  & 90.80\% & 90.80\% & $+0.00$ \\ \hline
+free-rider   & 2 & never  & 50.00\% & 50.00\% & $+0.00$ \\ \hline
 \end{tabular}
 \end{table}
 
+The economic mechanism is strongest precisely where vote-based Byzantine fault tolerance provably fails --- against a \emph{coordinated majority}. When two of three banks attack, an equal-weight consensus is dragged to $50\%$ (always-fraud) or $11\%$ (label-flip) balanced accuracy, whereas the Shapley$\to$reputation loop drives both attackers to the $0.5$ reputation floor within three rounds and, by excluding them from the quorum, restores the lone honest bank's $\sim$$91\%$ --- a $+41$ to $+80$ percentage-point swing. This holds because Shapley scores each bank against a trusted validation set rather than by counting votes, so a numerical majority cannot out-vote the contribution signal; it is genuinely complementary to Krum. The honest limitation is the single-minority and free-rider regime: a lone attacker is out-voted by the two honest banks and barely moves consensus accuracy, and a passive free-rider that never flags not only evades isolation but --- under majority-vote coalition scoring --- can be mis-attributed almost the entire token pool. The economic layer therefore deters coordinated manipulation that $f=0$ Krum cannot, but does not by itself solve free-riding.
 
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/economic_isolation_trajectory.png}
+        \caption{Attacker token share held at zero; reputation decays to the floor by round 3.}
+        \label{fig:econ_traj}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/economic_accuracy_protection.png}
+        \caption{Protection gap peaks at the coordinated-majority cases.}
+        \label{fig:econ_acc}
+    \end{subfigure}
+    \caption{Economic Byzantine tolerance: incentive-as-defence under $f=0$ Krum.}
+\end{figure}
 
-The initial performance degradation (rounds 1-5) reflects the period before BankC's reputation has fully depleted. By rounds 6-10, as BankC's aggregation weight approaches zero, the global model recovers to near-normal performance, demonstrating the mechanism's effectiveness over time.
+\FloatBarrier
 
-\section{Statistical Significance}
+\section{Statistical Byzantine Fault Tolerance: Krum Where the Theorem Holds}
+\label{sec:byzantine-robustness}
 
-Paired t-tests across three independent runs (different random seeds) confirm that all performance differences between the FL-ADTCN and the DB-BOA-ADTCN baseline \cite{prabanand2025} are statistically significant ($p < 0.001$). Table~\ref{tab:ttest} presents the t-test results.
+We now close the \emph{statistical} side by running the same Krum aggregator in the two smallest configurations where its precondition $n\ge 2f+3$ holds --- $n=5,f=1$ and $n=7,f=2$ --- against four weight-level poisoning attacks: sign-flip ($w\mapsto-w$), scaled norm-boosting ($w\mapsto 50w$), Gaussian junk, and a genuinely retrained label-flip model. All accuracy is balanced accuracy on 5000 held-out transactions.
 
 \begin{table}[H]
 \centering
-\caption{Statistical Significance Tests (Paired t-test, 3 Runs)}
-\label{tab:ttest}
-\begin{tabular}{|p{3.2cm}|r|r|r|r|}
+\caption{Statistical Byzantine fault tolerance: Krum vs FedAvg under four weight-poisoning attacks, where $n\ge 2f+3$ holds. ``Rejected'' = the poisoned organisation is not selected by Krum.}
+\label{tab:byzantine_robustness}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Metric} & \textbf{Base Paper} & \textbf{Ours} & \textbf{Difference} & \textbf{p-value} \\
-\hline
-Accuracy & 0.9545 $\pm$ 0.0018 & 0.9738 $\pm$ 0.0012 & +0.0193 & $<0.001$ \\
-\hline
-MCC      & 0.9410 $\pm$ 0.0021 & 0.9660 $\pm$ 0.0015 & +0.0250 & $<0.001$ \\
-\hline
-FPR      & 0.0445 $\pm$ 0.0025 & 0.0237 $\pm$ 0.0018 & $-0.0208$ & $<0.001$ \\
-\hline
-ROC-AUC  & 0.9612 $\pm$ 0.0019 & 0.9703 $\pm$ 0.0012 & +0.0091 & $<0.001$ \\
-\hline
+Attack & Attacker rejected? & Krum bal-acc & FedAvg bal-acc & Krum advantage \\ \hline
+\multicolumn{5}{|l|}{\emph{Regime $n=5,\ f=1$ (one attacker)}} \\ \hline
+sign-flip  & yes & 99.95\% & 99.92\% & $+0.03$ \\ \hline
+scaled     & yes & 99.95\% & 87.46\% & $+12.49$ \\ \hline
+gaussian   & yes & 99.95\% & 99.96\% & $-0.01$ \\ \hline
+label-flip & yes & 99.95\% & 99.91\% & $+0.04$ \\ \hline
+\multicolumn{5}{|l|}{\emph{Regime $n=7,\ f=2$ (two attackers)}} \\ \hline
+sign-flip  & yes & 99.95\% & 99.82\% & $+0.13$ \\ \hline
+scaled     & yes & 99.95\% & 87.47\% & $+12.48$ \\ \hline
+gaussian   & yes & 99.95\% & 99.95\% & $+0.00$ \\ \hline
+label-flip & yes & 99.95\% & 99.95\% & $+0.00$ \\ \hline
 \end{tabular}
 \end{table}
+
+Run where its theorem applies, Krum rejects the Byzantine update in all eight (regime $\times$ attack) cases: its score (the sum of squared $L_2$ distances to the $k=n-f-2$ nearest neighbours) identifies the poisoned organisation as the cluster outlier, so it is never the argmin and never enters the global model, which stays at $99.95\%$ balanced accuracy throughout. The separation margin is graded by how aggressive the attack is --- of order $10^{6}$ for norm-boosting, $10^{3}$ for sign-flip and Gaussian junk, and only $10^{0}$ for the subtle retrained label-flip, whose parameters sit just outside the honest spread. The FedAvg comparison is reported honestly rather than uniformly: plain averaging collapses only under the magnitude-dominant \emph{scaled} attack ($87.5\%$ versus Krum's $99.9\%$, a $+12.5$-point gap), because there a single large-norm vector dominates the mean; for the other three attacks one ($\le f$) poisoned vector is diluted by the honest majority, so FedAvg happens to survive too. The contribution is therefore not that FedAvg always fails, but that Krum provides a \emph{uniform} guarantee --- a constant $99.9\%$ and a provably-rejected adversary for up to $f$ colluding organisations --- whereas an unprotected mean is safe only when the attack is not norm-dominant. This is genuine statistical Byzantine fault tolerance, in contrast to the $f=0$ outlier rejection of the default $n=3$ pipeline. Two boundaries are kept honest: the guarantee covers at most $f$ colluding organisations (a coordinated majority is the regime handled by the economic mechanism of Section~\ref{sec:economic-byzantine}, making the two defences complementary), and the thin $10^{0}$ label-flip margin shows that a sufficiently subtle, close-to-honest poisoning attack could eventually fall within the honest cluster's own spread. The sweep is run with differential privacy disabled to isolate the robustness effect, in a single process rather than a live multi-host testnet.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/byzantine_robustness_krum_vs_fedavg.png}
+    \caption{Krum's flat $\sim$$99.9\%$ against FedAvg's drop under norm-boosting (left), and per-organisation Krum scores on a log axis with the attacker as the clear outlier (right).}
+    \label{fig:byzantine_robustness}
+\end{figure}
+
+\FloatBarrier
+
+\section{Scalable Contribution Attribution}
+\label{sec:scalability}
+
+The system's single anti-scalable component is exact Shapley attribution, which evaluates all $2^{n}-1$ coalitions. We add a Monte-Carlo permutation estimator costing $O(\text{samples}\cdot n)$ and measure (real wall-clock, single process) the runtime, the fidelity of the MC reward weights against exact, and the global-model accuracy as the federation size $n$ grows. Organisations are made genuinely heterogeneous (graded feature noise $\sigma\in\{0,0.5,1.0,1.5\}$), so the exact-vs-MC fidelity check is a real test.
+
+\begin{table}[H]
+\centering
+\caption{Exact vs Monte-Carlo Shapley as the federation size grows (real wall-clock, single process). $\rho$ = Spearman rank-correlation of the MC reward weights against exact; L1 = total reward-weight error. Exact is infeasible beyond $n\approx 12$.}
+\label{tab:scalability}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|r|r|r|r|r|r|r|r|}
+\hline
+$n$ & Exact (s) & MC (s) & Speed-up & Exact coal. & MC coal. & L1 & Spearman $\rho$ \\ \hline
+3   & 0.14   & 0.15  & 0.9$\times$ & 7    & 7    & 0.021 & $+1.00$ \\ \hline
+6   & 3.06   & 1.45  & 2.1$\times$ & 63   & 63   & 0.221 & $+0.20$ \\ \hline
+8   & 6.90   & 6.42  & 1.1$\times$ & 255  & 249  & 0.180 & $+0.64$ \\ \hline
+10  & 27.78  & 17.21 & 1.6$\times$ & 1023 & 697  & 0.207 & $+0.56$ \\ \hline
+12  & 113.53 & 34.74 & 3.3$\times$ & 4095 & 1265 & 0.257 & $-0.01$ \\ \hline
+14  & ---    & 48.08 & ---         & 16383 (infeasible) & 1820 & --- & --- \\ \hline
+16  & ---    & 66.72 & ---         & 65535 (infeasible) & 2321 & --- & --- \\ \hline
+20  & ---    & 95.09 & ---         & 1048575 (infeasible) & 3247 & --- & --- \\ \hline
+\end{tabular}
+\end{table}
+
+The contribution-attribution layer is made scalable in the sense of \emph{feasibility}, not raw speed-up. Exact Shapley grows geometrically --- $113$\,s already at $n=12$ --- and is intractable beyond it, whereas the Monte-Carlo estimator evaluates every federation size up to $n=20$ in under $100$\,s. The two costs form a \emph{crossover}: below $n\approx 10$ the faithful (untruncated) MC samples nearly all coalitions, so its runtime matches exact ($\sim$$1\times$), which is acceptable because exact is cheap there; above the crossover MC touches only a small fraction of $2^{n}$, giving a measured $3.3\times$ at $n=12$ and remaining the only estimator that terminates at all. The most important honest caveat concerns \emph{fidelity, not speed}: at a fixed $200$-permutation budget the reward ranking degrades as $n$ grows. The estimator stays \textbf{top-1-faithful only to $n\approx 5$}, and the full rank-correlation falls from $\rho=1.0$ at $n=3$ to $\rho\approx 0$ at $n=12$, where $200$ permutations cannot resolve twelve near-equal contributors. The finding is therefore two-edged and stated as such: MC-Shapley makes the on-chain reward split \emph{tractable} at scale, but its $200$-draw fidelity is trustworthy only to $n\approx 5$; recovering fidelity at larger $n$ requires the sample count to scale as $\approx O(n\log n)$. This narrows the title's scalability claim to its defensible form (\emph{scalable contribution attribution}) and leaves blockchain throughput and distributed training out of scope (Section~\ref{sec:validity}).
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/scalability_shapley_runtime.png}
+        \caption{Exact runtime tracks the $2^{n}$ reference and terminates at $n=12$; MC bends sub-linear to $n=20$.}
+        \label{fig:scalability_runtime}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/scalability_fidelity_accuracy.png}
+        \caption{Bounded reward-weight error and the equal-shard vs fixed-pool accuracy curves.}
+        \label{fig:scalability_fidelity}
+    \end{subfigure}
+    \caption{Scalable contribution attribution: feasibility at scale, with fidelity faithful to $n\approx 5$ at a fixed sample budget.}
+\end{figure}
+
+\FloatBarrier
+
+\section{Comparison with Prior Work}
+\label{sec:prior-comparison}
+
+This section positions the evaluated system against the closest related work reviewed in Chapter~2. Table~\ref{tab:prior_capability} compares \emph{capabilities}: which ingredients each system combines, and whether the interaction between its privacy and incentive layers is examined at all. The pattern that motivated this thesis is visible in the final column --- every prior system either omits one of the ingredients or assumes a clean contribution signal, so the privacy--incentive coupling characterised in Sections~\ref{sec:privacy-incentive}--\ref{sec:private-incentive} is examined nowhere else.
+
+\begin{table}[H]
+\centering
+\caption{Capability comparison against the closest related systems. ``Coupling'' = does the work examine how privacy noise corrupts the contribution-based reward?}
+\label{tab:prior_capability}
+\footnotesize\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{2.2cm}c>{\raggedright\arraybackslash}p{1.1cm}>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{1.9cm}}
+\toprule
+\textbf{Work} & \textbf{Ledger} & \textbf{FL} & \textbf{Formal DP} & \textbf{Robustness} & \textbf{Contribution reward} & \textbf{Coupling} \\
+\midrule
+FedCoin~\cite{fedcoin2020} & purpose-built PoSap blockchain & \checkmark & $\times$ & $\times$ & Shapley-valued payments & $\times$ \\
+\midrule
+Yang et al.~\cite{10701002} & blockchain as aggregation platform (prototype) & \checkmark & $\times$ (future work) & on-chain update verification & Stackelberg reward & $\times$ \\
+\midrule
+SI-ChainFL~\cite{zhao2026sichainfl} & consensus tied to Shapley incentives & \checkmark & $\times$ & incentive-tied aggregation eligibility & clustered Shapley & $\times$ \\
+\midrule
+Jaramillo-Velez et al.~\cite{jaramillo2026} & $\times$ & \checkmark & \checkmark & robust contribution scores & contribution evaluation (off-chain) & partial: private CE design \\
+\midrule
+Commey et al.~\cite{commey2025} & $\times$ & \checkmark & $\times$ & economic (Bayesian verification) & per-round payments & $\times$ \\
+\midrule
+Base paper~\cite{prabanand2025} & simulated PEC-BC (MATLAB) & $\times$ & $\times$ & $\times$ & $\times$ & $\times$ \\
+\midrule
+\textbf{This thesis} & \textbf{real Hyperledger Fabric, chaincode-enforced} & \checkmark & \checkmark~\textbf{both channels} & \textbf{Krum ($n\ge 2f+3$) + economic isolation} & \textbf{Shapley $\rightarrow$ tokens on-chain} & \checkmark~\textbf{charac\-terised + channel fix} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two rows deserve elaboration. Jaramillo-Velez et al.~\cite{jaramillo2026} come closest on the privacy side: they design contribution evaluation that is itself private and robust, but the direction studied here --- how a fixed privacy budget propagates through the Shapley signal into a quantified reward error on an immutable ledger, and which \emph{channel} the noise should be placed on --- is not their object of study, and no blockchain is involved. The base paper~\cite{prabanand2025} supplies the optimiser and detector this thesis builds on, but contains no federated learning, no incentive layer, and no real ledger.
+
+Table~\ref{tab:prior_quant} adds the available quantitative anchors. An honest caveat governs its reading: \textbf{each system is evaluated on a different dataset, task, and threat model, so the numbers position the works in their own regimes and are not directly comparable.} FedCoin is omitted because it reports the feasibility of Shapley computation under a consensus budget rather than detection performance; the base paper's dataset is private and its accuracy is reported only relative to its own optimiser baselines.
+
+\begin{table}[H]
+\centering
+\caption{Quantitative anchors of the closest related systems, each on its own dataset and threat model (not directly comparable; see text).}
+\label{tab:prior_quant}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{3.2cm}p{4.2cm}p{6.6cm}}
+\toprule
+\textbf{Work} & \textbf{Dataset / setting} & \textbf{Reported headline result} \\
+\midrule
+Base paper~\cite{prabanand2025} & private financial dataset (not public); simulated PEC-BC & accuracy exceeds BOA/DBOA/WSA/MBO-ADTCN variants by 1.7--7.3 percentage points; consensus latency reduced up to 36\% at 100\,tx/s \\
+\midrule
+SI-ChainFL~\cite{zhao2026sichainfl} & MNIST, CIFAR-10/100, high-speed-rail flow data & remains effective under 90\% malicious clients (PA attacks); +14.12\% accuracy over RAGA \\
+\midrule
+Commey et al.~\cite{commey2025} & MNIST / Fashion-MNIST, non-IID & 96.7\% accuracy under 50\% label-flipping adversaries; +51.7\,pp over collapsed FedAvg \\
+\midrule
+\textbf{This thesis} & \textbf{ULB credit-card fraud (284{,}807 tx, 0.17\% fraud), three-bank Fabric consortium} & \textbf{centralised ADTCN 99.85\% acc.\ / MCC 0.677; federated Krum configuration 99.92\% acc.\ / MCC 0.776 / FPR 0.05\%; honest-reward privacy budget moved from $\epsilon^{\star}\approx 3000$ (weight channel) to $\approx 50$ (incentive channel); Krum rejects 4/4 poisoning attacks at $n\ge 2f+3$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+What the comparison establishes is not numerical superiority --- the datasets differ too much for that claim --- but \emph{coverage}: this is the only system in the set that combines a real permissioned ledger, federated learning, formal differential privacy, statistical and economic Byzantine defences, and a contribution-proportional on-chain reward, and the only one that measures what the privacy layer does to the fairness of that reward.
+
+\FloatBarrier
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Interpretations}
+Read together, the experiments of this chapter tell a single story. The detector itself is sound: the DB-BOA-tuned ADTCN reaches 99.85\% accuracy and MCC 0.677 on the ULB test set, and the federated configuration preserves detection quality while keeping every institution's data local. The interesting behaviour appears in the interaction between the layers. Weight-channel differential privacy at the deployment budget $\epsilon=1.0$ does not merely cost accuracy --- it collapses the model to a degenerate single-class predictor, and the privacy sweep shows that reward fidelity and model accuracy decouple as the budget tightens: rewards become dishonest at budgets where the model still detects fraud. The mechanism-level fix is channel placement, not a better trade-off on the same channel --- moving the noise from the shared weights onto the released contribution signal brings the honest-reward budget from $\epsilon^{\star}\approx 3000$ down to $\epsilon^{\star}\approx 50$. Finally, the two defence layers are complementary rather than redundant: Krum (in its $n\ge 2f+3$ regime) rejects weight-level poisoning that plain averaging cannot survive, while the Shapley-weighted reward economically isolates a colluding majority that out-numbers any statistical defence; and the attribution layer that powers this defence remains tractable at scale only via Monte-Carlo estimation, whose fixed-budget fidelity is itself bounded (top-1-faithful to $n\approx 5$).
+
+\subsection{Implications}
+For deployment, the practical consequence is an operating point: a consortium that needs both a useful global model and honest on-chain rewards should leave the weight channel un-noised, enforce privacy on the released contribution channel at $\epsilon\approx 50$, and run Krum sized so that its theorem holds. For research, the chapter's central implication is that privacy and incentive mechanisms in blockchain-FL systems cannot be evaluated in isolation: prior Shapley-on-blockchain work assumes a clean contribution signal, and this chapter shows that assumption fails precisely in the privacy regimes a regulated deployment would require. A high-accuracy global model is not evidence that the reward ledger is fair --- the two can and do diverge, which matters all the more because Fabric's ledger records the unfair rewards immutably. Lastly, the negative results carry information of their own: DB-BOA's value is automation and leader selection rather than a detection-accuracy gain over a careful hand-tuned default, and fixed-budget Monte-Carlo Shapley buys feasibility, not free fidelity.
+
+\subsection{Limitations and Validity}
+\label{sec:validity}
+
+Several scope constraints are stated plainly and revisited in the Conclusion. The leader-selection frequencies and consensus throughput reported by the simulation layer are computed from node resource scores rather than measured; the per-round latency was measured on a single-host, two-organisation Fabric deployment (mean $\approx 2.1$\,s over 50 transactions), not on a multi-host production network. They characterise relative behaviour rather than production performance, and blockchain throughput is therefore explicitly outside the ``Scalable'' claim. The three institutions are stratified volume-splits of a single bank's ULB dataset --- a controlled rather than a true cross-institution setting --- which is why the deployment Shapley split is near-uniform (Section~\ref{sec:shapley-weights}) and why the contribution-differentiation results rely on a constructed training-label-noise gradient, disclosed wherever used. The differential-privacy budget $\epsilon=1.0$ used in the deployed ablation is intentionally tight; the framework's usable-privacy result is the output-channel mechanism of Section~\ref{sec:private-incentive}. Finally, the detection figures are reported at the weight-DP-off operating point, with the full DP-on collapse reported transparently in Section~\ref{sec:fed-ablation} rather than omitted.

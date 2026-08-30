@@ -588,13 +588,26 @@ app.get('/dashboard', (req, res) => res.sendFile(DASHBOARD_FILE));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 async function start() {
-    await connectFabric();
+    // Bind the HTTP server first so the dashboard/API are always reachable,
+    // even if Fabric discovery is slow.  Fabric connects in the background and
+    // routes use the demo fallback until `fabricConnected` flips true.
     app.listen(PORT, () => {
         console.log(`\n[API]   DB-BOA REST API running on http://localhost:${PORT}`);
-        console.log(`[API]   Fabric connected: ${fabricConnected}`);
         console.log(`[API]   Python script   : ${PYTHON_SCRIPT}`);
-        console.log(`[API]   Results dir     : ${RESULTS_DIR}\n`);
+        console.log(`[API]   Results dir     : ${RESULTS_DIR}`);
+        console.log(`[API]   Connecting to Fabric in background …\n`);
     });
+
+    // Bound the Fabric connect so a slow/failed discovery never blocks startup.
+    const timeout = new Promise((resolve) =>
+        setTimeout(() => resolve('timeout'), 25000));
+    const result = await Promise.race([connectFabric(), timeout]);
+    if (result === 'timeout') {
+        console.warn('[WARN]  Fabric connect timed out (25s) — serving in demo-fallback mode. '
+                   + 'Retrying in background.');
+        connectFabric().then(ok => ok && console.log('[INFO]  Fabric connected (late).'));
+    }
+    console.log(`[API]   Fabric connected: ${fabricConnected}`);
 }
 
 start().catch(console.error);

@@ -1,242 +1,618 @@
 {
   "optimal_hyperparams": {
-    "hidden_neurons": 98,
-    "epoch_count": 23,
-    "steps_per_epoch": 96
+    "hidden_neurons": 142,
+    "epoch_count": 30,
+    "steps_per_epoch": 76
   },
   "metrics": {
-    "Accuracy": 99.44999999999752,
-    "Precision": 95.8762886597444,
-    "Sensitivity": 92.9999999999535,
-    "Specificity": 99.7894736842079,
-    "NPV": 99.63215974776406,
-    "FPR": 0.21052631578946815,
-    "FNR": 6.999999999996501,
-    "FDR": 4.123711340204061,
-    "F1_Score": 94.41624365479838,
-    "MCC": 0.9413914520608903,
-    "TP": 186.0,
-    "TN": 3792.0,
-    "FP": 8.0,
-    "FN": 14.0
+    "Accuracy": 99.85077771145659,
+    "Precision": 54.248366013036446,
+    "Sensitivity": 84.69387755093399,
+    "Specificity": 99.87689926842975,
+    "NPV": 99.97359573307028,
+    "FPR": 0.12310073157006168,
+    "FNR": 15.306122448963974,
+    "FDR": 45.751633986898206,
+    "F1_Score": 66.13545816730434,
+    "MCC": 0.6771700986861263,
+    "TP": 83.0,
+    "TN": 56794.0,
+    "FP": 70.0,
+    "FN": 15.0
   },
   "db_boa_stats": {
-    "Min": -100000003.9164707,
-    "Max": -100000003.8696489,
-    "Mean": -100000003.8946205,
-    "Std": 0.023358819268399486,
-    "Median": -100000003.9164707,
-    "dboa_iters": 0,
-    "boa_iters": 30
+    "Min": -4.999999999993775,
+    "Max": -4.999999999991326,
+    "Mean": -4.99999999999301,
+    "Std": 8.941277784858236e-13,
+    "Median": -4.999999999993775,
+    "dboa_iters": 24,
+    "boa_iters": 6
   },
   "leader_node": 7,
   "leader_cost": 0.8560605277878892,
   "leader_ct": 0.22554447458683766,
   "leader_cc": 0.2691084864014136,
   "leader_ms": 0.3614075667996379,
+  "leader_method": "rl",
   "consensus_rounds": [
     {
       "round": 1,
       "leader": 7,
       "n_endorsed": 3,
       "consensus_ok": true,
-      "latency_ms": 94.9633124757394,
-      "throughput": 5202.667714126233,
-      "n_txns": 60
+      "latency_ms": 2097.2943476628698,
+      "throughput": 40.28049863371046,
+      "latency_source": "measured-fabric",
+      "n_txns": 60,
+      "leader_method": "rl",
+      "rl_reward": 10.0,
+      "rl_td_error": 0.4,
+      "rl_epsilon": 0.3,
+      "rl_explored": false
     },
     {
       "round": 2,
       "leader": 7,
-      "n_endorsed": 3,
+      "n_endorsed": 4,
       "consensus_ok": true,
-      "latency_ms": 104.88993357192506,
-      "throughput": 5925.59296036167,
-      "n_txns": 70
+      "latency_ms": 2106.854763762572,
+      "throughput": 40.28049863371046,
+      "latency_source": "measured-fabric",
+      "n_txns": 70,
+      "leader_method": "rl",
+      "rl_reward": 10.0,
+      "rl_td_error": 0.38136892016675095,
+      "rl_epsilon": 0.291,
+      "rl_explored": false
     },
     {
       "round": 3,
-      "leader": 7,
+      "leader": 2,
       "n_endorsed": 4,
       "consensus_ok": true,
-      "latency_ms": 103.98545488085307,
-      "throughput": 6002.689135762715,
-      "n_txns": 80
+      "latency_ms": 2122.3446970046793,
+      "throughput": 40.28049863371046,
+      "latency_source": "measured-fabric",
+      "n_txns": 80,
+      "leader_method": "rl",
+      "rl_reward": 10.0,
+      "rl_td_error": 0.4135425615184057,
+      "rl_epsilon": 0.28226999999999997,
+      "rl_explored": true
     },
     {
       "round": 4,
       "leader": 7,
-      "n_endorsed": 4,
+      "n_endorsed": 3,
       "consensus_ok": true,
-      "latency_ms": 103.98545488085307,
-      "throughput": 8353.70806408781,
-      "n_txns": 90
+      "latency_ms": 2055.238614379254,
+      "throughput": 40.28049863371046,
+      "latency_source": "measured-fabric",
+      "n_txns": 90,
+      "leader_method": "rl",
+      "rl_reward": 10.0,
+      "rl_td_error": 0.34382281667724834,
+      "rl_epsilon": 0.27380189999999993,
+      "rl_explored": true
     },
     {
       "round": 5,
       "leader": 7,
-      "n_endorsed": 4,
+      "n_endorsed": 2,
       "consensus_ok": true,
-      "latency_ms": 103.98545488085307,
-      "throughput": 9390.162759979403,
-      "n_txns": 100
+      "latency_ms": 2112.3025562403345,
+      "throughput": 40.28049863371046,
+      "latency_source": "measured-fabric",
+      "n_txns": 100,
+      "leader_method": "rl",
+      "rl_reward": 10.0,
+      "rl_td_error": 0.3285188468469382,
+      "rl_epsilon": 0.26558784299999993,
+      "rl_explored": false
     }
   ],
+  "rl_leader_comparison": {
+    "n_rounds": 20,
+    "db_boa": {
+      "rewards": [
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0
+      ],
+      "cum_reward": [
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        100,
+        110,
+        120,
+        130,
+        140,
+        150,
+        160,
+        170,
+        180,
+        190,
+        200
+      ],
+      "total_reward": 200.0,
+      "success_rate": 1.0,
+      "leader_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        20,
+        0,
+        0
+      ],
+      "leader_gini": 0.9,
+      "leaders": [
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7
+      ],
+      "degrade_node": null
+    },
+    "rl": {
+      "rewards": [
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0,
+        10.0
+      ],
+      "cum_reward": [
+        10.0,
+        20.0,
+        30.0,
+        40.0,
+        50.0,
+        60.0,
+        70.0,
+        80.0,
+        90.0,
+        100.0,
+        110.0,
+        120.0,
+        130.0,
+        140.0,
+        150.0,
+        160.0,
+        170.0,
+        180.0,
+        190.0,
+        200.0
+      ],
+      "total_reward": 200.0,
+      "success_rate": 1.0,
+      "leader_counts": [
+        0,
+        1,
+        3,
+        0,
+        1,
+        2,
+        0,
+        12,
+        1,
+        0
+      ],
+      "leader_gini": 0.71,
+      "leaders": [
+        7,
+        5,
+        2,
+        7,
+        5,
+        2,
+        1,
+        7,
+        7,
+        4,
+        7,
+        7,
+        8,
+        7,
+        7,
+        2,
+        7,
+        7,
+        7,
+        7
+      ],
+      "degrade_node": null,
+      "theta": [
+        0.5683641591086078,
+        0.39215829948500575,
+        0.35852213576773,
+        0.3503817048887593,
+        0.20676819614190625,
+        0.36806095702233,
+        0.46390467070331276,
+        0.5683641591086078
+      ],
+      "epsilon": [
+        0.3,
+        0.291,
+        0.28226999999999997,
+        0.27380189999999993,
+        0.26558784299999993,
+        0.25762020770999994,
+        0.24989160147869993,
+        0.24239485343433892,
+        0.23512300783130874,
+        0.22806931759636948,
+        0.22122723806847838,
+        0.21459042092642402,
+        0.2081527082986313,
+        0.20190812704967237,
+        0.1958508832381822,
+        0.18997535674103672,
+        0.1842760960388056,
+        0.17874781315764143,
+        0.17338537876291218,
+        0.1681838174000248
+      ]
+    }
+  },
   "fed_rounds": [
     {
       "round_num": 1,
       "aggregation_weights": [
-        0.19154556177578563,
-        0.2437581493971694,
-        0.564696288827045
+        0.3360160965794769,
+        0.33199195171026163,
+        0.3319919517102616
       ],
-      "best_fitness": -100000003.9738219,
-      "db_boa_history": [
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219
-      ],
-      "db_boa_stats": {
-        "Min": -100000003.9738219,
-        "Max": -100000003.9738219,
-        "Mean": -100000003.9738219,
-        "Std": 0.0,
-        "Median": -100000003.9738219,
-        "dboa_iters": 18,
-        "boa_iters": 2
-      },
       "org_contributions": {
-        "BankA": 0.19154556177578563,
-        "BankB": 0.2437581493971694,
-        "BankC": 0.564696288827045
+        "BankA": 0.3360160965794769,
+        "BankB": 0.33199195171026163,
+        "BankC": 0.3319919517102616
       },
-      "timestamp": "2026-04-07T11:15:02.791831",
+      "shapley_values": {
+        "BankA": 0.1669999999999666,
+        "BankB": 0.164999999999967,
+        "BankC": 0.16499999999996698
+      },
+      "coalition_values": {
+        "[]": 0.0,
+        "['BankA']": 0.4999999999999,
+        "['BankB']": 0.49899999999990025,
+        "['BankC']": 0.4979999999999004,
+        "['BankA', 'BankB']": 0.4979999999999004,
+        "['BankA', 'BankC']": 0.49899999999990025,
+        "['BankB', 'BankC']": 0.4959999999999008,
+        "['BankA', 'BankB', 'BankC']": 0.49699999999990063
+      },
+      "krum_scores": {
+        "BankA": 247.37425231933594,
+        "BankB": 275.32769775390625,
+        "BankC": 247.37425231933594
+      },
+      "krum_selected_org": "BankA",
+      "private_incentive": false,
+      "incentive_epsilon": null,
+      "clean_aggregation_weights": [
+        0.3360160965794769,
+        0.33199195171026163,
+        0.3319919517102616
+      ],
+      "dp_enabled": false,
+      "dp_epsilon": null,
+      "dp_delta": null,
+      "timestamp": "2026-06-07T20:04:12.792293",
       "accuracy_deltas": {
-        "BankA": 0.3749999999999858,
-        "BankB": 0.5249999999999915,
-        "BankC": 0.5999999999999801
+        "BankA": 0.0,
+        "BankB": 0.12815561251360919,
+        "BankC": 0.4564446473087287
       },
-      "global_weights_hash": "2bb6139e56e4c977de02f85b33bfb9ae31afe9106b718c2d1785bd6d952646e2"
+      "global_weights_hash": "97c4ff7a14745204bd176cb0b4381c9c1a258fd54584281415e034a90cdb3b29"
     },
     {
       "round_num": 2,
       "aggregation_weights": [
-        0.47610568269430825,
-        0.09489015187776999,
-        0.4290041654279218
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "best_fitness": -100000003.9738219,
-      "db_boa_history": [
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219
-      ],
-      "db_boa_stats": {
-        "Min": -100000003.9738219,
-        "Max": -100000003.9738219,
-        "Mean": -100000003.9738219,
-        "Std": 0.0,
-        "Median": -100000003.9738219,
-        "dboa_iters": 20,
-        "boa_iters": 0
-      },
       "org_contributions": {
-        "BankA": 0.47610568269430825,
-        "BankB": 0.09489015187776999,
-        "BankC": 0.4290041654279218
+        "BankA": 0.3333333333333333,
+        "BankB": 0.3333333333333333,
+        "BankC": 0.3333333333333333
       },
-      "timestamp": "2026-04-07T11:15:10.158886",
+      "shapley_values": {
+        "BankA": 0.16666666666663332,
+        "BankB": 0.16666666666663332,
+        "BankC": 0.16666666666663332
+      },
+      "coalition_values": {
+        "[]": 0.0,
+        "['BankA']": 0.4999999999999,
+        "['BankB']": 0.4999999999999,
+        "['BankC']": 0.4999999999999,
+        "['BankA', 'BankB']": 0.4999999999999,
+        "['BankA', 'BankC']": 0.4999999999999,
+        "['BankB', 'BankC']": 0.4999999999999,
+        "['BankA', 'BankB', 'BankC']": 0.4999999999999
+      },
+      "krum_scores": {
+        "BankA": 0.0,
+        "BankB": 0.0,
+        "BankC": 0.0
+      },
+      "krum_selected_org": "BankA",
+      "private_incentive": false,
+      "incentive_epsilon": null,
+      "clean_aggregation_weights": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "dp_enabled": false,
+      "dp_epsilon": null,
+      "dp_delta": null,
+      "timestamp": "2026-06-07T20:04:40.501256",
       "accuracy_deltas": {
         "BankA": 0.0,
         "BankB": 0.0,
         "BankC": 0.0
       },
-      "global_weights_hash": "98a12d9d44b84cec6914f5b406e623719a27d241d91585f45720de1817b2acba"
+      "global_weights_hash": "97c4ff7a14745204bd176cb0b4381c9c1a258fd54584281415e034a90cdb3b29"
     },
     {
       "round_num": 3,
       "aggregation_weights": [
-        0.5197721540896509,
-        0.3054788971687608,
-        0.17474894874158828
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "best_fitness": -100000003.9738219,
-      "db_boa_history": [
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219,
-        -100000003.9738219
-      ],
-      "db_boa_stats": {
-        "Min": -100000003.9738219,
-        "Max": -100000003.9738219,
-        "Mean": -100000003.9738219,
-        "Std": 0.0,
-        "Median": -100000003.9738219,
-        "dboa_iters": 20,
-        "boa_iters": 0
-      },
       "org_contributions": {
-        "BankA": 0.5197721540896509,
-        "BankB": 0.3054788971687608,
-        "BankC": 0.17474894874158828
+        "BankA": 0.3333333333333333,
+        "BankB": 0.3333333333333333,
+        "BankC": 0.3333333333333333
       },
-      "timestamp": "2026-04-07T11:15:17.490785",
+      "shapley_values": {
+        "BankA": 0.16666666666663332,
+        "BankB": 0.16666666666663332,
+        "BankC": 0.16666666666663332
+      },
+      "coalition_values": {
+        "[]": 0.0,
+        "['BankA']": 0.4999999999999,
+        "['BankB']": 0.4999999999999,
+        "['BankC']": 0.4999999999999,
+        "['BankA', 'BankB']": 0.4999999999999,
+        "['BankA', 'BankC']": 0.4999999999999,
+        "['BankB', 'BankC']": 0.4999999999999,
+        "['BankA', 'BankB', 'BankC']": 0.4999999999999
+      },
+      "krum_scores": {
+        "BankA": 0.0,
+        "BankB": 0.0,
+        "BankC": 0.0
+      },
+      "krum_selected_org": "BankA",
+      "private_incentive": false,
+      "incentive_epsilon": null,
+      "clean_aggregation_weights": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "dp_enabled": false,
+      "dp_epsilon": null,
+      "dp_delta": null,
+      "timestamp": "2026-06-07T20:05:08.579637",
       "accuracy_deltas": {
         "BankA": 0.0,
         "BankB": 0.0,
         "BankC": 0.0
       },
-      "global_weights_hash": "2b7a90c85929c31abec8e2b1e3bf0d2d625e73364216ad6769bc6dd0a4f6922e"
+      "global_weights_hash": "97c4ff7a14745204bd176cb0b4381c9c1a258fd54584281415e034a90cdb3b29"
     }
-  ]
+  ],
+  "attack_simulation": {
+    "attacker": "BankC",
+    "n_rounds": 15,
+    "n_disputed": 15,
+    "final_tokens": 70,
+    "final_reputation": 0.5,
+    "db_boa_weight_under_attack": 0.0,
+    "attack_log": [
+      {
+        "round": 1,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 98,
+        "reputation": 0.95
+      },
+      {
+        "round": 2,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 96,
+        "reputation": 0.8999999999999999
+      },
+      {
+        "round": 3,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 94,
+        "reputation": 0.8499999999999999
+      },
+      {
+        "round": 4,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 92,
+        "reputation": 0.7999999999999998
+      },
+      {
+        "round": 5,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 90,
+        "reputation": 0.7499999999999998
+      },
+      {
+        "round": 6,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 88,
+        "reputation": 0.6999999999999997
+      },
+      {
+        "round": 7,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 86,
+        "reputation": 0.6499999999999997
+      },
+      {
+        "round": 8,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 84,
+        "reputation": 0.5999999999999996
+      },
+      {
+        "round": 9,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 82,
+        "reputation": 0.5499999999999996
+      },
+      {
+        "round": 10,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 80,
+        "reputation": 0.5
+      },
+      {
+        "round": 11,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 78,
+        "reputation": 0.5
+      },
+      {
+        "round": 12,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 76,
+        "reputation": 0.5
+      },
+      {
+        "round": 13,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 74,
+        "reputation": 0.5
+      },
+      {
+        "round": 14,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 72,
+        "reputation": 0.5
+      },
+      {
+        "round": 15,
+        "y_true": 0,
+        "consensus": 0,
+        "attacker_verdict": 1,
+        "outcome": "DISPUTED",
+        "tokens": 70,
+        "reputation": 0.5
+      }
+    ]
+  }
 }

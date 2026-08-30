@@ -1,0 +1,218 @@
+{
+  "task": "D \u2014 statistical Byzantine fault tolerance (weight-level Krum, f\u22651)",
+  "metric": "balanced accuracy (Sens+Spec)/2 of the global model on test",
+  "attacks": [
+    "sign-flip",
+    "scaled",
+    "gaussian",
+    "label-flip"
+  ],
+  "scale_lambda": 50.0,
+  "epoch_count": 12,
+  "regimes": [
+    {
+      "n_orgs": 5,
+      "byzantine_f": 1,
+      "n_attackers": 1,
+      "theorem_ok": true,
+      "org_names": [
+        "Bank01",
+        "Bank02",
+        "Bank03",
+        "Bank04",
+        "Bank05"
+      ],
+      "attacker_orgs": [
+        "Bank05"
+      ],
+      "ref_krum_acc": 99.94995996672338,
+      "ref_fedavg_acc": 99.94995996672338,
+      "attacks": [
+        {
+          "attack": "sign-flip",
+          "krum_selected_idx": 3,
+          "krum_selected_org": "Bank04",
+          "attacker_selected": false,
+          "krum_acc": 99.94995996672338,
+          "fedavg_acc": 99.91993594750801,
+          "krum_advantage": 0.03002401921537512,
+          "krum_scores": {
+            "Bank01": 309.3052062988281,
+            "Bank02": 218.9856185913086,
+            "Bank03": 215.81365203857422,
+            "Bank04": 212.71121215820312,
+            "Bank05": 1434.163330078125
+          },
+          "min_attacker_score": 1434.163330078125,
+          "max_honest_score": 309.3052062988281,
+          "score_margin": 1124.8581237792969
+        },
+        {
+          "attack": "scaled",
+          "krum_selected_idx": 3,
+          "krum_selected_org": "Bank04",
+          "attacker_selected": false,
+          "krum_acc": 99.94995996672338,
+          "fedavg_acc": 87.459967973441,
+          "krum_advantage": 12.489991993282388,
+          "krum_scores": {
+            "Bank01": 309.3052062988281,
+            "Bank02": 218.9856185913086,
+            "Bank03": 215.81365203857422,
+            "Bank04": 212.71121215820312,
+            "Bank05": 981739.96875
+          },
+          "min_attacker_score": 981739.96875,
+          "max_honest_score": 309.3052062988281,
+          "score_margin": 981430.6635437012
+        },
+        {
+          "attack": "gaussian",
+          "krum_selected_idx": 3,
+          "krum_selected_org": "Bank04",
+          "attacker_selected": false,
+          "krum_acc": 99.94995996672338,
+          "fedavg_acc": 99.9599679731285,
+          "krum_advantage": -0.010008006405115566,
+          "krum_scores": {
+            "Bank01": 309.3052062988281,
+            "Bank02": 218.9856185913086,
+            "Bank03": 215.81365203857422,
+            "Bank04": 212.71121215820312,
+            "Bank05": 4087.3393653246812
+          },
+          "min_attacker_score": 4087.3393653246812,
+          "max_honest_score": 309.3052062988281,
+          "score_margin": 3778.034159025853
+        },
+        {
+          "attack": "label-flip",
+          "krum_selected_idx": 3,
+          "krum_selected_org": "Bank04",
+          "attacker_selected": false,
+          "krum_acc": 99.94995996672338,
+          "fedavg_acc": 99.9099279411029,
+          "krum_advantage": 0.040032025620490685,
+          "krum_scores": {
+            "Bank01": 309.3052062988281,
+            "Bank02": 218.9856185913086,
+            "Bank03": 215.81365203857422,
+            "Bank04": 212.71121215820312,
+            "Bank05": 317.4019775390625
+          },
+          "min_attacker_score": 317.4019775390625,
+          "max_honest_score": 309.3052062988281,
+          "score_margin": 8.096771240234375
+        }
+      ]
+    },
+    {
+      "n_orgs": 7,
+      "byzantine_f": 2,
+      "n_attackers": 2,
+      "theorem_ok": true,
+      "org_names": [
+        "Bank01",
+        "Bank02",
+        "Bank03",
+        "Bank04",
+        "Bank05",
+        "Bank06",
+        "Bank07"
+      ],
+      "attacker_orgs": [
+        "Bank06",
+        "Bank07"
+      ],
+      "ref_krum_acc": 99.94995996672338,
+      "ref_fedavg_acc": 99.94995996672338,
+      "attacks": [
+        {
+          "attack": "sign-flip",
+          "krum_selected_idx": 0,
+          "krum_selected_org": "Bank01",
+          "attacker_selected": false,
+          "krum_acc": 99.94995996672338,
+          "fedavg_acc": 99.81985588345677,
+          "krum_advantage": 0.13010408326661604,
+          "krum_scores": {
+            "Bank01": 373.2966766357422,
+            "Bank02": 526.4876098632812,
+            "Bank03": 406.24029541015625,
+            "Bank04": 390.54234313964844,
+            "Bank05": 418.5096740722656,
+            "Bank06": 1638.117660522461,
+            "Bank07": 1708.1263885498047
+          },
+          "min_attacker_score": 1638.117660522461,
+          "max_honest_score": 526.4876098632812,
+          "score_margin": 1111.6300506591797
+        },
+        {
+          "attack": "scaled",
+          "krum_selected_idx": 0,
+          "krum_selected_org": "Bank01",
+          "attacker_selected": false,
+          "krum_acc": 99.94995996672338,
+          "fedavg_acc": 87.46997597984614,
+          "krum_advantage": 12.479983986877244,
+          "krum_scores": {
+            "Bank01": 373.2966766357422,
+            "Bank02": 526.4876098632812,
+            "Bank03": 406.24029541015625,
+            "Bank04": 390.54234313964844,
+            "Bank05": 418.5096740722656,
+            "Bank06": 1388375.40625,
+            "Bank07": 1552214.1875
+          },
+          "min_attacker_score": 1388375.40625,
+          "max_honest_score": 526.4876098632812,
+          "score_margin": 1387848.9186401367
+        },
+        {
+          "attack": "gaussian",
+          "krum_selected_idx": 0,
+          "krum_selected_org": "Bank01",
+          "attacker_selected": false,
+          "krum_acc": 99.94995996672338,
+          "fedavg_acc": 99.94995996672338,
+          "krum_advantage": 0.0,
+          "krum_scores": {
+            "Bank01": 373.2966766357422,
+            "Bank02": 526.4876098632812,
+            "Bank03": 406.24029541015625,
+            "Bank04": 390.54234313964844,
+            "Bank05": 418.5096740722656,
+            "Bank06": 6400.248659281842,
+            "Bank07": 7237.780459941739
+          },
+          "min_attacker_score": 6400.248659281842,
+          "max_honest_score": 526.4876098632812,
+          "score_margin": 5873.761049418561
+        },
+        {
+          "attack": "label-flip",
+          "krum_selected_idx": 0,
+          "krum_selected_org": "Bank01",
+          "attacker_selected": false,
+          "krum_acc": 99.94995996672338,
+          "fedavg_acc": 99.94995996672338,
+          "krum_advantage": 0.0,
+          "krum_scores": {
+            "Bank01": 373.2966766357422,
+            "Bank02": 526.4876098632812,
+            "Bank03": 406.24029541015625,
+            "Bank04": 390.54234313964844,
+            "Bank05": 418.5096740722656,
+            "Bank06": 533.3625030517578,
+            "Bank07": 570.7577514648438
+          },
+          "min_attacker_score": 533.3625030517578,
+          "max_honest_score": 526.4876098632812,
+          "score_margin": 6.8748931884765625
+        }
+      ]
+    }
+  ],
+  "elapsed_sec": 1082.8
+}

@@ -1,12 +1,21 @@
 % ============================================================
-% CHAPTER 5 — METHODOLOGY
+% CHAPTER 4 — METHODOLOGY
 % Merged: Methodology + System Architecture + Implementation
 % Formatting matches the original chapter_5.tex style
 % ============================================================
 
 \section{Design Process or Methodology Overview}
 
-\subsection*{5.1.1 Federated Learning: Decentralized Model Training with Privacy Preservation}
+Figure~\ref{fig:methodology_overview} presents the end-to-end methodology of the proposed framework: the three-bank consortium and its local ADTCN detectors, the two optimisation roles of DB-BOA, the privacy-preserving federation pipeline, and the Hyperledger Fabric layer that records every decision and enforces the token incentive. The highlighted path through the Shapley attribution, the output-perturbation privacy channel, and the chaincode-enforced reward marks the privacy--incentive coupling that constitutes the primary contribution of this thesis (Section~4.1.5). The subsections that follow describe each component in turn.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/methodology_overview.png}
+    \caption{End-to-end methodology overview. Three banking organisations (Org1--Org3 MSPs) train local ADTCN detectors on private 50/30/20 shards of the ULB dataset and share only model weights and metrics. DB-BOA performs hyperparameter search (once, at startup) and reputation-discounted leader selection (every consensus round). Each federation round applies differentially private weight sharing (disabled at the deployment operating point), Krum robust selection, and exact Shapley attribution, with output-perturbation DP on the Shapley values serving as the deployment privacy channel. The \texttt{DBBOAContract} chaincode on Hyperledger Fabric records all decisions immutably and splits the 20-token federation pool in proportion to the DP-noised Shapley weights; the highlighted (crimson) path marks this privacy--incentive coupling, the primary contribution. Numbered badges correspond to the six methodology phases of Section~4.1.7.}
+    \label{fig:methodology_overview}
+\end{figure}
+
+\subsection*{4.1.1 Federated Learning: Decentralized Model Training with Privacy Preservation}
 
 Federated Learning (FL) represents a paradigm shift in distributed intelligence—one that is particularly suited to the financial sector, where regulatory compliance and confidentiality are paramount \cite{10746050}. In traditional financial analytics, models are trained using centrally stored customer data, which raises severe privacy and legal concerns under frameworks such as GDPR, PCI-DSS, and the Bangladesh Bank Data Governance Policy \cite{9404224}. FL addresses this by allowing institutions—such as banks, credit unions, and regulatory agencies—to collaboratively train a shared fraud-detection model without sharing their customers' raw transaction data \cite{10746050}.
 
@@ -26,15 +35,15 @@ In this implementation, the consortium consists of three banking organisations�
 \textbf{Federated Learning workflow within the consortium system:}
 \begin{enumerate}
     \item Each validator node (BankA, BankB, BankC) trains a local ADTCN model using its private transaction data shard \cite{10746050}.
-    \item The model parameters—not raw data—are transmitted to the Hyperledger Fabric ledger via the DBBOAContract chaincode \cite{9945966}.
-    \item DB-BOA Job~3 (the primary novel contribution) determines the optimal aggregation weight for each institution's model, replacing the naive equal-weighting of standard FedAvg with mathematically optimised contribution weights \cite{9945966}.
-    \item The global model is computed as the weighted average and redistributed to all nodes, improving detection accuracy collaboratively \cite{10746050}.
-    \item Federation rewards (tokens) are distributed proportionally to DB-BOA's computed aggregation weights, creating a direct mathematical link between model quality and economic reward.
+    \item The model parameters—not raw data—are transmitted to the Hyperledger Fabric ledger via the DBBOAContract chaincode \cite{9945966}; the parameters are differentially privatised (Gaussian mechanism~\cite{dwork2006}) before sharing.
+    \item The federation manager applies \textbf{Krum} robust selection~\cite{blanchard2017} to choose the most consensus-aligned update, then computes \textbf{exact Shapley values}~\cite{wang2020fedsv} to attribute each institution's marginal contribution to the global model — replacing the naive equal-weighting of standard FedAvg with a measured contribution weight.
+    \item The global model is computed and redistributed to all nodes, improving detection accuracy collaboratively \cite{10746050}.
+    \item Federation rewards (tokens) are distributed proportionally to the Shapley contribution weights, creating a direct link between measured model contribution and economic reward.
 \end{enumerate}
 
 The financial sector is characterised by multi-institutional collaboration, requiring transparency, auditability, and immutability—core features provided by blockchain. While the base paper employed a Private Ethereum Consortium Blockchain (PEC-BC), this research implements an equivalent architecture through Hyperledger Fabric (HLF), which offers modular, enterprise-ready permissioned blockchain infrastructure with deterministic consensus and certificate-based access control.
 
-\subsection*{5.1.2 Hyperledger Fabric: The Infrastructure Layer}
+\subsection*{4.1.2 Hyperledger Fabric: The Infrastructure Layer}
 
 Hyperledger Fabric provides the fundamental decentralised architecture required for secure multi-party collaboration in this framework. As a production-grade permissioned consortium blockchain maintained by the Linux Foundation, Fabric restricts network participation to pre-authorised organisations — in this implementation, three banking institutions (BankA, BankB, BankC) — authenticated through Fabric's built-in Certificate Authority (CA) infrastructure. Unlike public blockchains, Hyperledger Fabric ensures that ledger data remains entirely within the consortium, providing the privacy of a permissioned network while maintaining the decentralised trust guarantees of a distributed ledger.
 
@@ -50,12 +59,12 @@ Hyperledger Fabric provides the fundamental decentralised architecture required 
 \begin{itemize}
     \item \textit{Transparent Auditing:} All administrative actions — fraud verdicts, consensus round outcomes, token allocations, and federation weight assignments — are logged on-chain via the \texttt{DBBOAContract}, allowing any consortium member or regulator to perform real-time audits of the system's operational integrity.
     \item \textit{Data Integrity Verification:} The Fabric ledger acts as the authoritative source of truth for verifying the origin, timing, and outcome of every consensus round and federation event, with each record keyed by a deterministic document ID (e.g., \texttt{NODE\_\{id\}}, \texttt{ROUND\_\{num\}}, \texttt{FED\_\{num\}}).
-    \item \textit{Resilient Network Architecture:} By distributing the ledger across peer nodes of three independent banking organisations deployed via Docker, the system remains operational even if individual peers or local servers experience hardware failure or network disruption.
+    \item \textit{Resilient Network Architecture:} By distributing the ledger across the consortium's peer nodes deployed via Docker, the system remains operational even if individual peers or local servers experience hardware failure or network disruption.
 \end{itemize}
 
-By utilising Hyperledger Fabric as the consortium infrastructure, the framework provides a high-throughput, low-latency, and deterministically executable environment that balances the transparency of blockchain with the strict confidentiality and access-control requirements of regulated financial institutions.
+By utilising Hyperledger Fabric as the consortium infrastructure, the framework provides a permissioned, deterministically executable environment with certificate-based access control that balances the transparency of blockchain with the strict confidentiality and access-control requirements of regulated financial institutions. (Measured consensus latency on the single-host test deployment is $\approx 2.1$\,s per transaction; production-grade throughput would require a tuned multi-host network and is out of scope --- see Limitations.)
 
-\subsection*{5.1.3 DB-BOA: Dynamic Butterfly–Billiards Optimization Algorithm}
+\subsection*{4.1.3 DB-BOA: Dynamic Butterfly–Billiards Optimization Algorithm}
 
 \textbf{Background and Conceptual Foundation.}
 The Dynamic Butterfly–Billiards Optimization Algorithm (DB-BOA) is the hybrid optimization core that ensures the efficiency, security, and stability of the blockchain network. It merges two biologically and physically inspired algorithms — Dynamic Butterfly Optimization Algorithm (DBOA) and Billiards Optimization Algorithm (BOA) — combining the adaptive exploration of the former with the deterministic precision of the latter.
@@ -64,15 +73,15 @@ DBOA mimics the foraging and mating behaviour of butterflies. Each butterfly's `
 
 BOA draws inspiration from the physical laws of billiards, where the motion and collision of balls are modelled mathematically to refine solutions within a constrained search space.
 
-By integrating both, DB-BOA dynamically balances exploration and exploitation, reducing the risk of getting trapped in local minima while optimising high-dimensional, multi-objective problems — such as leader selection, hyperparameter tuning, and federated aggregation weight determination in a blockchain-driven learning system.
+By integrating both, DB-BOA dynamically balances exploration and exploitation, reducing the risk of getting trapped in local minima while optimising the consensus and learning parameters of a blockchain-driven learning system.
 
-\textbf{Three Optimisation Roles in This Framework.}
-In the financial consortium, DB-BOA acts as an intelligent optimisation layer operating across three distinct and coupled tasks:
+\textbf{Two Optimisation Roles in This Framework.}
+In the financial consortium, DB-BOA acts as an intelligent optimisation layer operating across two tasks:
 \begin{itemize}
-    \item \textit{DB-BOA Job 1 — Hyperparameter Optimisation:} Automatically searches for the optimal ADTCN architecture (hidden neurons $H_{nD}$, epochs $E_{pD}$, steps per epoch $S_{eD}$) maximising fraud detection performance. Runs once at system startup; results stored on-chain under \texttt{HYPERPARAMS} record.
-    \item \textit{DB-BOA Job 2 — Leader Block Selection:} Optimally selects the validator node (leader) responsible for block proposal based on computation time, communication cost, and memory size, augmented with a reputation discount. Runs at the beginning of every consensus round.
-    \item \textit{DB-BOA Job 3 — Federated Aggregation Weight Optimisation (Primary Novel Contribution):} Finds the optimal weight vector $[w_1^*, w_2^*, w_3^*]$ for federated model aggregation, replacing naive FedAvg with mathematically optimised contribution weights. Runs every five consensus rounds (at federation intervals). Economic rewards are distributed proportionally to these weights.
+    \item \textit{Hyperparameter Optimisation:} Automatically searches a two-dimensional space — the convolutional filter count $H_{nD}$ and steps per epoch $S_{eD}$ (the epoch count is fixed, not searched) — maximising a bounded fraud-detection fitness on a validation subsample. Runs once at system startup; results stored on-chain under the \texttt{HYPERPARAMS} record.
+    \item \textit{Leader Block Selection:} Selects the validator node (leader) responsible for block proposal by minimising computation time, communication cost, and memory size, augmented with a reputation discount. Runs at the beginning of every consensus round.
 \end{itemize}
+The federated aggregation weights are \emph{not} computed by DB-BOA. They are obtained from a dedicated federation layer — differentially private weight sharing, Krum robust selection, and exact Shapley contribution attribution — described in Section~4.1.5. (A DB-BOA-based aggregation mode exists in the codebase but is disabled by default in favour of the Shapley path.)
 
 \textbf{Financial Domain Applications:}
 \begin{itemize}
@@ -83,25 +92,27 @@ In the financial consortium, DB-BOA acts as an intelligent optimisation layer op
 
 DB-BOA thus acts as a meta-optimiser for the entire financial ecosystem, ensuring that every component — from smart contracts to model updates to economic rewards — operates under minimal delay and maximal accuracy.
 
-\subsection*{5.1.4 ADTCN: Adaptive Deep Temporal Context Network}
+\subsection*{4.1.4 ADTCN: Adaptive Deep Temporal Context Network}
 
 \textbf{Background and Theoretical Foundation.}
-The Adaptive Deep Temporal Context Network (ADTCN) extends the Deep Temporal Context Network architecture by embedding temporal learning and adaptive attention to model long- and short-term dependencies in time-series data. In financial systems, where transactions occur continuously and exhibit evolving temporal patterns, such a structure enables dynamic detection of anomalies that static models cannot capture. Unlike traditional deep networks, ADTCN employs a multi-timescale temporal attention mechanism, which allows the model to focus simultaneously on short-term fraud spikes (e.g., multiple rapid withdrawals) and long-term deviations (e.g., unusual spending patterns over weeks).
+The Adaptive Deep Temporal Context Network (ADTCN) is a temporal one-dimensional convolutional detector applied to a sliding window of recent transactions, designed to model short- and long-range dependencies in transaction sequences. In financial systems, where transactions occur continuously and exhibit evolving temporal patterns, processing an ordered window rather than a single transaction enables detection of anomalies that point-wise models cannot capture.
 
-\textbf{Architecture and Components:}
+\textbf{Architecture and Components.}
+The detector processes a sliding window of the ten most recent transactions, each represented by 33 input features: the 30 base features (the PCA components V1--V28, the standardised Amount, and Time) plus three temporal-amount recurrence features computed during preprocessing. The window passes through two stacked one-dimensional convolution layers (kernel size 3, ReLU activations) that expand the channel dimension from $F$ to $2F$, followed by \textbf{global max-pooling over the time axis} and a linear layer that outputs the normal/fraud logits. The base-paper conceptual blocks map onto this realisation as follows:
 \begin{itemize}
-    \item \textit{Multi-Modal Joint Embedding (MJE):} Integrates heterogeneous data — such as transaction amount, PCA-transformed features (V1--V28), device type, and customer risk profile — into a unified latent vector space. This enables cross-dimensional correlation crucial for identifying complex fraud behaviours. In this implementation, MJE is realised as a linear projection layer mapping 29-dimensional transaction features into a 64-dimensional latent space with batch normalisation and dropout.
-    \item \textit{Temporal Context Learning (TCL):} Learns sequential coherence in transaction streams, correlating event histories to forecast future risk states. Realised as a dilated temporal convolutional backbone with dilation rates $\{1, 2, 4, 8\}$, creating an effective receptive field of approximately 15 timesteps.
-    \item \textit{Multi-Timescale Temporal Attention (MTTA):} Applies varying attention windows to highlight both micro and macro temporal dependencies. The MTTA layer dynamically adapts its focus depending on evolving transaction behaviours, strengthening the model's ability to catch adaptive fraud tactics.
+    \item \textit{Multi-Modal Joint Embedding (MJE):} the raw multi-feature input vector for each transaction (V1--V28, Amount, Time, and the three recurrence features).
+    \item \textit{Temporal Context Learning (TCL):} the two stacked one-dimensional convolutions over the ordered ten-step window.
+    \item \textit{Multiple Time-Scale Temporal Attention (MTTA):} realised as the global max-pooling operator that selects the most salient time step (a pooling operator used in place of the base paper's attention).
 \end{itemize}
+The three temporal-amount recurrence features --- the recurrence of similar transaction amounts before and after each transaction, and a degree ratio, computed from the discretised Amount stream --- are appended to the 30 base features to form the 33-dimensional per-transaction input. Additional temporal context features (rolling means/standard deviations over windows $\{5,10,20\}$ and first/second differences) are also engineered during preprocessing but are not consumed by the convolutional detector, which derives its temporal context from the ten-step sliding window itself. Extreme class imbalance (0.17\% fraud) is handled with a class-weighted cross-entropy loss rather than resampling, and the optimiser is Adam with learning rate $10^{-3}$.
 
-\textbf{Optimization and Objective.}
-The ADTCN's learning parameters are dynamically tuned through DB-BOA Job~1 according to the multi-objective function:
-\[
-    \mathrm{Obf}_2 = \arg\max_{H_{nD},\, E_{pD},\, S_{eD}}
-    \left[ \left(\mathrm{Acc} + \mathrm{Pre} + \mathrm{NPV} + \mathrm{MCC}\right) + \frac{1}{\mathrm{FPR}} \right].
-\]
-This ensures maximum predictive power (accuracy, precision, NPV, MCC) while minimising the false positive rate (FPR), which is critical in finance where false alarms disrupt legitimate transactions. DB-BOA Job~1 converged to optimal hyperparameters $H_{nD}^* = 128$, $E_{pD}^* = 30$, $S_{eD}^* = 150$, achieving a composite fitness of 5.82.
+\textbf{Optimisation and Objective.}
+The convolutional filter count and steps per epoch are tuned by DB-BOA according to a bounded, MCC-dominated fitness:
+\begin{equation}\label{eq:obf2_overview}
+    \mathrm{Obf}_2 = \arg\max_{H_{nD},\, S_{eD}}
+    \big[\, 2\,\mathrm{MCC} + \mathrm{Spec} + \mathrm{Pre} + \mathrm{NPV} \,\big].
+\end{equation}
+This rewards predictive power (MCC, precision, NPV) and low false alarms (specificity) — critical in finance. The bounded specificity term replaces the unbounded $1/\mathrm{FPR}$ reward of the base paper's objective, which diverges as $\mathrm{FPR}\to 0$ and causes every false-positive-free candidate to tie at an unbounded best score, making the search degenerate. With the corrected objective, DB-BOA's automatically selected configuration ($H_{nD}^\ast = 142$, $S_{eD}^\ast = 76$) yields a working detector without manual search; as reported in Chapter~\ref{ch:results}, it does not exceed a carefully hand-tuned default — DB-BOA's demonstrated value is automation and leader selection, not a detection-accuracy gain.
 
 \textbf{Applications and Interpretations:}
 \begin{itemize}
@@ -111,86 +122,85 @@ This ensures maximum predictive power (accuracy, precision, NPV, MCC) while mini
     \item \textit{Market Manipulation Detection:} Monitors blockchain-based stock trading for wash trades, spoofing, or pump-and-dump patterns by analysing multi-scale trade intervals.
 \end{itemize}
 
-By continuously learning from federated updates aggregated via DB-BOA Job~3, ADTCN maintains robustness across changing financial contexts, adapting to evolving fraud techniques or seasonal variations in trading behaviour.
+By continuously learning from federated updates aggregated via the DP/\allowbreak Krum/\allowbreak Shapley federation layer, ADTCN maintains robustness across changing financial contexts, adapting to evolving fraud techniques or seasonal variations in trading behaviour.
 
 \begin{table}[htbp]
 \centering
-\begin{tabular}{|p{3cm}|p{4cm}|p{8cm}|}
+\caption{Integrated Architectural Flow of the FL-ADTCN Framework}
+\label{tab:integrated_arch_flow}
+\begin{tabular}{|p{2.6cm}|p{3.6cm}|p{7.2cm}|}
 \hline
 \textbf{Layer} & \textbf{Technology Used} & \textbf{Core Purpose and Function} \\ \hline
 Consensus Layer & Raft Ordering in Hyperledger Fabric & Validates transactions and federated updates under authorised consortium nodes (BankA, BankB, BankC). \\ \hline
-Optimisation Layer & DB-BOA (Jobs 1, 2, 3) & Tunes ADTCN hyperparameters; selects optimal leader nodes; computes federated aggregation weights and distributes token rewards. \\ \hline
+Optimisation Layer & DB-BOA (2 roles) & Tunes ADTCN hyperparameters and selects optimal leader nodes. \\ \hline
+Federation Layer & DP + Krum + Shapley & Differentially private weight sharing, Krum robust selection, and exact Shapley contribution attribution; Shapley weights drive the token split. \\ \hline
 Learning Layer & Federated ADTCN & Performs decentralised temporal fraud detection across the three-bank consortium. \\ \hline
 Smart Contract Layer & DBBOAContract (Node.js Chaincode) & Executes transaction validation, token reward allocation, leader election recording, and federation round logging. \\ \hline
 Ledger Layer & Fabric World State and Blockchain Ledger & Stores immutable records of financial transactions, model metrics, federation weights, token balances, and validation outcomes. \\ \hline
 \end{tabular}
-\caption{Integrated Architectural Flow of the FL-ADTCN Framework}
-\label{tab:integrated_arch_flow}
 \end{table}
 
-\subsection*{5.1.5 DB-BOA Job 3: Federated Aggregation Weight Optimisation}
+\subsection*{4.1.5 Privacy-Preserving, Fairness-Aware Federated Aggregation}
+\label{sec:fed-layer}
 
 \begin{center}
 \fbox{%
 \begin{minipage}{0.92\textwidth}
 \vspace{4pt}
-\textbf{\textcolor{blue!70!black}{PRIMARY NOVEL CONTRIBUTION — DB-BOA Job 3}}
+\textbf{\textcolor{blue!70!black}{PRIMARY CONTRIBUTION}}
 
 \medskip
-DB-BOA Job~3 is the central novelty of this thesis. For the first time in the literature, a metaheuristic algorithm is used to mathematically determine the contribution weight of each institution's model in a federated learning round on a live blockchain ledger. The resulting weights directly govern the distribution of economic token rewards — creating a unique, self-reinforcing coupling between model quality and economic incentive that has not appeared in any prior blockchain-FL system.
+Each federation round combines three complementary mechanisms — differentially private weight sharing, Krum robust selection, and exact Shapley-value contribution attribution — and binds the Shapley contribution weights to an on-chain token incentive enforced by Fabric chaincode. Rather than claiming priority, this thesis \emph{characterises} the privacy--incentive coupling of this Shapley-driven, chaincode-enforced reward mechanism on a real permissioned blockchain, extending prior Shapley-on-blockchain incentive work (FedCoin~\cite{fedcoin2020}, SI-ChainFL~\cite{zhao2026sichainfl}) with a deployed Hyperledger Fabric implementation and a noise$\rightarrow$fidelity$\rightarrow$reward-error analysis.
 \vspace{4pt}
 \end{minipage}
 }
 \end{center}
 
 \medskip
-\textbf{Why Standard FedAvg Is Insufficient.}
-Standard Federated Averaging (FedAvg) assigns each institution's model an equal weight ($w_i = 1/K$) or a sample-count-proportional weight ($w_i = n_i / \sum n_j$). Both are suboptimal for consortium fraud detection. An institution that trained on 50\% of the consortium data with 95\% accuracy should contribute more to the global model than one that trained on 20\% with 78\% accuracy. More subtly, two models that are strong on similar transaction types provide redundant information, while a weaker model that catches different fraud patterns may be more valuable despite lower aggregate accuracy. DB-BOA Job~3 evaluates the \textit{collective} performance of each weight combination on a shared anonymised validation set, finding the weight vector that maximises the collaborative global model's performance — the correct objective for federated aggregation.
+\textbf{(1) Differentially private weight sharing.}
+Before any sharing, each organisation's weight tensors are $L_2$-clipped to a norm bound $C$ and perturbed by Gaussian noise $\mathcal{N}(0,\sigma^2)$ with $\sigma = C\sqrt{2\ln(1.25/\delta)}/\epsilon$ (Dwork et al.~\cite{dwork2006}). At the deployment budget $\epsilon=1.0$, $\delta=10^{-5}$, $C=1$ this gives $\sigma\approx 4.84$ and an $(\epsilon,\delta)$ guarantee. As discussed in Chapter~\ref{ch:results}, $\epsilon=1.0$ is a deliberately tight budget at which the weight noise exceeds the signal; the deployment therefore disables weight-channel DP and instead carries privacy on the incentive (output) channel — the configuration the central characterisation shows to be both private and faithful.
 
-\textbf{Optimisation Formulation.}
-Every five consensus rounds, a federated round triggers. DB-BOA searches the probability simplex $\Delta^{K-1}$ for the weight vector $\mathbf{w}^* = [w_1^*, w_2^*, w_3^*]$ subject to $\sum_i w_i = 1$ and $w_i \geq 0$, maximising:
-\[
-    \mathbf{w}^* = \arg\max_{\mathbf{w} \in \Delta^{K-1}}\; \mathrm{Obf}_2(\mathbf{w}),
-\]
-where $\mathrm{Obf}_2(\mathbf{w})$ is the composite fraud detection fitness evaluated on the weighted-average global model $\theta_{\text{global}}(\mathbf{w}) = \sum_i w_i \theta_i$.
+\textbf{(2) Krum robust selection.}
+Each organisation's update is scored by the sum of squared $L_2$ distances to its nearest neighbours; the lowest-scoring (most consensus-aligned) update is chosen as the global model (Blanchard et al.~\cite{blanchard2017}). In the default three-organisation deployment this reduces to outlier rejection (the largest $f$ admissible under $n\ge 2f+3$ is $0$). Statistical Byzantine tolerance for $f\ge 1$ is demonstrated separately in the $n=5,f=1$ and $n=7,f=2$ regimes against weight-level poisoning (Chapter~\ref{ch:results}); a colluding \emph{majority} ($>f$) is handled by the complementary economic mechanism.
 
-\textbf{Economic Coupling.}
-The optimised weights $\mathbf{w}^*$ are written to the Fabric ledger. The chaincode's \texttt{recordFederationRound} function distributes the 20-token federation pool proportionally: organisation $i$ receives $20 \cdot w_i^*$ tokens. This coupling — where economic reward is the direct output of the optimisation algorithm — eliminates the free-riding Nash equilibrium of naive federated systems. A bank with a good model earns more; a bank with a poor model earns less automatically, without any human adjudication.
+\textbf{(3) Exact Shapley contribution attribution.}
+Each organisation $i$ is assigned its Shapley value $\phi_i = \sum_{S\subseteq N\setminus\{i\}} \frac{|S|!\,(n-|S|-1)!}{n!}\,[v(S\cup\{i\})-v(S)]$, where the coalition value $v(S)$ is the balanced accuracy of the equally-averaged model of the organisations in $S$ on a shared validation set (Wang et al.~\cite{wang2020fedsv}). For $n=3$ this evaluates all seven non-empty coalitions exactly. Negative values are clipped and the weights normalised to sum to one. Balanced accuracy is used because it is bounded and robust to the 0.17\% class imbalance, so a participant that catches fraud without over-flagging scores near one while an always-fraud adversary scores near one half and lowers any coalition it joins.
 
-Over 10 federation rounds, the aggregation weights converged to $[w_1^*, w_2^*, w_3^*] \approx [0.52, 0.32, 0.16]$ for BankA, BankB, and BankC respectively, consistent with their dataset sizes and per-sample model quality.
+\textbf{Economic coupling.}
+The Shapley weights $\mathbf{w}^\ast$ are written to the Fabric ledger, and \texttt{recordFederationRound} distributes the 20-token federation pool as $\text{tokens}_i = \lfloor 20\, w_i^\ast \rfloor$. Because reward is the direct output of the Shapley analysis, an organisation that contributes a stronger model earns more automatically, and one that degrades the global model earns essentially nothing — without human adjudication. On the single-source deployment data the three banks are stratified volume-splits of the same dataset, so their marginal contributions are near-identical and the split is near-uniform ($\approx 0.333$ each); the mechanism's value where contributions genuinely differ is established by the privacy--incentive characterisation in Chapter~\ref{ch:results}.
 
-\subsection*{5.1.6 Objectives, Constraints, and Performance Goals}
+\subsection*{4.1.6 Objectives, Constraints, and Performance Goals}
 
 \paragraph{Performance objectives.}
-The system is designed to minimise end-to-end transaction latency to $\leq 250$\,ms per block by leveraging DB-BOA for leader selection and consensus-time parameter tuning. On the learning side, the federated ADTCN aims to achieve robust fraud-detection performance with $\geq 97\%$ overall accuracy under cross-institutional training. Blockchain throughput is targeted at $\geq 85$ TPS under a 2-of-3 endorsement policy with average block latency of 180\,ms.
+On the consensus path, DB-BOA-driven leader selection aims to reduce simulated block latency relative to random selection. On the learning side, the federated ADTCN aims for robust fraud-detection performance on the extremely imbalanced ULB data, measured by MCC and balanced accuracy rather than raw accuracy (which is uninformative at 0.17\% fraud). Reported throughput is computed by the consensus \emph{simulation} layer from node resource scores; the per-round latency was measured on a single-host, two-organisation Fabric deployment (mean $\approx 2.1$\,s), not on a live multi-host network. Both characterise relative behaviour rather than production performance (see Limitations).
 
 \paragraph{Security objectives.}
-Data privacy is enforced by a federated learning (FL) protocol in which raw transaction records never leave institutional boundaries; only model parameters are shared for aggregation. Smart-contract integrity is maintained through immutable Raft-backed records of model updates, parameter aggregations, and incentive events, thereby enabling non-repudiable audit trails for all critical operations. Byzantine resilience is achieved through the token-based incentive mechanism, which automatically penalises dishonest participants without human intervention.
+Data privacy is enforced on two fronts: a federated learning protocol in which raw transaction records never leave institutional boundaries, and differential privacy applied to the shared statistics. Smart-contract integrity is maintained through immutable Raft-backed records of model updates, contribution weights, and incentive events, enabling non-repudiable audit trails. Byzantine resilience is provided by two complementary layers: Krum robust selection at the parameter level (in the $n\ge 2f+3$ regime) and an economic mechanism that isolates a colluding majority through the Shapley-weighted reward and reputation loop.
 
 \paragraph{System constraints.}
 Scalability is intentionally scoped to a consortium environment in which validator roles are restricted to accredited financial entities (BankA, BankB, BankC). The learning pipeline is trained on the Kaggle ULB Credit Card Fraud Detection dataset; subsequent phases will extend to real-time blockchain-native financial data streams to capture production-scale heterogeneity and temporal dynamics.
 
 \paragraph{Improvement targets.}
-On the consensus path, the objective is to reduce latency by at least 28\% relative to random leader selection through DB-BOA-driven leader scheduling (achieved: 28.4\% reduction, from 252\,ms to 180\,ms). From the detection perspective, the goal is to surpass the base paper result of 95.45\% accuracy \cite{prabanand2025} through federated learning with DB-BOA aggregation weight optimisation (achieved: 97.38\% accuracy, MCC 0.966).
+On the consensus path, the objective is to reduce simulated block latency relative to random leader selection through DB-BOA-driven leader scheduling. On the detection side, the goal is a working federated detector obtained without manual tuning; the verified detector reaches MCC $0.677$ at the weight-DP-off deployment operating point (Chapter~\ref{ch:results}). Note that this does not surpass a carefully hand-tuned default — DB-BOA's demonstrated contribution is automation and leader selection, not a detection-accuracy gain (reported honestly in Chapter~\ref{ch:results}).
 
-\subsection*{5.1.7 Methodology Process Flow}
+\subsection*{4.1.7 Methodology Process Flow}
 
 The research follows a structured six-phase pipeline. Each phase builds on the previous, culminating in a fully integrated, incentivised federated fraud detection system.
 
 \begin{enumerate}
-    \item \textbf{Phase 1 — Leader Selection (DB-BOA Job 2):} DB-BOA reads node resource metrics (CT, CC, MS) from the Fabric ledger with reputation discounts applied, and selects the optimal leader node for each consensus round. Results written on-chain.
-    \item \textbf{Phase 2 — Hyperparameter Optimisation (DB-BOA Job 1):} DB-BOA searches the three-dimensional space $(H_{nD}, E_{pD}, S_{eD})$ to maximise $\mathrm{Obf}_2$ on a validation subset. Optimal parameters stored on-chain under \texttt{HYPERPARAMS}. Runs once at system startup.
+    \item \textbf{Phase 1 — Leader Selection (DB-BOA):} DB-BOA reads node resource metrics (CT, CC, MS) from the Fabric ledger with reputation discounts applied, and selects the optimal leader node for each consensus round. Results written on-chain.
+    \item \textbf{Phase 2 — Hyperparameter Optimisation (DB-BOA):} DB-BOA searches the two-dimensional space $(H_{nD}, S_{eD})$ to maximise the bounded $\mathrm{Obf}_2$ on a validation subsample (epoch count fixed). Optimal parameters stored on-chain under \texttt{HYPERPARAMS}. Runs once at system startup.
     \item \textbf{Phase 3 — ADTCN Local Training:} Each institution trains its local ADTCN model using DB-BOA-optimised hyperparameters on its private data shard. Fraud detection verdicts submitted to the blockchain; chaincode applies token incentives.
-    \item \textbf{Phase 4 — Federated Aggregation (DB-BOA Job 3):} Every five consensus rounds, DB-BOA optimises the aggregation weight vector over the probability simplex. The weighted-average global model is computed and distributed to all organisations. Token rewards distributed proportionally to weights.
+    \item \textbf{Phase 4 — Federated Aggregation (DP + Krum + Shapley):} Every five consensus rounds, the federation manager applies differentially private weight sharing, Krum robust selection, and exact Shapley contribution attribution. The global model is computed and distributed to all organisations; token rewards are distributed proportionally to the Shapley weights.
     \item \textbf{Phase 5 — Blockchain Integration (Hyperledger Fabric):} All phases execute against the live Hyperledger Fabric test-network. The \texttt{DBBOAContract} chaincode enforces incentive rules, records all decisions immutably, and emits events to the monitoring dashboard via the Node.js API server.
-    \item \textbf{Phase 6 — Evaluation and Adversarial Testing:} The integrated system is evaluated under normal operation (50 consensus rounds, 10 federation rounds) and under Byzantine attack (BankC configured as a constant-fraud reporter) to validate incentive mechanism resilience.
+    \item \textbf{Phase 6 — Evaluation and Adversarial Testing:} The integrated system is evaluated under normal operation (five simulated consensus rounds and three federation rounds) and under a 15-round Byzantine attack (BankC configured as a constant-fraud reporter) to validate incentive mechanism resilience.
 \end{enumerate}
 
 % ============================================================
 \section{Preliminary Design or Design (Model) Specification}
 % ============================================================
 
-\subsection*{5.2.1 Dynamic Butterfly–Billiards Optimization Algorithm (DB-BOA): Origin, Design, and Functional Role}
+\subsection*{4.2.1 Dynamic Butterfly–Billiards Optimization Algorithm (DB-BOA): Origin, Design, and Functional Role}
 
 \textbf{Introduction.}
 The Dynamic Butterfly–Billiards Optimization Algorithm (DB-BOA) forms the optimisation backbone of the proposed blockchain–learning architecture. It operates as the adaptive intelligence that continuously tunes the blockchain's consensus parameters and the deep-learning model's hyperparameters to maintain both computational efficiency and predictive accuracy. Unlike traditional optimisation methods with fixed mathematical gradients, DB-BOA is a hybrid meta-heuristic algorithm — it learns through simulation and stochastic adaptation, not calculus. Its design philosophy combines the broad exploration capacity of biological swarm intelligence with the fine precision of physical motion dynamics. The outcome is an optimiser capable of balancing speed, stability, and scalability within a decentralised network.
@@ -210,53 +220,55 @@ The hybrid DB-BOA unites both ideas to exploit their strengths and overcome thei
 
 \begin{table}[htbp]
 \centering
-\begin{tabular}{|p{3.8cm}|p{3.2cm}|p{3.2cm}|p{4.8cm}|}
+\caption{Comparison of DBOA, BOA, and DB-BOA}
+\label{tab:dboa_boa_dbboa_comparison}
+\begin{tabular}{|p{3.2cm}|p{2.9cm}|p{2.9cm}|p{4.0cm}|}
 \hline
 \textbf{Feature} & \textbf{DBOA} & \textbf{BOA} & \textbf{DB-BOA} \\ \hline
 Inspiration & Butterfly foraging (biological) & Billiard physics (mechanical) & Hybrid biological–physical \\ \hline
 Focus & Exploration & Exploitation & Adaptive balance \\ \hline
 Convergence & Slower, global & Faster, local & Balanced \\ \hline
 Limitation & Time-intensive & Local traps & Adaptive switch probability \\ \hline
-Application in this work & Broad parameter search & Fine leader selection & Combined: HParam + Leader + Federation Weights \\ \hline
+Application in this work & Broad parameter search & Fine leader selection & Combined: hyperparameter tuning + leader selection \\ \hline
 \end{tabular}
-\caption{Comparison of DBOA, BOA, and DB-BOA}
-\label{tab:dboa_boa_dbboa_comparison}
 \end{table}
 
 \textbf{Mathematical Structure.}
 The DB-BOA workflow begins with a randomly initialised population of candidate solutions
-\[
+\begin{equation}\label{eq:population}
     Y = \{ y_1, y_2, \dots, y_n \}.
-\]
+\end{equation}
 For each iteration $t$, a decision rule determines which parent algorithm governs the update:
-\[
+\begin{equation}\label{eq:switch}
     Y_{t+1} =
     \begin{cases}
-        \mathrm{DBOA}(Y_t), & \text{if } \mathrm{rand} < \dfrac{\mathrm{bestfit}^{(t)}}{\mathrm{worstfit}^{(t)}},\\[8pt]
+        \mathrm{DBOA}(Y_t), & \text{if } \mathrm{rand} < \tau_t,\\[4pt]
         \mathrm{BOA}(Y_t),  & \text{otherwise},
     \end{cases}
-\]
-where $\mathrm{bestfit}^{(t)}$ and $\mathrm{worstfit}^{(t)}$ are the best and worst objective values in the population at iteration $t$. The ratio $\mathrm{bestfit}/\mathrm{worstfit}$ acts as an adaptive switching probability: it is high when the population has converged (DBOA exploitation preferred) and low when the population is diverse (BOA exploration preferred). This mechanism is fully adaptive without requiring manual scheduling of the switch probability.
+    \qquad
+    \tau_t = 1 - \frac{\bigl|\mathrm{bestfit}^{(t)} - \mathrm{worstfit}^{(t)}\bigr|}{\max\bigl(\bigl|\mathrm{bestfit}^{(t)}\bigr|,\,\bigl|\mathrm{worstfit}^{(t)}\bigr|,\,\varepsilon_0\bigr)},
+\end{equation}
+where $\mathrm{bestfit}^{(t)}$ and $\mathrm{worstfit}^{(t)}$ are the best and worst objective values in the population at iteration $t$ and $\varepsilon_0$ is a small constant guarding against division by zero. The threshold $\tau_t$ is a range-normalised convergence measure --- the implemented form of the base paper's $\mathrm{bestfit}/\mathrm{worstfit}$ ratio criterion, valid for both positive costs and negated (maximisation) objectives: when the population has converged ($\mathrm{best}\approx\mathrm{worst}$) $\tau_t \to 1$ and the DBOA exploitation step dominates; when the population is diverse $\tau_t$ falls and the BOA exploration step dominates. This mechanism is fully adaptive without requiring manual scheduling of the switch probability.
 
 When the BOA phase is selected, each candidate updates its position according to:
-\[
+\begin{equation}\label{eq:boa_update}
     y^{\text{new}}_{j,e} = y_{j,e} + s \big( Q_{j,e} - J \, y_{j,e} \big),
-\]
+\end{equation}
 where $s \in [0,1]$ is the step size controlling exploration intensity, $Q_{j,e}$ is the target ``pocket'' (a better solution), and $J$ is a control coefficient regulating rebound strength.
 
-When DBOA is selected, the best solution $y^*$ is mutated using Lévy-distributed perturbations (LSAM):
-\[
-    y^*_{\text{new}} = y^* + \alpha \otimes \mathrm{Levy}(\lambda) \cdot (y^* - y_{\text{random}}),
-\]
-where $\alpha = 0.01$ and $\lambda = 1.5$. This mutation restores population diversity around the current optimum, preventing premature convergence.
+When DBOA is selected, its butterfly search moves are followed by the Local Search Algorithm based on Mutation (LSAM), which perturbs the current best solution $y^*$ with range-scaled Gaussian mutation:
+\begin{equation}\label{eq:dboa_levy}
+    y^*_{\text{new}} = y^* + \mu\,\mathcal{N}(0, I) \odot (\mathbf{ub} - \mathbf{lb}),
+\end{equation}
+with mutation scale $\mu = 0.1$ over five LSAM iterations per call; if the mutant is not fitter, a randomly chosen population member is mutated instead. (The base paper describes this diversity-restoring step with L\'evy-flight perturbations; the implementation realises it with the bounded Gaussian mutation shown, which serves the same purpose.) This mutation restores population diversity around the current optimum, preventing premature convergence.
 
-\subsection*{5.2.2 Objective Functions and Optimisation Goals}
+\subsection*{4.2.2 Objective Functions and Optimisation Goals}
 
-\paragraph{(a) Blockchain-Level Optimisation (DB-BOA Job 2 — Leader Selection).}
+\paragraph{(a) Blockchain-Level Optimisation (DB-BOA — Leader Selection).}
 DB-BOA minimises the combined resource cost of blockchain consensus:
-\[
+\begin{equation}\label{eq:obf1}
     \mathrm{Obf}_1 = \arg\min_{L_{\mathrm{bbc}}} \big( CT + CC + MS \big),
-\]
+\end{equation}
 where:
 \begin{itemize}
     \item \textbf{CT (Computation Time):} average CPU time to validate and commit a block,
@@ -265,23 +277,19 @@ where:
 \end{itemize}
 This objective promotes the selection of a leader node that yields the lowest operational overhead while sustaining throughput and reliability.
 
-\paragraph{(b) Model-Level Optimisation (DB-BOA Job 1 — Hyperparameter Tuning).}
-Simultaneously, DB-BOA maximises the learning performance of the ADTCN model:
-\[
-    \mathrm{Obf}_2 = \arg\max_{H_{nD},\, E_{pD},\, S_{eD}} \left[ \left(\mathrm{Acc} + \mathrm{Pre} + \mathrm{NPV} + \mathrm{MCC}\right) + \frac{1}{\mathrm{FPR}} \right],
-\]
-where Acc, Pre, NPV, MCC, and FPR are the standard classification metrics. The $1/\mathrm{FPR}$ term heavily penalises solutions that generate false alarms — critical in finance where false positives disrupt legitimate transactions.
+\paragraph{(b) Model-Level Optimisation (DB-BOA — Hyperparameter Tuning).}
+Simultaneously, DB-BOA maximises a bounded, MCC-dominated learning fitness for the ADTCN model:
+\begin{equation}\label{eq:obf2}
+    \mathrm{Obf}_2 = \arg\max_{H_{nD},\, S_{eD}} \big[\, 2\,\mathrm{MCC} + \mathrm{Spec} + \mathrm{Pre} + \mathrm{NPV} \,\big],
+\end{equation}
+where MCC, Spec (specificity), Pre, and NPV are standard classification metrics. The bounded specificity term replaces the base paper's unbounded $1/\mathrm{FPR}$ reward, which diverges as $\mathrm{FPR}\to 0$ and ties every false-positive-free candidate at an unbounded best score, making the search degenerate. The MCC weight ensures the objective tracks balanced quality on the extremely imbalanced data. Only two dimensions are searched ($H_{nD}$, $S_{eD}$); the epoch count is fixed.
 
-\paragraph{(c) Federated Aggregation Optimisation (DB-BOA Job 3 — Novel Contribution).}
-DB-BOA searches the probability simplex for the optimal weight vector governing federated aggregation:
-\[
-    \mathbf{w}^* = \arg\max_{\mathbf{w} \in \Delta^{K-1}}\; \mathrm{Obf}_2\!\left(\theta_{\text{global}}(\mathbf{w})\right), \quad \text{where } \theta_{\text{global}}(\mathbf{w}) = \sum_{i=1}^{K} w_i \theta_i,
-\]
-subject to $\sum_i w_i = 1$ and $w_i \geq 0$. The fitness is evaluated on a shared anonymised validation set $\mathcal{V}$. This dual-objective design makes DB-BOA a multi-domain optimiser that simultaneously serves infrastructural (consensus), analytical (learning), and economic (incentive) subsystems within a single coherent loop.
+\paragraph{(c) Federated Aggregation (handled by the federation layer, not DB-BOA).}
+The federated aggregation weights are produced by the dedicated DP/Krum/Shapley federation layer of Section~4.1.5, not by DB-BOA. The global model is $\theta_{\text{global}}(\mathbf{w}) = \sum_{i=1}^{K} w_i \theta_i$ with $\mathbf{w}$ the normalised exact Shapley contribution weights, evaluated on a shared validation set. DB-BOA therefore serves the infrastructural (consensus) and analytical (learning) subsystems, while the economic (incentive) subsystem is driven by the Shapley signal.
 
-\subsection*{5.2.3 Role in Blockchain Leader Selection with Reputation Discounting}
+\subsection*{4.2.3 Role in Blockchain Leader Selection with Reputation Discounting}
 
-Within the Hyperledger Fabric consortium network, DB-BOA Job~2 functions as the leader-selection controller. Each peer node periodically provides three resource metrics read from the Fabric ledger:
+Within the Hyperledger Fabric consortium network, DB-BOA functions as the leader-selection controller. Each peer node periodically provides three resource metrics read from the Fabric ledger:
 \begin{itemize}
     \item \textbf{CT (Computation Time):} time to validate and propose a block,
     \item \textbf{CC (Communication Cost):} total message volume during endorsement,
@@ -289,41 +297,35 @@ Within the Hyperledger Fabric consortium network, DB-BOA Job~2 functions as the 
 \end{itemize}
 
 A reputation discount factor $\rho_i \in [0.5, 2.0]$ is applied, making the effective objective for peer $i$:
-\[
+\begin{equation}\label{eq:obf1_rep}
     \mathrm{Obf}_1^{(i)} = \frac{CT_i + CC_i + MS_i}{\rho_i}.
-\]
+\end{equation}
 Peers with higher reputation have a lower effective cost, making them more competitive in leader selection. Reputation updates follow:
-\[
+\begin{equation}\label{eq:rep_update}
     \rho_i^{(r+1)} = \begin{cases}
         \min\!\left(\rho_i^{(r)} + 0.02,\; 2.0\right) & \text{if round } r \text{ succeeds,} \\
         \max\!\left(\rho_i^{(r)} - 0.05,\; 0.5\right) & \text{if round } r \text{ fails.}
     \end{cases}
-\]
+\end{equation}
 This creates a multi-round feedback loop: reliably performing nodes are progressively preferred for leadership, earn more leadership rewards, and maintain higher reputation — a self-reinforcing cycle of good behaviour.
 
-Across 50 consensus rounds, BankA's peer was selected 28 times (56\% frequency, average latency 164\,ms), BankB 18 times (36\%, 189\,ms), and BankC 4 times (8\%, 231\,ms). DB-BOA reduced average block latency by 28.4\% compared to random selection (from 252\,ms to 180\,ms), consistent with the base paper's reported 30\% improvement \cite{prabanand2025}.
+Leader selection runs over a ten-node simulated consortium, where DB-BOA minimises the reputation-discounted resource cost each round. The selection frequencies reported by this layer are computed from node resource scores in simulation (\texttt{leader\_block.py}); the per-round consensus latency is taken from a real single-host, two-organisation Fabric measurement (mean $\approx 2.1$\,s), not a live multi-host network. They characterise the relative behaviour of reputation-aware selection rather than production throughput, and are revisited in the Limitations.
 
-\subsection*{5.2.4 DB-BOA Job 3: Federated Aggregation — Detailed Design}
+\subsection*{4.2.4 Exact Shapley Contribution Attribution — Detailed Design}
 
-\textbf{Simplex Constraint Handling.}
-Candidate weight vectors are initialised uniformly on the simplex $\Delta^{K-1}$ using the Dirichlet distribution. After each BOA position update, vectors are projected back onto the simplex via L1-normalisation:
-\[
-    \mathbf{w} \leftarrow \frac{\max(\mathbf{w}, \mathbf{0})}{\|\max(\mathbf{w}, \mathbf{0})\|_1}.
-\]
-This ensures that all weight vectors remain feasible throughout the search.
+\textbf{Coalition Evaluation.}
+For the $n=3$ consortium, the federation manager evaluates all $2^3-1 = 7$ non-empty coalitions exactly. The value $v(S)$ of a coalition $S$ is the balanced accuracy of the equally-averaged model of the organisations in $S$ on a shared validation set. The Shapley value $\phi_i$ for organisation $i$ is its average marginal contribution across all coalitions; negative values are clipped and the resulting weights normalised to sum to one. Balanced accuracy is used as the coalition value because it is bounded and robust to the 0.17\% class imbalance.
 
-\textbf{Why This Surpasses FedAvg.}
-FedAvg assigns $w_i = n_i / \sum n_j$ (sample-count weighting). This is suboptimal because a model trained on 50\% of data with 95\% accuracy should contribute more than one trained on 20\% with 78\% accuracy. More subtly, redundant models (strong on the same transaction types) add less value than a complementary model catching different fraud patterns. DB-BOA evaluates the \textit{collective} fitness of each weight combination, correctly solving the aggregation problem.
+\textbf{Why This Improves on FedAvg.}
+FedAvg assigns $w_i = n_i / \sum n_j$ (sample-count weighting), which \emph{assumes} contribution tracks data volume. Exact Shapley instead \emph{measures} each organisation's marginal contribution to the collaborative model, the unique attribution satisfying the efficiency, symmetry, and null-player axioms. On genuinely identical contributors it correctly returns a near-equal split; where contributions differ it rewards the stronger model and assigns a poisoning participant near-zero weight.
 
 \textbf{Incentive Token Distribution.}
-Once $\mathbf{w}^*$ is written to the Fabric ledger, the \texttt{recordFederationRound} chaincode function distributes the 20-token federation pool:
-\[
-    \text{tokens}_i = 20 \cdot w_i^*.
-\]
-Over 10 federation rounds under normal operation, token balances evolved as: BankA $\approx 458$, BankB $\approx 312$, BankC $\approx 178$. Under Byzantine attack (BankC always-fraud), BankC's balance depleted to negative territory within 8 rounds and its reputation fell to the floor of 0.5 within 12 rounds, automatically reducing its influence.
+Once $\mathbf{w}^\ast$ is written to the Fabric ledger, the \texttt{recordFederationRound} chaincode function distributes the 20-token federation pool as $\text{tokens}_i = \lfloor 20 \cdot w_i^\ast \rfloor$. On the single-source deployment data the per-round split is near-uniform ($\approx 0.333$ each, $\approx 6.67$ tokens), because the three banks are stratified volume-splits of the same dataset; under the Byzantine attack (BankC always-fraud) the Shapley layer assigns the poisoned organisation a weight of $0.000$ and the incentive contract drains its token balance and floors its reputation, as reported in Chapter~\ref{ch:results}.
 
 \begin{table}[htbp]
 \centering
+\caption{Complete token incentive structure enforced by DBBOAContract chaincode}
+\label{tab:token_structure}
 \begin{tabular}{|p{6.5cm}|p{1.5cm}|p{5.5cm}|}
 \hline
 \textbf{Event} & \textbf{Tokens} & \textbf{Enforced by Chaincode Function} \\ \hline
@@ -332,132 +334,129 @@ Confirmed verdict AND latency $< 300$\,ms & $+15$ & \texttt{recordConsensusRound
 Selected as leader AND consensus round succeeds & $+10$ & \texttt{recordConsensusRound} \\ \hline
 Verdict disputed by consensus majority & $-2$ & \texttt{recordFraudResult} \\ \hline
 Consensus round fails under current leader & $-2$ & \texttt{recordConsensusRound} \\ \hline
-Federation participation (20 tokens by DB-BOA weight) & $+20 w_i^*$ & \texttt{recordFederationRound} \\ \hline
+Federation participation (20-token pool, split by Shapley weight) & $+\lfloor 20 w_i^\ast\rfloor$ & \texttt{recordFederationRound} \\ \hline
 \end{tabular}
-\caption{Complete token incentive structure enforced by DBBOAContract chaincode}
-\label{tab:token_structure}
 \end{table}
 
-\subsection*{5.2.5 Practical Advantages and Observed Behaviour}
+\subsection*{4.2.5 Practical Advantages and Observed Behaviour}
 
 \begin{itemize}
-    \item \textbf{Stability:} DB-BOA Job~1 converged to optimal hyperparameters within 25 iterations, reaching $\mathrm{Obf}_2 = 5.82$ versus 4.91 for pure BOA and 5.21 for pure DBOA. The adaptive switching mechanism drives superior convergence.
-    \item \textbf{Efficiency:} DB-BOA leader selection reduced consensus latency by 28.4\% and kept the majority of rounds below the 300\,ms bonus threshold.
-    \item \textbf{Adaptability:} Dynamic switching maintains optimiser performance across diverse data distributions (IID and non-IID consortium partitions).
-    \item \textbf{Economic Alignment:} DB-BOA Job~3 produces aggregation weights that simultaneously determine model quality contribution and economic reward — the first mathematically derived (not heuristic) federated incentive distribution in the literature.
-    \item \textbf{Byzantine Resilience:} The incentive mechanism automatically isolates a malicious organisation within 12 rounds without human intervention.
+    \item \textbf{Automation:} DB-BOA selects a working ADTCN configuration without manual search. The bounded objective surface is flat near a well-chosen configuration, so the optimiser converges quickly; its demonstrated value is automation, not a detection-accuracy gain over a hand-tune (reported honestly in Chapter~\ref{ch:results}).
+    \item \textbf{Efficiency:} DB-BOA reputation-aware leader selection reduces simulated consensus latency relative to random selection.
+    \item \textbf{Adaptability:} Dynamic switching maintains optimiser performance across diverse data distributions (stratified and volume-skewed consortium partitions).
+    \item \textbf{Economic Alignment:} Exact Shapley contribution weights determine both model-quality contribution and economic reward — a measured, axiomatic attribution that replaces FedAvg's assumed equal weighting, extending the Shapley-on-blockchain incentive line~\cite{fedcoin2020} with a deployed Fabric implementation.
+    \item \textbf{Byzantine Resilience:} Krum rejects weight-level poisoning in the $n\ge 2f+3$ regime, and the economic mechanism isolates a colluding majority through the Shapley-weighted reward and reputation loop.
 \end{itemize}
 
-\subsubsection*{5.2.6 Current Constraints and Future Development}
+\subsubsection*{4.2.6 Current Constraints and Future Development}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{2.6cm}|p{6.2cm}|p{3.2cm}|p{2.7cm}|}
+\caption{Current implementation constraints and planned development roadmap for FL-ADTCN}
+\label{tab:constraints_roadmap}
+\begin{tabular}{|p{2.3cm}|p{5.5cm}|p{2.9cm}|p{2.4cm}|}
 \hline
 \textbf{Type} & \textbf{Description} & \textbf{Impact} & \textbf{Planned Enhancement} \\ \hline
 Consortium scale & Prototype validated with 3 organisations. Real consortia may involve 10--50 banks. & Performance at scale unvalidated. & Extend Fabric channel and DB-BOA to $K > 3$ organisations. \\ \hline
 Resource metrics & Node CT, CC, MS simulated from realistic distributions rather than collected from real hardware monitoring. & Metrics may not reflect production variance. & Deploy Prometheus-based peer monitoring agents. \\ \hline
-Shared validation set & DB-BOA Job~3 requires a shared anonymised validation set agreed by all consortium members. & Coordination overhead not resolved in prototype. & Design consortium-negotiated validation set construction protocol. \\ \hline
-Adaptive adversaries & Byzantine resilience tested against simple always-fraud attacker only. & Sophisticated model poisoning attacks partially mitigated. & Integrate Krum, FLTrust, or coordinate-wise median aggregation. \\ \hline
+Shared validation set & Exact Shapley attribution requires a shared anonymised validation set agreed by all consortium members. & Coordination overhead not resolved in prototype. & Design consortium-negotiated validation set construction protocol. \\ \hline
+Adaptive adversaries & Krum tested for weight poisoning ($n\ge 2f+3$); economic isolation tested against a colluding majority. & Sophisticated adaptive poisoning near the honest cluster only partially mitigated. & Add FLTrust or coordinate-wise median; multi-seed adaptive-attacker study. \\ \hline
 Dataset scope & Kaggle ULB dataset covers European credit card transactions over 48 hours. & Generalisation to other geographies and time horizons requires validation. & Extend to real-time streaming transaction logs. \\ \hline
 \end{tabular}
-\caption{Current implementation constraints and planned development roadmap for FL-ADTCN}
-\label{tab:constraints_roadmap}
 \end{table}
 
-DB-BOA represents a pivotal step in merging optimisation intelligence with permissioned blockchain governance. Within this research, DB-BOA enables energy-aware leader selection, consensus tuning, deep-learning hyperparameter refinement, and federated reward distribution under a single adaptive loop. The current stage validates all three jobs on a real Hyperledger Fabric test-network, confirming that hybrid optimisation can effectively bridge blockchain consensus, machine-learning intelligence, and economic incentive alignment.
+DB-BOA represents a pivotal step in merging optimisation intelligence with permissioned blockchain governance. Within this research, DB-BOA is deployed in \emph{two live roles} under a single adaptive loop: deep-learning hyperparameter search for the ADTCN detector, and consensus leader selection. A third role --- direct optimisation of per-organisation federation weights --- is implemented but disabled by default; fair contribution attribution and robust aggregation are instead handled by the differential-privacy / Krum / Shapley aggregation layer described in the following sections. The current stage validates these roles on a real Hyperledger Fabric test-network, confirming that hybrid optimisation can effectively bridge blockchain consensus, machine-learning intelligence, and economic incentive alignment.
 
-\subsection*{5.2.7 Adaptive Deep Temporal Context Network (ADTCN): Architecture and Design}
+\subsection*{4.2.7 Adaptive Deep Temporal Context Network (ADTCN): Architecture and Design}
 
-The Adaptive Deep Temporal Context Network (ADTCN) serves as the intelligence layer of the hybrid blockchain–learning framework, enabling temporal anomaly detection, fraud prevention, and adaptive security control in consortium-based financial systems. Within this architecture, ADTCN functions as the decision brain — processing validated transaction streams from the blockchain's leader nodes and determining anomaly probability scores. Its structure unifies temporal attention, contextual embedding, and multi-scale sequence modelling, all tuned by DB-BOA Job~1 to achieve high accuracy and minimal false positive rates.
+The Adaptive Deep Temporal Context Network (ADTCN) serves as the intelligence layer of the hybrid blockchain–learning framework, enabling temporal anomaly detection in consortium-based financial systems. Within this architecture, ADTCN functions as the decision brain — processing ordered windows of recent transactions and producing fraud probability scores. Its structure combines a multi-feature input, stacked one-dimensional convolutions over the window, and global pooling over time, with the filter count and steps-per-epoch tuned by DB-BOA.
 
 \textbf{Theoretical Foundation and Evolution.}
-ADTCN evolved from the Deep Temporal Context Network (DTCN) paradigm, originally designed for temporal sequence prediction tasks. Conventional DTCN suffered from overfitting, fixed time-window rigidity, and lack of adaptability to non-IID blockchain data. The Adaptive DTCN introduces three core advances:
+ADTCN extends the Deep Temporal Context Network (DTCN) paradigm for temporal sequence tasks. Conventional DTCN suffered from fixed time-window rigidity and a lack of adaptability to heterogeneous data. The Adaptive DTCN introduces the following practical advances:
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{3.5cm}|p{5.2cm}|p{6.2cm}|}
-\hline
-\textbf{Feature} & \textbf{DTCN} & \textbf{ADTCN} \\ \hline
-Temporal Modeling & Fixed periodic window & Multi-scale adaptive temporal layers \\ \hline
-Attention Mechanism & Single-scale self-attention & Multi-Timescale Temporal Attention (MTTA) \\ \hline
-Data Integration & Static input streams & Federated + Blockchain feedback adaptation \\ \hline
-Optimization & Manual tuning & DB-BOA Job~1 hyperparameter optimisation \\ \hline
-\end{tabular}
-\caption{Evolution from DTCN to ADTCN across modelling, attention, data integration, and optimisation}
+\caption{Evolution from DTCN to ADTCN across modelling, aggregation, data integration, and optimisation}
 \label{tab:dtcn_to_adtcn}
+\begin{tabular}{|p{3.0cm}|p{4.7cm}|p{5.6cm}|}
+\hline
+\textbf{Feature} & \textbf{DTCN} & \textbf{ADTCN (this work)} \\ \hline
+Temporal Modeling & Fixed periodic window & Sliding ten-step window over recent transactions \\ \hline
+Temporal Aggregation & Single-scale pooling & Global max-pooling over the time axis \\ \hline
+Data Integration & Static input streams & Federated + blockchain feedback adaptation \\ \hline
+Optimization & Manual tuning & DB-BOA hyperparameter optimisation (filters, steps) \\ \hline
+\end{tabular}
 \end{table}
 
-\subsection*{5.2.8 ADTCN Architectural Design}
+\subsection*{4.2.8 ADTCN Architectural Design}
 
-The ADTCN architecture is composed of three hierarchical modules that operate collaboratively to model temporal dependencies and transaction irregularities \cite{prabanand2025}:
+The ADTCN architecture is composed of the following modules, with the base-paper conceptual block names mapped onto their actual realisation \cite{prabanand2025}:
 \begin{itemize}
-    \item \textbf{(a) Multi-Modal Joint Embedding (MJE).} Transforms heterogeneous blockchain data (transaction metadata, node trust scores, temporal stamps) into a unified latent vector space using a linear projection mapping 29-dimensional transaction features (V1--V28 PCA components and standardised Amount) into a 64-dimensional latent space with batch normalisation and dropout.
-    \item \textbf{(b) Temporal Context Learning (TCL).} Builds Past Temporal Context (PTC) and Near Temporal Context (NTC) sequences using a dilated temporal convolutional backbone with dilation rates $\{1, 2, 4, 8\}$, creating an effective receptive field of approximately 15 timesteps. This dual representation allows the model to recognise periodic patterns (e.g., recurring trade bursts) and spontaneous deviations (e.g., sudden fraud spikes).
-    \item \textbf{(c) Multiple Time-Scale Temporal Attention (MTTA).} A hierarchical attention mechanism evaluates context relevance across varying timescales. Each attention head computes weights based on transaction intervals, block validation cycles, and node response time, ensuring ADTCN adapts to network load dynamics.
+    \item \textbf{(a) Multi-Modal Joint Embedding (MJE).} The raw multi-feature input vector for each transaction — the 33 input features (V1--V28 PCA components, standardised Amount, Time, and three temporal-amount recurrence features). No separate learned embedding layer is used.
+    \item \textbf{(b) Temporal Context Learning (TCL).} Two stacked one-dimensional convolution layers (kernel size 3, padding 1, ReLU) applied over the ordered ten-step window, expanding the channel dimension from $F$ to $2F$. The window itself supplies the temporal context.
+    \item \textbf{(c) Multiple Time-Scale Temporal Attention (MTTA).} Realised as global max-pooling over the time axis, which selects the most salient time step — a pooling operator used in place of the base paper's attention.
 \end{itemize}
 
-\subsection*{5.2.9 Mathematical Formulation}
+\subsection*{4.2.9 Mathematical Formulation}
 
-Let $X = \{x_1, x_2, \dots, x_T\}$ represent the sequential input of blockchain transactions over time $T$. For each sequence, ADTCN performs three stages:
+Let $X = \{x_1, x_2, \dots, x_T\}$ ($T=10$) be the windowed input of recent transactions, each $x_t \in \mathbb{R}^{33}$. ADTCN performs three stages:
 
-\textbf{Embedding Stage:}
-\[
-    e_t = f_{\mathrm{MJE}}(x_t;\, \theta_e),
-\]
-where $f_{\mathrm{MJE}}$ encodes 29-dimensional transaction vectors into 64-dimensional latent embeddings.
+\textbf{Convolutional Encoding:}
+\begin{equation}\label{eq:adtcn_conv}
+    H = \mathrm{ReLU}\big(\mathrm{Conv1d}_{F\to 2F}\big(\mathrm{ReLU}(\mathrm{Conv1d}_{33\to F}(X))\big)\big),
+\end{equation}
+two stacked 1-D convolutions over the time axis (kernel size 3) producing channel maps $H \in \mathbb{R}^{2F\times T}$.
 
-\textbf{Temporal Context Encoding:}
-\[
-    h_t = f_{\mathrm{TCL}}(e_t, h_{t-1};\, \theta_t),
-\]
-combining past context $h_{t-1}$ with current embeddings for temporal continuity. TCL uses dilated causal convolutions with rates $\{1, 2, 4, 8\}$.
+\textbf{Temporal Pooling:}
+\begin{equation}\label{eq:adtcn_pool}
+    c = \max_{t=1,\dots,T} H_{:,t},
+\end{equation}
+global max-pooling over time, yielding the context vector $c \in \mathbb{R}^{2F}$ (the salient-timestep summary that stands in for attention).
 
-\textbf{Multi-Scale Attention:}
-\[
-    \alpha_t = \mathrm{softmax}(W_a \cdot h_t), \qquad
-    c = \sum_{t=1}^{T} \alpha_t h_t,
-\]
-where $c$ is the context vector summarising sequence dependencies.
+\textbf{Classification:}
+\begin{equation}\label{eq:adtcn_cls}
+    \hat{y} = \mathrm{Linear}_{2F\to 2}(c),
+\end{equation}
+two logits for the normal/fraud classes, trained with class-weighted cross-entropy.
 
-\textbf{Adaptive Objective (DB-BOA Job 1 tuned):}
-\[
-    \mathrm{Obf}_2 = \arg\max_{H_{nD},\, E_{pD},\, S_{eD}}
-    \left[ \left(\mathrm{Acc} + \mathrm{Pre} + \mathrm{NPV} + \mathrm{MCC}\right) + \frac{1}{\mathrm{FPR}} \right],
-\]
-where hyperparameters $H_{nD}$, $E_{pD}$, $S_{eD}$ correspond to hidden neurons (optimal: 128), epochs (optimal: 30), and steps per epoch (optimal: 150) respectively \cite{prabanand2025}.
+\textbf{Adaptive Objective (DB-BOA tuned):}
+\begin{equation}\label{eq:obf2_adtcn}
+    \mathrm{Obf}_2 = \arg\max_{H_{nD},\, S_{eD}}
+    \big[\, 2\,\mathrm{MCC} + \mathrm{Spec} + \mathrm{Pre} + \mathrm{NPV} \,\big],
+\end{equation}
+where $H_{nD}$ (filter count) and $S_{eD}$ (steps per epoch) are searched (the epoch count is fixed); DB-BOA's selected configuration is $H_{nD}^\ast = 142$, $S_{eD}^\ast = 76$.
 
-\subsection*{5.2.10 Integration with DB-BOA and Blockchain Consensus}
+\subsection*{4.2.10 Integration with DB-BOA and Blockchain Consensus}
 
 In the Hyperledger Fabric consortium environment, DB-BOA dynamically tunes the ADTCN parameters during runtime. The integration follows a coupled feedback cycle:
 \begin{enumerate}
-    \item DB-BOA Job~2 selects the optimal leader node; the leader proposes the next block containing anonymised transaction features.
+    \item DB-BOA selects the optimal leader node; the leader proposes the next block containing anonymised transaction features.
     \item ADTCN receives validated transaction streams from the selected leader and produces fraud probability scores.
     \item Fraud verdicts are submitted to the Fabric ledger; the chaincode applies token incentives based on consensus agreement.
-    \item Every 5 rounds, DB-BOA Job~3 aggregates local ADTCN models into a global model using optimised weights; the global model is redistributed to all institutions.
-    \item DB-BOA Job~1 re-reads current node metrics and validation performance to confirm hyperparameters remain near-optimal; re-runs if performance degradation is detected.
+    \item Every 5 rounds, the federation manager aggregates local ADTCN models into a global model via the DP/Krum/Shapley layer; the global model is redistributed to all institutions.
+    \item DB-BOA re-reads current node metrics at every consensus round for leader selection; the hyperparameter search can be re-run if sustained performance degradation is observed (a manual operation in the current implementation).
 \end{enumerate}
 
-This coupling allows adaptive control — if network latency rises or false positives increase, DB-BOA adjusts ADTCN's depth or attention granularity automatically.
+This coupling allows adaptive control of the consensus layer — if a node's effective cost rises, DB-BOA re-selects the leader at the next round; re-tuning the detector remains a manual operation.
 
-Under DB-BOA optimisation, the centralised ADTCN achieved 99.31\% accuracy and MCC of 0.9249; the federated FL-ADTCN with DB-BOA Job~3 aggregation achieved 97.38\% accuracy and MCC of 0.966, surpassing the base paper's 95.45\% across all metrics \cite{prabanand2025}.
+At the weight-DP-off deployment operating point, the DB-BOA-tuned ADTCN reaches MCC $0.677$ on the held-out ULB test set (Chapter~\ref{ch:results}). These are honest numbers for a lightweight one-dimensional CNN on raw PCA features; they are not the base paper's 95.45\% nor an inflated 99.31\% — those are not produced by this implementation.
 
 \paragraph{Practical Advantages and Behavioral Insights.}
 \begin{itemize}
     \item \textbf{Resilience:} Handles high-frequency transaction bursts without degrading accuracy.
-    \item \textbf{Adaptability:} Learns temporal patterns across changing block intervals through dilated convolution with receptive field 15 timesteps.
-    \item \textbf{Robustness:} Maintains stability under non-IID data heterogeneity through FedProx regularisation ($\mu = 0.05$) and stratified sampling.
-    \item \textbf{Scalability:} Efficient across the three-bank consortium through adaptive attention and DB-BOA feedback at each layer.
+    \item \textbf{Adaptability:} Learns temporal patterns over the ten-step sliding window via stacked 1-D convolutions.
+    \item \textbf{Robustness:} Maintains stability under data heterogeneity through stratified partitioning that preserves the global fraud rate in each shard.
+    \item \textbf{Scalability:} The contribution-attribution layer remains tractable as the federation grows via Monte-Carlo Shapley (Chapter~\ref{ch:results}).
 \end{itemize}
 
-\section*{Federated Adaptive Deep Temporal Context Network (FL-ADTCN): Design, Evaluation, and Results}
+\subsection*{4.2.11 Federated Adaptive Deep Temporal Context Network (FL-ADTCN): Distributed Design and Federation Modes}
 
-\subsection*{Introduction}
+\subsubsection*{Introduction}
 The Federated Adaptive Deep Temporal Context Network (FL-ADTCN) is the distributed and privacy-preserving extension of the ADTCN model, designed to detect financial anomalies and fraudulent activity across consortium blockchain environments. It enables collaborative intelligence among the three participating banking organisations (BankA, BankB, BankC) without exchanging raw transaction data. Unlike centralised deep learning, FL-ADTCN employs the Federated Learning paradigm where each node locally trains a private model on its own dataset and only shares model parameters (not data) with the global aggregator — implemented here on Hyperledger Fabric via the DBBOAContract chaincode.
 
-Through integration with DB-BOA Jobs 1, 2, and 3, FL-ADTCN achieves adaptive hyperparameter tuning, optimised consensus leadership, and mathematically derived federation weights while maintaining strong predictive performance and transaction-level anomaly sensitivity.
+Through integration with DB-BOA (hyperparameter tuning and consensus leader selection) and the DP/Krum/Shapley federation layer, FL-ADTCN achieves automated detector configuration, optimised consensus leadership, and measured contribution weights that drive the on-chain incentive, while maintaining transaction-level anomaly sensitivity.
 
-\subsection*{Federated Learning Modes}
+\subsubsection*{Federated Learning Modes}
 FL-ADTCN was evaluated under three collaborative learning modes:
 
 \paragraph{(a) Centralized Training (Baseline).}
@@ -467,117 +466,97 @@ All training data are aggregated into a single global model. \textit{Advantages:
 Each institution holds Independent and Identically Distributed subsets of the data — each bank's partition maintains the global 0.17\% fraud rate. Ensures stable training close to the centralised baseline while preserving data sovereignty.
 
 \paragraph{(c) Federated non-IID Training.}
-Each institution holds Non-Independent and Non-Identically Distributed data — reflecting real heterogeneity in institutional size (50/30/20 split across BankA, BankB, BankC). Introduces realistic imbalance and client drift, addressed through stratified sampling and FedProx regularisation.
+Each institution holds Non-Independent and Non-Identically Distributed data — reflecting heterogeneity in institutional size (50/30/20 split across BankA, BankB, BankC). Introduces realistic imbalance, addressed through stratified partitioning that preserves the global 0.17\% fraud rate in each shard.
 
-\subsection*{Model Architecture Overview}
-The FL-ADTCN integrates the same deep temporal context mechanisms as ADTCN but operates in a distributed parameter-synchronisation framework, with DB-BOA Job~3 replacing the naive FedAvg aggregation.
+\subsubsection*{Model Architecture Overview}
+The FL-ADTCN uses the same one-dimensional convolutional detector as ADTCN but operates in a distributed parameter-synchronisation framework, with the DP/Krum/Shapley federation layer replacing naive FedAvg aggregation.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{3.2cm}|p{7.7cm}|p{4.8cm}|}
+\caption{Layered FL-ADTCN architecture (1-D CNN realisation of the MJE--TCL--MTTA blocks)}
+\label{tab:fl_adtcn_arch}
+\begin{tabular}{|p{2.9cm}|p{6.6cm}|p{4.0cm}|}
 \hline
 \textbf{Module} & \textbf{Description} & \textbf{Purpose} \\ \hline
-MJE (Multi-Modal Joint Embedding) & Linear projection layer mapping 29-dimensional transaction features into 64-dimensional latent space with BatchNorm and Dropout. & Generates shared feature representations for each institution. \\ \hline
-TCL (Temporal Context Learning) & Dilated temporal convolutional backbone with rates $\{1, 2, 4, 8\}$; receptive field $\approx 15$ timesteps. & Learns time-aware transaction evolution across short- and long-term patterns. \\ \hline
-MTTA (Multi-Timescale Temporal Attention) & Softmax attention over all timesteps; produces weighted context vector. & Enhances anomaly localisation and reduces false positives. \\ \hline
+MJE (Multi-Modal Joint Embedding) & Raw 33-feature transaction input (V1--V28, Amount, Time, three recurrence features); no separate learned embedding. & Supplies the multi-feature input for each institution. \\ \hline
+TCL (Temporal Context Learning) & Two stacked \texttt{Conv1d} layers (kernel 3, ReLU) over the ten-step window, $F\!\to\!2F$ channels. & Learns time-aware transaction evolution over the window. \\ \hline
+MTTA (Multi-Timescale Temporal Attention) & Global max-pooling over the time axis; selects the salient time step. & Summarises the window for the linear classifier. \\ \hline
 \end{tabular}
-\caption{Layered FL-ADTCN architecture with MJE–TCL–MTTA pipeline}
-\label{tab:fl_adtcn_arch}
 \end{table}
 
-\subsection*{Experimental Configuration}
+Figure~\ref{fig:adtcn_arch} shows the complete forward path of the detector as implemented, annotated with the tensor shapes at each stage.
 
-\begin{table}[H]
+\begin{figure}[H]
 \centering
-\begin{tabular}{|p{4.2cm}|p{10.8cm}|}
-\hline
-\textbf{Parameter} & \textbf{Description} \\ \hline
-Dataset & Kaggle ULB Credit Card Fraud Detection (284,807 transactions, 31 features, 0.17\% fraud) \\ \hline
-Sequence length & 10 timesteps (sliding window) \\ \hline
-Consortium nodes & 3 banking organisations (BankA 50\%, BankB 30\%, BankC 20\%) \\ \hline
-FL Algorithm & FedAvg for IID baseline; FedProx ($\mu = 0.05$) + DB-BOA Job~3 weights for non-IID \\ \hline
-Federation interval & Every 5 consensus rounds; 10 federation rounds total (50 consensus rounds) \\ \hline
-Local Epochs & 30 (DB-BOA Job~1 optimised) \\ \hline
-Framework & PyTorch 2.1.0 with CUDA 11.8, Hyperledger Fabric v2.5.4 \\ \hline
-Metrics & Accuracy, MCC, FPR, NPV, Precision, ROC-AUC \\ \hline
-\end{tabular}
-\caption{Experimental configuration for the FL-ADTCN consortium evaluation}
-\label{tab:fl_adtcn_config}
-\end{table}
+\begin{tikzpicture}[
+  blk/.style={rectangle, rounded corners=4pt, draw=blue!70!black, fill=blue!10,
+              minimum height=1.55cm, text width=2.05cm, align=center, font=\scriptsize},
+  pool/.style={blk, draw=orange!80!black, fill=orange!15},
+  head/.style={blk, draw=green!60!black, fill=green!12},
+  arr/.style={->, thick, gray!70},
+  shp/.style={font=\tiny, color=gray!90, align=center},
+  grp/.style={font=\scriptsize\bfseries, color=blue!60!black}
+]
+\node[blk] (in)   at (0,0)    {Input window\\10 transactions\\$\times$ 33 features};
+\node[blk] (c1)   at (2.6,0)  {\texttt{Conv1d}\\$33\!\to\!F$\\kernel 3, pad 1\\+ ReLU};
+\node[blk] (c2)   at (5.2,0)  {\texttt{Conv1d}\\$F\!\to\!2F$\\kernel 3, pad 1\\+ ReLU};
+\node[pool] (mp)  at (7.8,0)  {Global\\max-pool\\over time axis};
+\node[head] (fc)  at (10.4,0) {\texttt{Linear}\\$2F\!\to\!2$\\logits:\\normal / fraud};
+\draw[arr] (in) -- (c1);
+\draw[arr] (c1) -- (c2);
+\draw[arr] (c2) -- (mp);
+\draw[arr] (mp) -- (fc);
+\node[shp] at (1.3,-1.25)  {$(B,10,33)$};
+\node[shp] at (3.9,-1.25)  {$(B,F,10)$};
+\node[shp] at (6.5,-1.25)  {$(B,2F,10)$};
+\node[shp] at (9.1,-1.25)  {$(B,2F)$};
+\node[grp] at (0,1.25)   {MJE};
+\node[grp] at (3.9,1.25) {TCL};
+\node[grp] at (7.8,1.25) {MTTA};
+\node[grp] at (10.4,1.25){OUT};
+\node[font=\tiny, color=gray!90, text width=12.6cm, align=center] at (5.2,-2.0)
+  {$F$ = convolutional filter count, searched by DB-BOA (deployment value $F=142$); class imbalance handled by weighted cross-entropy, not resampling.};
+\end{tikzpicture}
+\caption{Forward path of the ADTCN detector as implemented: two stacked \texttt{Conv1d} layers over the ten-transaction window, global max-pooling over the time axis, and a linear classification head. Group labels map each stage to the MJE/TCL/MTTA blocks of Table~\ref{tab:fl_adtcn_arch}.}
+\label{fig:adtcn_arch}
+\end{figure}
 
-\subsection*{5.2.9 Performance Metric Definitions}
+The experimental configuration, the performance-metric definitions, and the quantitative results of this federated evaluation are presented in Chapter~\ref{ch:results}.
 
-\begin{table}[H]
-\centering
-\begin{tabular}{|p{3.2cm}|p{9.4cm}|p{2.6cm}|}
-\hline
-\textbf{Metric} & \textbf{Meaning} & \textbf{Ideal} \\ \hline
-Accuracy (Acc) & Fraction of correctly predicted cases (TP + TN) / Total. & $\uparrow$ \\ \hline
-Matthews Correlation Coefficient (MCC) & Balanced correlation considering TP, TN, FP, FN. Robust to class imbalance. & $\uparrow$ \\ \hline
-False Positive Rate (FPR) & Fraction of normal cases wrongly labelled as fraud (FP / (FP + TN)). & $\downarrow$ \\ \hline
-Precision (Pre) & Proportion of detected frauds that are truly fraud. & $\uparrow$ \\ \hline
-Negative Predictive Value (NPV) & Probability that a ``normal'' prediction is correct. & $\uparrow$ \\ \hline
-ROC-AUC & Threshold-independent discrimination ability. & $\uparrow$ \\ \hline
-\end{tabular}
-\caption{FL-ADTCN performance metric definitions}
-\label{tab:fl_adtcn_metric_defs}
-\end{table}
-
-\subsection*{Quantitative Results}
-
-\begin{table}[H]
-\centering
-\begin{tabular}{|p{4.0cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|}
-\hline
-\textbf{Model} & \textbf{Accuracy} & \textbf{MCC} & \textbf{FPR} & \textbf{NPV} & \textbf{Precision} & \textbf{ROC-AUC} \\ \hline
-Centralised ADTCN & 0.9931 & 0.9249 & 0.0004 & 0.9997 & 0.8673 & 0.9703 \\ \hline
-Federated (IID) & 0.9826 & 0.8314 & 0.0172 & 0.9990 & 0.7207 & 0.9525 \\ \hline
-Federated (non-IID raw) & 0.9738 & 0.1424 & 0.0001 & 0.9734 & 0.9980 & 0.1424 \\ \hline
-Federated (non-IID + Stratified + FedProx) & 0.9738 & 0.6213 & 0.0001 & 0.9980 & 0.9980 & 0.9210 \\ \hline
-\textbf{FL-ADTCN + DB-BOA (Ours)} & \textbf{0.9786} & \textbf{0.7812} & \textbf{0.0038} & \textbf{0.9993} & \textbf{0.8695} & \textbf{0.9525} \\ \hline
-DB-BOA-ADTCN \cite{prabanand2025} (base paper) & 0.9545 & 0.9410 & 0.0388 & 0.9534 & 0.9522 & 0.9612 \\ \hline
-\end{tabular}
-\caption{Performance comparison: centralised, federated (IID/non-IID), and FL-ADTCN with DB-BOA Job~3 integration}
-\label{tab:fl_adtcn_results}
-\end{table}
-
-\paragraph{Interpretation.}
-Raw non-IID FL fails catastrophically (ROC-AUC = 0.14) because extreme label skew creates contradictory gradient directions — FedAvg averages these into a near-random global model. Stratification and FedProx ($\mu = 0.05$) recover ROC-AUC to 0.92. DB-BOA Job~3 aggregation further improves the federated model by assigning a higher weight to BankA's stronger model (trained on 50\% of data, $w_1^* \approx 0.52$), producing measurable improvements in MCC and NPV. The improved federated model retains 98\% of centralised ROC-AUC utility while maintaining full data sovereignty. Compared to the base paper \cite{prabanand2025}, the FL-ADTCN achieves higher accuracy (97.38\% vs. 95.45\%) and substantially higher MCC (0.966 vs. 0.941) under federated conditions.
-
-\subsection*{Discussion and Constraints}
+\subsubsection*{Discussion and Constraints}
 
 \paragraph{(a) Achievements.}
-FL-ADTCN with DB-BOA Job~3 preserved accuracy within the federated setting while fully maintaining data privacy; demonstrated the first mathematically derived (not heuristic) federated reward distribution on a live Hyperledger Fabric ledger; and provided empirical evidence that DB-BOA-weighted aggregation outperforms FedAvg on consortium financial data.
+The framework implements, on a real Hyperledger Fabric consortium, a DP + Krum + exact-Shapley federated aggregation layer whose Shapley contribution weights drive an on-chain, chaincode-enforced token incentive; it extends the Shapley-on-blockchain incentive line~\cite{fedcoin2020,zhao2026sichainfl} with a deployed implementation and, as its central contribution, a characterisation of the privacy--incentive coupling of that mechanism (Chapter~\ref{ch:results}).
 
 \paragraph{(b) Remaining Limitations.}
 
 \begin{center}
-\begin{tabular}{|p{3.0cm}|p{6.8cm}|p{6.0cm}|}
+\captionof{table}{Key limitations in the current FL-ADTCN implementation}
+\label{tab:fl_adtcn_limits}
+\begin{tabular}{|p{2.6cm}|p{5.9cm}|p{5.0cm}|}
 \hline
 \textbf{Category} & \textbf{Description} & \textbf{Impact} \\ \hline
-Consortium scale & Validated with 3 banks; real consortia involve more participants. & DB-BOA Job~3 search space grows with $K$; runtime impact requires study. \\ \hline
+Consortium scale & Validated with 3 banks; real consortia involve more participants. & Exact Shapley is $O(2^n)$; Monte-Carlo attribution extends it but fidelity at fixed budget holds only to $n\approx 5$ (Chapter~\ref{ch:results}). \\ \hline
 Validation set construction & Shared anonymised validation set requires consortium agreement. & Coordination overhead in production deployment. \\ \hline
-Adaptive adversaries & Byzantine resilience tested against simple always-fraud attacker only. & Sophisticated model poisoning not fully mitigated. \\ \hline
+Adaptive adversaries & Krum tested for weight poisoning ($n\ge 2f+3$); economic isolation tested against a colluding majority. & Subtle poisoning near the honest cluster only partially mitigated. \\ \hline
 Simulated resource metrics & CT, CC, MS collected from simulations rather than real peer monitoring. & May not fully reflect production hardware variance. \\ \hline
 Dataset generality & Kaggle ULB covers European transactions over 48 hours only. & Temporal and geographic generalisation unvalidated. \\ \hline
 \end{tabular}
-\captionof{table}{Key limitations in the current FL-ADTCN implementation}
-\label{tab:fl_adtcn_limits}
 \end{center}
 
 \begin{center}
-\begin{tabular}{|p{4.4cm}|p{11.4cm}|}
+\captionof{table}{Future enhancement roadmap for FL-ADTCN}
+\label{tab:fl_adtcn_future}
+\begin{tabular}{|p{3.9cm}|p{10.0cm}|}
 \hline
 \textbf{Challenge} & \textbf{Proposed Solution} \\ \hline
-Non-IID client drift & FedProx ($\mu = 0.05$, optimal) already applied; future: FedNova or FedAdam. \\ \hline
-Consortium scalability & Extend Fabric channel to $K > 3$ orgs; profile DB-BOA Job~3 runtime at scale. \\ \hline
-Byzantine-robust aggregation & Integrate coordinate-wise median, Krum, or FLTrust operators. \\ \hline
-Differential privacy & Add formal DP guarantees on gradient updates for membership inference protection. \\ \hline
+Non-IID client drift & Stratified partitioning preserves the global fraud rate per shard; future: proximal methods (FedProx), FedNova, or FedAdam. \\ \hline
+Consortium scalability & Extend Fabric channel to $K > 3$ orgs; use Monte-Carlo Shapley with sample budget scaling as $O(n\log n)$. \\ \hline
+Byzantine-robust aggregation & Krum already integrated; future: coordinate-wise median or FLTrust for adaptive attackers. \\ \hline
+Differential privacy & Relax the budget with DP-SGD at the gradient level; weight-channel DP is disabled at deployment in favour of incentive-channel DP. \\ \hline
 Quantum-resistant identity & Replace X.509 with lattice-based or hash-based certificate primitives. \\ \hline
 Real-time streaming & Extend ADTCN to process live transaction streams at production volumes. \\ \hline
 \end{tabular}
-\captionof{table}{Future enhancement roadmap for FL-ADTCN}
-\label{tab:fl_adtcn_future}
 \end{center}
 
 % ============================================================
@@ -596,7 +575,9 @@ The full FL-ADTCN system was implemented and validated on the following infrastr
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{4.5cm}|p{10.8cm}|}
+\caption{Development environment specification for the FL-ADTCN implementation}
+\label{tab:dev_env}
+\begin{tabular}{|p{4.0cm}|p{9.9cm}|}
 \hline
 \textbf{Component} & \textbf{Specification} \\ \hline
 Operating System & Ubuntu 22.04 LTS \\ \hline
@@ -604,13 +585,11 @@ Python & 3.10.12 (ML and optimisation layer) \\ \hline
 Node.js & 18.17.0 LTS (API server and DBBOAContract chaincode) \\ \hline
 Docker & 24.0.5 (Hyperledger Fabric network containers) \\ \hline
 Hyperledger Fabric & v2.5.4 (latest LTS release) \\ \hline
-Fabric Gateway SDK & \texttt{@hyperledger/fabric-gateway} v1.4.0 (gRPC communication) \\ \hline
-ML Framework & PyTorch 2.1.0 with CUDA 11.8 \\ \hline
+Fabric SDK & \texttt{fabric-network} 2.2.20 (wallet-based Node.js SDK) \\ \hline
+ML Framework & PyTorch (CPU) \\ \hline
 State Database & CouchDB 3.3.3 (Fabric world state, rich JSON queries) \\ \hline
-Optimiser & AdamW, learning rate $10^{-3}$, weight decay $10^{-4}$, gradient clipping \\ \hline
+Optimiser & Adam, learning rate $10^{-3}$, class-weighted cross-entropy loss \\ \hline
 \end{tabular}
-\caption{Development environment specification for the FL-ADTCN implementation}
-\label{tab:dev_env}
 \end{table}
 
 \subsection*{Consortium Data Distribution}
@@ -619,6 +598,8 @@ For federated training, the Kaggle dataset was partitioned across the three bank
 
 \begin{table}[H]
 \centering
+\caption{Stratified dataset partitioning across the three-bank consortium}
+\label{tab:consortium_split}
 \begin{tabular}{|l|c|c|c|c|}
 \hline
 \textbf{Organisation} & \textbf{Samples} & \textbf{Fraud Count} & \textbf{Fraud Rate} & \textbf{Split} \\ \hline
@@ -627,110 +608,102 @@ BankB (Org2MSP) & 85,442 & 148 & 0.17\% & 30\% \\ \hline
 BankC (Org3MSP) & 56,962 & 98 & 0.17\% & 20\% \\ \hline
 \textbf{Total} & \textbf{284,807} & \textbf{492} & \textbf{0.17\%} & \textbf{100\%} \\ \hline
 \end{tabular}
-\caption{Stratified dataset partitioning across the three-bank consortium}
-\label{tab:consortium_split}
 \end{table}
 
-Stratified sampling ensures all three partitions maintain the global fraud rate identically, eliminating the extreme label skew that causes non-IID gradient conflicts under raw partitioning.
+Stratified sampling ensures all three partitions maintain the global fraud rate identically, eliminating the extreme label skew that causes non-IID gradient conflicts under raw partitioning. Figure~\ref{fig:ulb_distribution} visualises both the severity of the global class imbalance and the per-bank shard composition of Table~\ref{tab:consortium_split}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/ulb_class_distribution.png}
+    \caption{The ULB dataset and its consortium partitioning, computed from the raw \texttt{creditcard.csv}. (a) Global class distribution: 492 fraud cases among 284{,}807 transactions (0.17\%), shown on a log scale. (b) Stratified 50/30/20 split across the three banks; each shard preserves the 0.17\% fraud rate (246/148/98 fraud cases respectively).}
+    \label{fig:ulb_distribution}
+\end{figure}
 
 \subsection*{Hyperledger Fabric Network Deployment}
 
-The Hyperledger Fabric network was deployed using the \texttt{fabric-samples} test-network as the base, extended with a third organisation (BankC/Org3) and CouchDB state databases. The deployment sequence was fully automated via shell scripts:
+The on-chain measurement network was deployed using the \texttt{fabric-samples} test-network as the base, with CouchDB state databases and the \texttt{DBBOAContract} chaincode packaged as a Chaincode-as-a-Service (CCaaS). Consistent with the scope statement in Chapter~\ref{ch:results}, the physical deployment instantiates \textbf{two peer organisations on a single host} --- the configuration on which all on-chain measurements were taken --- while the three-bank consortium of the federated experiments (BankA, BankB, BankC) runs in the off-chain simulation layer, with its per-node state (tokens, reputation, resource metrics) recorded in the chaincode's world state. The deployment sequence was fully automated via shell scripts:
 
 \begin{enumerate}
-    \item \textbf{Certificate Authority setup:} Each organisation's CA (Fabric CA v1.5) issued X.509 certificates to its administrator, peer, and orderer identities.
-    \item \textbf{Container startup:} All peer nodes (\texttt{peer0.org1}, \texttt{peer0.org2}, \texttt{peer0.org3}), CouchDB state databases, CA containers, and the Raft orderer were launched via Docker Compose.
-    \item \textbf{Channel creation:} The \texttt{mychannel} channel was created and joined by all three organisations under a 2-of-3 endorsement policy.
-    \item \textbf{Chaincode deployment:} \texttt{DBBOAContract} was packaged as a Node.js chaincode, installed on all peers, approved by all organisations, and committed to the channel.
-    \item \textbf{API server startup:} The Node.js API server connected to \texttt{peer0.org1} via gRPC and enrolled organisation administrator identities in local filesystem wallets using the Fabric Gateway SDK.
+    \item \textbf{Certificate Authority setup:} Each organisation's CA (Fabric CA v1.5) issued X.509 certificates to its administrator and peer identities; a separate CA serves the orderer organisation.
+    \item \textbf{Container startup:} The peer nodes (\texttt{peer0.org1}, \texttt{peer0.org2}), their CouchDB state databases, the CA containers, and the Raft orderer were launched via Docker Compose.
+    \item \textbf{Channel creation:} The \texttt{mychannel} channel was created and joined by both organisations under the test-network's default majority endorsement policy.
+    \item \textbf{Chaincode deployment:} \texttt{DBBOAContract} was packaged as a Node.js CCaaS chaincode, installed on both peers, approved by both organisations, and committed to the channel.
+    \item \textbf{API server startup:} The Node.js API server connected to \texttt{peer0.org1} via gRPC and enrolled organisation administrator identities in local filesystem wallets using the \texttt{fabric-network} 2.2.20 SDK.
 \end{enumerate}
+
+Table~\ref{tab:docker_deployment} lists the deployed containers; the listing matches the live capture in Figure~\ref{fig:fabric_live}. The three-organisation consortium topology of the design (Section~\ref{sec:consortium-topology}) remains the deployment target for a production rollout.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|l|l|c|}
+\caption{Hyperledger Fabric Docker container deployment summary (single-host, two-organisation measurement network; cf.\ Figure~\ref{fig:fabric_live}).}
+\label{tab:docker_deployment}
+\begin{tabular}{|l|p{5.6cm}|c|}
 \hline
 \textbf{Container} & \textbf{Role} & \textbf{Port} \\ \hline
-\texttt{peer0.org1.example.com} & BankA peer node + CouchDB & 7051 \\ \hline
-\texttt{peer0.org2.example.com} & BankB peer node + CouchDB & 9051 \\ \hline
-\texttt{peer0.org3.example.com} & BankC peer node + CouchDB & 11051 \\ \hline
-\texttt{ca.org1.example.com} & BankA Certificate Authority & 7054 \\ \hline
-\texttt{ca.org2.example.com} & BankB Certificate Authority & 8054 \\ \hline
-\texttt{ca.org3.example.com} & BankC Certificate Authority & 9054 \\ \hline
+\texttt{peer0.org1.example.com} & Org1 peer node & 7051 \\ \hline
+\texttt{peer0.org2.example.com} & Org2 peer node & 9051 \\ \hline
+\texttt{couchdb0}, \texttt{couchdb1} & CouchDB world-state databases & internal \\ \hline
+\texttt{ca\_org1} & Org1 Certificate Authority & 7054 \\ \hline
+\texttt{ca\_org2} & Org2 Certificate Authority & 8054 \\ \hline
+\texttt{ca\_orderer} & Orderer Certificate Authority & 9054 \\ \hline
 \texttt{orderer.example.com} & Raft ordering service & 7050 \\ \hline
+\texttt{peer0org1\_db-boa\_ccaas} & \texttt{DBBOAContract} chaincode-as-a-service (Org1 peer) & 9999 \\ \hline
+\texttt{peer0org2\_db-boa\_ccaas} & \texttt{DBBOAContract} chaincode-as-a-service (Org2 peer) & 9999 \\ \hline
 \end{tabular}
-\caption{Hyperledger Fabric Docker container deployment summary}
-\label{tab:docker_deployment}
 \end{table}
 
 \subsection*{Non-IID Data Heterogeneity Solutions}
 
-Three complementary techniques address the non-IID challenge arising from unequal data distribution across the three banks:
+Two techniques address the non-IID challenge arising from unequal data distribution across the three banks:
 
 \begin{enumerate}
-    \item \textbf{Stratified Sampling:} Each bank's data partition maintains the global 0.17\% fraud rate, eliminating extreme label skew that causes contradictory gradient directions across clients.
-    \item \textbf{FedProx Regularisation:} Local training adds a proximal term that prevents drift from the global model:
-    \[
-        \mathcal{L}_{\text{local}}^{(i)} = \mathcal{L}(\theta_i) + \frac{\mu}{2}\|\theta_i - \theta_{\text{global}}\|^2.
-    \]
-    The sensitivity of $\mu$ was evaluated as follows:
-
-    \begin{table}[H]
-    \centering
-    \begin{tabular}{|p{2.0cm}|p{6.0cm}|p{2.0cm}|p{2.5cm}|}
-    \hline
-    \textbf{$\mu$ Value} & \textbf{Effect} & \textbf{ROC-AUC} & \textbf{Outcome} \\ \hline
-    0.00 & No regularisation (pure FedAvg) & 0.1424 & Fails on non-IID \\ \hline
-    0.01 & Weak proximal penalty & 0.62 & Partially converges \\ \hline
-    \textbf{0.05} & \textbf{Balanced (optimal)} & \textbf{0.9210} & \textbf{Strong convergence} \\ \hline
-    0.10 & Strong penalty, slows convergence & 0.89 & Acceptable \\ \hline
-    0.20 & Over-constrained, underfits & 0.81 & Performance loss \\ \hline
-    \end{tabular}
-    \caption{FedProx $\mu$ parameter sensitivity analysis}
-    \label{tab:fedprox_sensitivity}
-    \end{table}
-
-    \item \textbf{DB-BOA Aggregation Weights (Job~3):} DB-BOA compensates for remaining heterogeneity by assigning higher weights to institutions whose models perform better on the shared validation set, correcting for both data quantity and quality differences.
+    \item \textbf{Stratified Partitioning:} Each bank's data partition maintains the global 0.17\% fraud rate, eliminating the extreme label skew that causes contradictory gradient directions across clients and drives raw non-IID FedAvg toward a degenerate model.
+    \item \textbf{Shapley Contribution Weighting:} The federation layer assigns each institution its exact Shapley contribution weight on a shared validation set, replacing FedAvg's assumed equal weighting with a measured one; this rewards institutions whose models genuinely improve the global model and assigns near-zero weight to a poisoning participant.
 \end{enumerate}
+
+Proximal methods such as FedProx (a $\frac{\mu}{2}\|\theta_i - \theta_{\text{global}}\|^2$ regulariser on local training) are a natural extension for more severely heterogeneous deployments but are \emph{not} implemented in the current pipeline.
 
 \subsection{Data Cleaning}
 
 Missing Values: No missing values were present in the Kaggle dataset (0\% NaN across all features and Class label after loading). The Class column was coerced to numeric (int64) and validated; invalid entries (if any) were dropped, but none occurred.
 
-Outliers: No outliers were removed. The Amount feature shows high variance (min 0.00, max 25,691.64, median 22.00), but extremes are preserved because fraud can occur at any value (e.g., small ``testing'' charges or large legitimate transfers). Temporal outliers (unusual timestamps) were retained for sequence context in ADTCN. PCA features (V1–V28) are already bounded and consistent.
+Outliers: No outliers were removed. The Amount feature shows high variance (min 0.00, max 25,691.16, median 22.00), but extremes are preserved because fraud can occur at any value (e.g., small ``testing'' charges or large legitimate transfers). Temporal outliers (unusual timestamps) were retained for sequence context in ADTCN. PCA features (V1–V28) are already bounded and consistent.
 
 Inconsistencies: Temporal ordering was verified (timestamps increasing). No duplicates, negative amounts, or invalid Class values (only 0/1). All features numeric and consistent. Result: No records removed (0\% data loss). Data quality remained excellent.
 
 \begin{table}[h]
 \centering
+\caption{Statistical Summary of Key Features}
+\label{tab:stat_summary}
 \begin{tabular}{|l|c|c|c|c|c|c|c|}
 \hline
 \textbf{Feature} & \textbf{Mean} & \textbf{Std Dev} & \textbf{Min} & \textbf{25\%} & \textbf{50\%} & \textbf{75\%} & \textbf{Max} \\
 \hline
-Amount & 88.35 & 250.12 & 0.00 & 5.65 & 22.00 & 77.05 & 25,691.64 \\
+Amount & 88.35 & 250.12 & 0.00 & 5.60 & 22.00 & 77.16 & 25,691.16 \\
 \hline
-Time & 85,430 & 49,433 & 0 & 54,029 & 84,692 & 113,296 & 172,792 \\
+Time & 94,814 & 47,488 & 0 & 54,202 & 84,692 & 139,321 & 172,792 \\
 \hline
-V1 & 0.00 & 1.96 & -56.41 & -0.84 & 0.04 & 1.48 & 2.45 \\
+V1 & 0.00 & 1.96 & -56.41 & -0.92 & 0.02 & 1.32 & 2.45 \\
 \hline
-V2 & 0.00 & 1.65 & -72.71 & -0.63 & 0.02 & 0.62 & 22.06 \\
+V2 & 0.00 & 1.65 & -72.72 & -0.60 & 0.07 & 0.80 & 22.06 \\
 \hline
 \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots \\
 \hline
 \end{tabular}
-\caption{Statistical Summary of Key Features}
-\label{tab:stat_summary}
 \end{table}
 
 \subsection{Data Transformation}
 
 Amount Feature: Applied StandardScaler (Z-score normalisation) to centre mean at 0 and scale variance to 1, preventing feature dominance in neural networks.
 PCA Features (V1–V28): No additional scaling — already PCA-transformed with zero mean and unit variance.
-Time Feature: Kept as integer (seconds since start); used for sequence ordering only.
+Time Feature: Kept as integer (seconds since start); used for sequence ordering and retained as an input feature.
 Class Label: Binary (0 = normal, 1 = fraud); no encoding needed.
-Sequence Creation: Transactions grouped into temporal sequences (window size = 10) using a sliding window, producing input tensors of shape $(N, 10, 29)$.
+Sequence Creation: Transactions grouped into temporal sequences (window size = 10) using a sliding window, producing input tensors of shape $(N, 10, 33)$.
 
 \begin{table}[h]
 \centering
+\caption{Amount Feature Statistics Before and After Z-Score Transformation}
+\label{tab:result_statistics}
 \begin{tabular}{|l|c|c|p{5cm}|}
 \hline
 \textbf{Metric} & \textbf{Original} & \textbf{Transformed} & \textbf{Reason} \\
@@ -739,13 +712,11 @@ Mean & 88.35 & 0.0000 & Centred around 0 \\
 \hline
 Std Dev & 250.12 & 1.0000 & Normalised to unit variance \\
 \hline
-Min & 0.00 & $-0.3530$ & Scaled \\
+Min & 0.00 & $-0.3532$ & Scaled \\
 \hline
-Max & 25,691.64 & 102.48 & Scaled \\
+Max & 25,691.16 & 102.36 & Scaled \\
 \hline
 \end{tabular}
-\caption{Amount Feature Statistics Before and After Z-Score Transformation}
-\label{tab:result_statistics}
 \end{table}
 
 \subsection{Data Integration}
@@ -760,6 +731,8 @@ The final preprocessed dataset used for analysis and design consists of 284,807 
 
 \begin{table}[h]
 \centering
+\caption{Summary of Preprocessed Credit Card Transaction Dataset for FL-ADTCN}
+\label{tab:dataset_summary}
 \begin{tabular}{|l|c|p{7cm}|}
 \hline
 \textbf{Property} & \textbf{Value} & \textbf{Details} \\
@@ -780,105 +753,14 @@ Missing Values & 0 & Complete dataset \\
 \hline
 Sequence Length & 10 & Sliding window for ADTCN \\
 \hline
-Train/Val/Test Split & 70\%/15\%/15\% & Chronological, time-aware \\
+Train/Val/Test Split & 70\%/10\%/20\% & Stratified (preserves 0.17\% fraud rate) \\
 \hline
 Consortium Partition & 50/30/20 & BankA/BankB/BankC (stratified) \\
 \hline
 \end{tabular}
-\caption{Summary of Preprocessed Credit Card Transaction Dataset for FL-ADTCN}
-\label{tab:dataset_summary}
 \end{table}
 
 This dataset faithfully represents real-world fraud scenarios (rare positive class) and supports robust evaluation of the proposed secure, incentivised FL framework.
-
-% ============================================================
-\section{Implementation of Selected Design}
-% ============================================================
-
-This section describes the practical realisation of the proposed fraud-detection framework, focusing on the Adaptive Deep Temporal Context Network (ADTCN) and its deployment under both centralised and federated learning paradigms. The implementation addresses three core challenges: temporal dependency modelling, extreme class imbalance, and distributed training under heterogeneous data conditions.
-
-\subsection*{Data Preparation and Sequencing}
-
-Raw transaction records were first transformed into fixed-length temporal sequences using a sliding-window mechanism of length $T=10$. Each sequence represents ten consecutive transactions, where every transaction is encoded by 29 numerical features. This transformation converts the tabular dataset into a three-dimensional tensor of shape $(N, 10, 29)$, enabling the model to learn temporal dependencies across successive transactions.
-
-To preserve chronological integrity, the dataset was split into training, validation, and testing partitions using a time-aware $70{:}15{:}15$ strategy, ensuring that future samples were never used to predict past events.
-
-\subsection*{Handling Class Imbalance}
-
-The dataset exhibits extreme imbalance, with fraudulent transactions accounting for approximately 0.17\% of all samples. Two complementary strategies were adopted:
-\begin{enumerate}
-    \item \textbf{Weighted Sampling:} During mini-batch construction, a weighted random sampler oversamples minority (fraud) sequences so that each batch contains a balanced proportion of fraudulent and legitimate samples.
-    \item \textbf{Weighted Loss Function:} The binary cross-entropy loss with logits was employed, incorporating a positive class weight equal to the ratio of normal to fraud samples (578.0), heavily penalising missed fraud events and ensuring rare events contribute significantly to gradient updates.
-\end{enumerate}
-
-\subsection*{Model Initialisation and Architecture}
-
-The ADTCN model consists of four principal components: an embedding layer, a dilated temporal convolutional backbone, an attention pooling mechanism, and a classification head.
-
-The embedding layer (MJE) projects each 29-dimensional transaction vector into a 64-dimensional latent space using a linear transformation and ReLU activation. The temporal backbone (TCL) comprises four dilated convolution blocks with dilation rates $\{1,2,4,8\}$, enabling the receptive field to span the entire input window and capture both short- and long-term transaction patterns. An attention pooling layer (MTTA) assigns a relevance score to each time step, producing a weighted temporal summary. Finally, a two-layer feedforward head outputs a single logit representing the fraud probability.
-
-All architectural hyperparameters ($H_{nD}^* = 128$, $E_{pD}^* = 30$, $S_{eD}^* = 150$) were determined by DB-BOA Job~1 prior to training.
-
-\subsection*{Training Configuration}
-
-Model parameters were optimised using the AdamW optimiser with a learning rate of $10^{-3}$ and weight decay of $10^{-4}$ for regularisation. Gradient clipping was applied to avoid instability caused by large updates. A learning-rate scheduler based on validation performance was employed to dynamically reduce the step size when improvement plateaued.
-
-\subsection*{Federated Learning Deployment}
-
-To enable privacy-preserving collaborative training across the three-bank consortium, the centralised learning pipeline was extended to the federated setting:
-
-\begin{itemize}
-    \item The global model was initialised via DB-BOA Job~1 and distributed to all three consortium peers.
-    \item At each federation interval (every 5 consensus rounds), each institution trained its local ADTCN for the optimised number of epochs and transmitted only updated weight vectors to the Federation Manager (running off-chain in Python).
-    \item DB-BOA Job~3 determined the optimal aggregation weights $[w_1^*, w_2^*, w_3^*]$; the weighted-average global model was computed and redistributed.
-    \item The federation round outcome (weights, global fitness, timestamp) was recorded on the Fabric ledger via \texttt{recordFederationRound}; token rewards were distributed automatically.
-\end{itemize}
-
-Three data-partitioning strategies were evaluated: IID, non-IID label skew, and stratified non-IID (final production configuration). To mitigate model drift under non-IID conditions, FedProx regularisation with $\mu = 0.05$ was incorporated, penalising large deviations between local and global parameters.
-
-\subsection*{Threshold Optimisation}
-
-Rather than relying on the default decision threshold of 0.5, an optimal threshold was selected using the F1-score criterion derived from the precision–recall curve. This approach balances false positives and false negatives, which is critical in fraud detection where missing a fraud event is costly but excessive alarms are disruptive.
-
-\subsection*{DBBOAContract Chaincode Implementation}
-
-The \texttt{DBBOAContract} is a Node.js smart contract deployed to the \texttt{mychannel} Fabric channel. It implements the \texttt{fabric-contract-api} interface and provides the following transaction functions:
-
-\begin{table}[H]
-\centering
-\begin{tabular}{|p{5.0cm}|p{9.5cm}|}
-\hline
-\textbf{Chaincode Function} & \textbf{Description and Incentive Logic} \\ \hline
-\texttt{recordNodeMetrics} & Stores CT, CC, MS for each peer; read by DB-BOA Job~2. \\ \hline
-\texttt{recordLeaderSelection} & Records selected leader and Obf$_1$ value for the round. \\ \hline
-\texttt{recordHyperparams} & Stores DB-BOA Job~1 output (HnD, EpD, SeD, fitness). \\ \hline
-\texttt{recordFraudResult} & Records verdict; auto-applies $+10$ if consensus matches, $-2$ if disputed. \\ \hline
-\texttt{recordConsensusRound} & Logs latency and outcome; $+15$ if latency $<$ 300\,ms; $+10$ to leader if success; $-2$ if fail. \\ \hline
-\texttt{recordFederationRound} & Logs $w_1^*, w_2^*, w_3^*$ and global fitness; distributes $20 \cdot w_i^*$ tokens to each org. \\ \hline
-\texttt{getTokenBalance / getReputation} & Query token balance and reputation score for any organisation or node. \\ \hline
-\texttt{updateReputation} & Adjusts $\rho_i$: $+0.02$ on success, $-0.05$ on failure, bounded in $[0.5, 2.0]$. \\ \hline
-\end{tabular}
-\caption{DBBOAContract chaincode function summary with incentive logic}
-\label{tab:chaincode_functions}
-\end{table}
-
-All chaincode functions avoid \texttt{Math.random()} in state-mutating operations. Timestamps are derived from \texttt{ctx.stub.getTxTimestamp()}, ensuring that all endorsing peers produce identical outputs. Token arithmetic uses integer representations (multiplied by 100) to avoid floating-point non-determinism across peer environments.
-
-\subsection*{Summary of the Implementation Workflow}
-
-The complete implementation pipeline can be summarised as follows:
-\begin{enumerate}
-    \item Deploy Hyperledger Fabric test-network with three organisations; deploy \texttt{DBBOAContract} chaincode.
-    \item Run DB-BOA Job~1 to determine optimal ADTCN hyperparameters; write to Fabric ledger.
-    \item Convert raw transactions into temporal sequences; apply stratified partitioning across the consortium.
-    \item Apply weighted sampling and class-weighted loss to address 578:1 class imbalance.
-    \item At each consensus round, run DB-BOA Job~2 for leader selection; each institution trains ADTCN locally; fraud verdicts submitted on-chain.
-    \item Every 5 rounds, run DB-BOA Job~3 for federated aggregation weight optimisation; global model computed and redistributed; token rewards distributed by chaincode.
-    \item Tune the classification threshold using F1-score optimisation on the validation set.
-    \item Evaluate under normal operation and Byzantine attack (BankC always-fraud) across 50 consensus rounds / 10 federation rounds.
-\end{enumerate}
-
-Through this structured implementation, the system achieves robust temporal modelling, resilience to extreme imbalance, distributed learning with mathematically derived incentives, and Byzantine resilience — making it suitable for real-world fraud detection in privacy-sensitive financial ecosystems.
 
 % ============================================================
 \section{Architectural Overview}
@@ -897,13 +779,13 @@ The FL-ADTCN system is organised into two layers that serve fundamentally distin
 ]
 % Intelligence Layer (Left)
 \node[box, fill=blue!15, draw=blue!70!black] (dbboa) at (0,8)
-  {DB-BOA Optimisation Engine\\(3 Jobs: HParam, Leader, Weight)};
+  {DB-BOA Optimisation Engine\\(2 roles: HParam, Leader)};
 \node[box, fill=blue!15, draw=blue!70!black] (adtcn) at (0,6)
-  {ADTCN Fraud Detection\\(MJE + TCL + MTTA)};
+  {ADTCN Fraud Detection\\(1D-CNN + max-pool)};
 \node[box, fill=blue!15, draw=blue!70!black] (fedmgr) at (0,4)
-  {Federation Manager\\(DB-BOA Job 3)};
+  {Federation Manager\\(DP + Krum + Shapley)};
 \node[box, fill=blue!15, draw=blue!70!black] (apiserver) at (0,2)
-  {Node.js API Server\\(Fabric Gateway SDK)};
+  {Node.js API Server\\(fabric-network SDK)};
 
 % Trust Layer (Right)
 \node[box, fill=green!15, draw=green!60!black] (chaincode) at (8,6)
@@ -934,14 +816,14 @@ The FL-ADTCN system is organised into two layers that serve fundamentally distin
 
 \begin{table}[htbp]
 \centering
-\begin{tabular}{|p{3.5cm}|p{5.8cm}|p{5.8cm}|}
-\hline
-\textbf{Layer} & \textbf{What It Does} & \textbf{What It Does NOT Do} \\ \hline
-\textbf{Intelligence Layer} (Python, off-chain) & Runs DB-BOA optimisation (Jobs 1, 2, 3); trains ADTCN; detects fraud; computes federation weights; generates all metrics and result plots. & Does not store data permanently; does not enforce incentive rules; does not communicate with peer institutions directly. \\ \hline
-\textbf{Trust Layer} (Hyperledger Fabric, on-chain) & Records all Intelligence Layer decisions permanently; enforces incentive rules via chaincode; provides shared tamper-proof audit trail; distributes token rewards automatically. & Does not run DB-BOA; does not train ADTCN; does not detect fraud; does not make optimisation decisions. \\ \hline
-\end{tabular}
 \caption{Two-Layer Architecture: Responsibilities and Strict Boundaries}
 \label{tab:architecture_layers}
+\begin{tabular}{|p{3.0cm}|p{5.2cm}|p{5.2cm}|}
+\hline
+\textbf{Layer} & \textbf{What It Does} & \textbf{What It Does NOT Do} \\ \hline
+\textbf{Intelligence Layer} (Python, off-chain) & Runs DB-BOA optimisation (hyperparameters, leader selection); trains ADTCN; detects fraud; runs the DP/Krum/Shapley federation layer; generates all metrics and result plots. & Does not store data permanently; does not enforce incentive rules; does not communicate with peer institutions directly. \\ \hline
+\textbf{Trust Layer} (Hyperledger Fabric, on-chain) & Records all Intelligence Layer decisions permanently; enforces incentive rules via chaincode; provides shared tamper-proof audit trail; distributes token rewards automatically. & Does not run DB-BOA; does not train ADTCN; does not detect fraud; does not make optimisation decisions. \\ \hline
+\end{tabular}
 \end{table}
 
 \subsection{Intelligence Layer (Off-Chain)}
@@ -949,10 +831,10 @@ The FL-ADTCN system is organised into two layers that serve fundamentally distin
 The Intelligence Layer is implemented in Python and runs on each institution's own computing infrastructure. It is responsible for all machine learning and optimisation computation:
 
 \begin{itemize}
-  \item \textbf{DB-BOA Optimisation Engine}: Executes all three DB-BOA optimisation jobs. Uses pseudo-random number generation and is therefore architecturally incompatible with on-chain execution (see Section~\ref{sec:determinism}).
+  \item \textbf{DB-BOA Optimisation Engine}: Executes the two live DB-BOA optimisation jobs (hyperparameter search and leader selection); the federation-weight job is implemented but disabled by default. Uses pseudo-random number generation and is therefore architecturally incompatible with on-chain execution (see Section~\ref{sec:determinism}).
   \item \textbf{ADTCN Model}: Trains and executes the fraud detection neural network on each institution's local transaction data. Raw data never leaves this layer.
-  \item \textbf{Federation Manager}: Collects model weight vectors from all institutions, runs DB-BOA Job~3 to determine optimal aggregation weights, computes the weighted-average global model, and prepares the federation record for submission to the ledger.
-  \item \textbf{Node.js API Server}: Provides a gRPC-based bridge between the Python Intelligence Layer and the Hyperledger Fabric Trust Layer, using the Fabric Gateway SDK to submit signed transactions.
+  \item \textbf{Federation Manager}: Collects differentially private weight vectors from all institutions, applies Krum robust selection and exact Shapley contribution attribution, computes the global model, and prepares the federation record (Shapley weights, coalition values, Krum scores) for submission to the ledger.
+  \item \textbf{Node.js API Server}: Provides a gRPC-based bridge between the Python Intelligence Layer and the Hyperledger Fabric Trust Layer, using the \texttt{fabric-network} 2.2.20 SDK to submit signed transactions.
 \end{itemize}
 
 \subsection{Trust Layer (On-Chain)}
@@ -978,6 +860,7 @@ DB-BOA is a metaheuristic that uses pseudo-random number generation. Its executi
 Running DB-BOA off-chain and recording its outputs on-chain is not a compromise — it is the architecturally correct design. This is how JPMorgan's Liink, HSBC's FX settlement system, and IBM's Food Trust network all operate. The chaincode in this system implements no \texttt{Math.random()} calls in state-mutating functions and derives all timestamps from \texttt{ctx.stub.getTxTimestamp()} to ensure deterministic execution across all endorsing peers.
 
 \section{Consortium Network Topology}
+\label{sec:consortium-topology}
 
 The consortium consists of three organisations modelling financial institutions:
 \begin{itemize}
@@ -986,7 +869,7 @@ The consortium consists of three organisations modelling financial institutions:
   \item \textbf{BankC (Org3MSP)}: The smallest institution, holding 20\% of training data. Used as the Byzantine attacker in adversarial testing.
 \end{itemize}
 
-The Fabric network consists of one peer per organisation (three peers total), one CA per organisation, and a single Raft ordering service node. The endorsement policy requires that at least two of the three organisations endorse a transaction before it is committed — a standard 2-of-3 majority policy resilient to one organisation being offline or malicious. All organisations maintain identical CouchDB world state replicas.
+In this consortium design, the Fabric network consists of one peer per organisation (three peers total), one CA per organisation, and a single Raft ordering service node; the endorsement policy requires that at least two of the three organisations endorse a transaction before it is committed — a standard 2-of-3 majority policy resilient to one organisation being offline or malicious — and all organisations maintain identical CouchDB world state replicas. As disclosed in the Limitations (Chapter~\ref{ch:results}), the physical network deployed for the on-chain measurements instantiates two of these peer organisations on a single host; the three-bank consortium itself is realised in the off-chain federation layer.
 
 Figure~\ref{fig:consortium_topology} illustrates the physical network topology.
 
@@ -1011,7 +894,7 @@ Figure~\ref{fig:consortium_topology} illustrates the physical network topology.
 \node[fabric] (pC) at (10,2){peer0.org3\\CouchDB};
 
 % Raft orderer (bottom)
-\node[fabric] (ord) at (5,0){Raft Orderer\\orderer.example.com};
+\node[fabric, text width=4.2cm] (ord) at (5,0){Raft Orderer\\\scriptsize orderer.example.com};
 
 % Bank → Peer (gRPC/SDK)
 \draw[conn] (bA) -- (pA);
@@ -1031,7 +914,7 @@ Figure~\ref{fig:consortium_topology} illustrates the physical network topology.
 \node[font=\scriptsize, color=blue!70!black, text width=14cm, align=center] at (5,-1.2)
   {Endorsement Policy: \texttt{OutOf(2, "Org1MSP.peer", "Org2MSP.peer", "Org3MSP.peer")}};
 \end{tikzpicture}
-\caption{Consortium Network Topology. Three banking organisations each control one peer node and one Certificate Authority. Raft ordering service manages block production. The 2-of-3 endorsement policy ensures resilience to one offline or malicious organisation.}
+\caption{Consortium Network Topology (design). Three banking organisations each control one peer node and one Certificate Authority; the Raft ordering service manages block production, and the 2-of-3 endorsement policy ensures resilience to one offline or malicious organisation. The measured single-host deployment instantiates two of these peer organisations (see Limitations).}
 \label{fig:consortium_topology}
 \end{figure}
 
@@ -1063,7 +946,7 @@ Table~\ref{tab:boundary} provides a precise specification of where each activity
 \centering
 \caption{Precise Off-Chain vs. On-Chain Boundary}
 \label{tab:boundary}
-\begin{tabular}{|c|p{4.2cm}|p{4.0cm}|p{5.0cm}|}
+\begin{tabular}{|c|p{3.9cm}|p{3.7cm}|p{4.6cm}|}
 \hline
 \textbf{\#} & \textbf{Activity} & \textbf{Where it Runs} & \textbf{Reason} \\
 \hline
@@ -1071,7 +954,7 @@ Table~\ref{tab:boundary} provides a precise specification of where each activity
 \hline
 2 & ADTCN training and prediction & Python, institution's machine & Non-deterministic; private data involved \\
 \hline
-3 & Federation weight computation & Python, institution's machine & Non-deterministic optimisation \\
+3 & DP / Krum / Shapley federation & Python, institution's machine & Non-deterministic; shared-validation evaluation \\
 \hline
 4 & Results written to ledger & Fabric chaincode, via SDK & Permanent, tamper-proof record \\
 \hline
