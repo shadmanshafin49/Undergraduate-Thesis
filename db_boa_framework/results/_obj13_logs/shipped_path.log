@@ -1,0 +1,24 @@
+﻿
+  === ULB ===
+    ULB shipped: loader.get_eval_subset -> eval_subset=3000
+      pool 3,000 rows, 5 unique fraud (0.167 %)  ->  surrogate draws n_f=30  ⛔ WITH REPLACEMENT
+      expected DISTINCT fraud in surrogate: 4.99  (duplication 6.01x), ~9 fraud rows in validation
+    ULB audit: basepaper _eval_subset(n=6000)
+      pool 6,000 rows, 30 unique fraud (0.500 %)  ->  surrogate draws n_f=30  ok, all distinct
+      expected DISTINCT fraud in surrogate: 30.0  (duplication 1.0x), ~9 fraud rows in validation
+
+  === BANKSIM ===
+    BankSim shipped: loader.get_eval_subset -> eval_subset=3000
+      pool 3,000 rows, 38 unique fraud (1.267 %)  ->  surrogate draws n_f=30  ok, all distinct
+      expected DISTINCT fraud in surrogate: 30.0  (duplication 1.0x), ~9 fraud rows in validation
+    BankSim audit: basepaper _eval_subset(n=6000)
+      pool 6,000 rows, 75 unique fraud (1.250 %)  ->  surrogate draws n_f=30  ok, all distinct
+      expected DISTINCT fraud in surrogate: 30.0  (duplication 1.0x), ~9 fraud rows in validation
+
+  === STAGE 2: does the duplication leak across the 70/30 split? ===
+    [ulb/legacy       ]   5 unique fraud -> 21 train /  9 val rows;  9 of  9 val positives are copies of a TRAIN row  ⛔ LEAK
+    [ulb/deterministic]   5 unique fraud -> 21 train /  9 val rows;  9 of  9 val positives are copies of a TRAIN row  ⛔ LEAK
+    [banksim/legacy       ]  30 unique fraud -> 20 train / 10 val rows;  0 of 10 val positives are copies of a TRAIN row  ok, disjoint
+    [banksim/deterministic]  30 unique fraud -> 21 train /  9 val rows;  0 of  9 val positives are copies of a TRAIN row  ok, disjoint
+
+  wrote D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\obj13_shipped_path_check.json

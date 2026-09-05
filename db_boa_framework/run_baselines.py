@@ -31,6 +31,7 @@ McMahan et al., "Communication-Efficient Learning of Deep Networks from
 Decentralized Data", AISTATS 2017.  (FedAvg baseline)
 """
 
+import argparse
 import copy
 import json
 import os
@@ -42,8 +43,8 @@ warnings.filterwarnings("ignore")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config                  import ADTCN_CONFIG, FEDERATION_CONFIG, RESULTS_DIR
-from data.data_loader        import FinancialDataLoader
+from config                  import (ADTCN_CONFIG, FEDERATION_CONFIG,
+                                     RESULTS_DIR, DATASETS, get_loader)
 from models.adtcn            import ADTCN
 from models.federated_adtcn  import FederatedADTCN
 from models.federation_manager import FederationManager
@@ -80,7 +81,7 @@ def _avg_weights(weights_list: list, counts: list = None) -> list:
 
 
 def run_one_baseline(loader, X_train, X_val, X_test, y_train, y_val, y_test,
-                     adtcn_base, cfg_override: dict) -> dict:
+                     adtcn_base, cfg_override: dict, test_groups=None) -> dict:
     """
     Train all three org models, run one federated round, evaluate on test set.
     Returns the test-set metrics dict.
@@ -89,12 +90,16 @@ def run_one_baseline(loader, X_train, X_val, X_test, y_train, y_val, y_test,
     fed_cfg.update(cfg_override)
 
     org_splits = loader.split_for_orgs(X_train, y_train)
+    # Entity-linked windows inside the federation, when the loader can supply
+    # them (BankSim under partition="customer").  None everywhere else, which
+    # falls back to global windows — see BankSimDataLoader.split_for_orgs.
+    org_groups = getattr(loader, "last_org_groups", {}) or {}
     org_models = {}
     org_counts = []   # sample counts per org, for McMahan size-weighted FedAvg
     for org_name, (X_org, y_org) in org_splits.items():
         m = FederatedADTCN(cfg=ADTCN_CONFIG)
         m.optimal_params = adtcn_base.optimal_params
-        m.fit(X_org, y_org, verbose=False)
+        m.fit(X_org, y_org, verbose=False, groups=org_groups.get(org_name))
         org_models[org_name] = m
         org_counts.append(len(y_org))
 
@@ -125,21 +130,51 @@ def run_one_baseline(loader, X_train, X_val, X_test, y_train, y_val, y_test,
     eval_model = list(org_models.values())[0]
     eval_model.load_weights(global_w)
 
-    y_pred = eval_model.predict(X_test)
+    y_pred = eval_model.predict(X_test, groups=test_groups)
     return compute_all_metrics(y_test, y_pred)
 
 
-def main():
-    print("Loading data …", flush=True)
-    loader = FinancialDataLoader()
+def main(dataset="ulb", partition=None, out_name=None, filters=None, epochs=None):
+    print(f"Loading data … ({DATASETS[dataset]['label']})", flush=True)
+    loader = get_loader(dataset)
+    if partition:
+        if dataset != "banksim":
+            raise SystemExit("--partition requires --dataset banksim")
+        loader.cfg["partition"] = partition
     X_train, X_val, X_test, y_train, y_val, y_test = loader.load(verbose=False)
+    # Tell the detector how many leading columns are real features — see
+    # ADTCN.fit. Without this BankSim's 79 features are truncated to 33.
+    ADTCN_CONFIG["n_raw_features"] = loader.raw_feature_count
     X_opt, y_opt = loader.get_eval_subset(X_train, y_train)
 
-    print("Running DB-BOA hyperparameter search (shared across all runs) …",
-          flush=True)
+    if epochs:
+        ADTCN_CONFIG["epoch_count"] = int(epochs)
+
     adtcn_base = ADTCN()
-    adtcn_base.optimise_hyperparams(X_opt, y_opt, verbose=False)
-    print(f"  Optimal params: {adtcn_base.optimal_params}", flush=True)
+    if filters:
+        # Skip the DB-BOA search and pin the detector width.
+        #
+        # Why this option exists: experiments/objective_noise_audit.py shows the
+        # DB-BOA surrogate fitness is a *random function of its input* on a
+        # low-fraud dataset — a fixed configuration re-scored 25 times spans most
+        # of the objective's range, and between-seed variation is as large as
+        # between-configuration variation.  A width it returns is therefore not
+        # meaningfully "optimal".  For an ablation whose subject is
+        # FedAvg vs Krum vs DP, the detector width is a nuisance parameter, and
+        # pinning it removes a confound (and hours of compute) rather than
+        # hiding one.  The pinned value is recorded in the output artifact.
+        adtcn_base.optimal_params = {
+            "hidden_neurons": int(filters),
+            "epoch_count": ADTCN_CONFIG["epoch_count"],
+            "steps_per_epoch": ADTCN_CONFIG["steps_per_epoch"],
+        }
+        print(f"  Detector width PINNED (DB-BOA search skipped): "
+              f"{adtcn_base.optimal_params}", flush=True)
+    else:
+        print("Running DB-BOA hyperparameter search (shared across all runs) ...",
+              flush=True)
+        adtcn_base.optimise_hyperparams(X_opt, y_opt, verbose=False)
+        print(f"  Optimal params: {adtcn_base.optimal_params}", flush=True)
 
     results = {}
     for bc in BASELINE_CONFIGS:
@@ -150,14 +185,33 @@ def main():
         m = run_one_baseline(
             loader, X_train, X_val, X_test, y_train, y_val, y_test,
             adtcn_base, override,
+            test_groups=(getattr(loader, "groups_test", None)
+                         if (partition == "customer") else None),
         )
         results[label] = m
         print_metrics_table(m, model_name=label)
 
     # ── Persist a verifiable artifact (provenance for the §6.2 ablation table) ─
-    out_path = os.path.join(RESULTS_DIR, "baselines.json")
+    out_path = os.path.join(RESULTS_DIR,
+                            out_name or ("baselines.json" if dataset == "ulb"
+                                         else f"baselines_{dataset}.json"))
     artifact = {
-        "task": "federated ablation (FedAvg / +Krum / +DP / proposed) on ULB test set",
+        "task": f"federated ablation (FedAvg / +Krum / +DP / proposed) on the "
+                f"{dataset} test set",
+        "dataset": DATASETS[dataset]["label"],
+        "partition": partition or getattr(loader, "cfg", {}).get("partition", "stratified"),
+        "detector_width_source": ("pinned (DB-BOA search skipped; see "
+                                  "experiments/objective_noise_audit.py)"
+                                  if filters else "DB-BOA search"),
+        # OBJ-13: which surrogate protocol chose the width.  Only meaningful when
+        # the search actually ran — the pinned path never builds an objective, so
+        # `baselines_banksim_*.json` are NOT affected by the repair even though
+        # OBJ-13's downstream-cost list originally said they were.
+        "surrogate_eval_mode": (None if filters
+                                else ADTCN_CONFIG.get("surrogate_eval_mode",
+                                                      "legacy")),
+        "surrogate_k": (None if filters else ADTCN_CONFIG.get("surrogate_k")),
+        "epoch_count": ADTCN_CONFIG["epoch_count"],
         "dp_epsilon": 1.0,
         "dp_delta": 1e-5,
         "optimal_params": getattr(adtcn_base, "optimal_params", None),
@@ -182,7 +236,7 @@ def main():
         sign_m = "▼" if dp_cost_mcc > 0 else "▲"
         print(f"  DP cost:  Accuracy {sign_a}{abs(dp_cost_acc):.5f}%  "
               f"MCC {sign_m}{abs(dp_cost_mcc):.5f}", flush=True)
-        print("─" * 70, flush=True)
+        print("-" * 70, flush=True)
 
     print("\n\n" + "=" * 70, flush=True)
     print("PASTE THE FOLLOWING INTO baseline_metrics() in utils/metrics.py")
@@ -197,4 +251,18 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--dataset", choices=["ulb", "banksim"], default="ulb")
+    ap.add_argument("--partition", choices=["stratified", "customer"], default=None,
+                    help="BankSim only: 'customer' gives each bank whole "
+                         "customers, so no customer's history sits at two banks")
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--filters", type=int, default=None,
+                    help="Pin the detector width and skip the DB-BOA search. "
+                         "See the note in main() for why this is a legitimate "
+                         "choice for an ablation about Krum/DP.")
+    ap.add_argument("--epochs", type=int, default=None,
+                    help="Override ADTCN_CONFIG['epoch_count'].")
+    a = ap.parse_args()
+    main(dataset=a.dataset, partition=a.partition, out_name=a.out,
+         filters=a.filters, epochs=a.epochs)

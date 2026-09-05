@@ -1,0 +1,14 @@
+﻿==============================================================================
+  OBJ-13 SURROGATE REPAIR — side-by-side, dataset=banksim
+  modes=['legacy', 'deterministic', 'averaged']  seeds=[42, 7, 123]  k=3
+  space: filters [5,255]  spe [50,250]  pop=20 x 30 iters
+  yardstick: averaged objective, seed 20260904, k=7, unseen by every search
+==============================================================================
+  BankSim [customer] train=417,848 test=122,278 features=79
+  search pool    : 19,999 rows, 252 fraud
+  yardstick pool : 20,001 rows, 253 fraud  (row-disjoint from the search pool)
+  yardstick built: 2000 rows, 30 fraud, 7 draws
+  reference   hand_set_default: 128f/150spe  yardstick 3.7197 ± 0.4212
+  reference      shipped_dbboa: 142f/ 76spe  yardstick 3.5298 ± 0.5829
+
+  --- legacy / seed 42 ---

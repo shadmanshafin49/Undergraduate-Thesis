@@ -28,25 +28,7 @@ DATA_CONFIG = {
     "test_size"         : 0.20,     # 80/20 train-test split
     "val_size"          : 0.10,     # 10 % of training set for validation
     "random_state"      : 42,
-    # Pool the DB-BOA surrogate subsamples its 2,000 training rows FROM.
-    #
-    # ⛔ Was 3_000, and that silently broke the ULB search (OBJ-13, 2026-09-04).
-    # At ULB's 0.167 % fraud a 3,000-row stratified pool holds only **5 unique
-    # fraud transactions**, which is below `_ADTCNObjective._MIN_FRAUD_ROWS = 30`.
-    # The objective then takes the `replace=True` branch and builds its 30 "fraud
-    # rows" by repeating those 5 about six times each; the 70/30 split scatters
-    # the copies, and **9 of 9 validation positives end up being copies of rows
-    # in the training half** (measured — see obj13_shipped_path_check.json).
-    # The surrogate was scoring itself on rows it had memorised, which is why
-    # Obf2 pinned at its 5.0000 ceiling and why all five optimisers "found" it.
-    #
-    # Enlarging the pool costs **no training time at all** — the surrogate still
-    # draws 2,000 rows; only the stratified draw it draws them from changes.
-    # 36,000 rows yields ~60 unique fraud, i.e. 2x _MIN_FRAUD_ROWS, so the
-    # replacement branch has headroom rather than sitting one row from firing.
-    # BankSim never needed this (3,000 rows already held 38 unique fraud) but
-    # gets the same treatment so the two datasets share one code path.
-    "eval_subset"       : 36_000,   # samples used for fast DB-BOA fitness eval
+    "eval_subset"       : 3_000,    # samples used for fast DB-BOA fitness eval
     # Temporal-amount recurrence features (inspired by Liu et al., WWW 2021)
     # NOTE: ULB has no account IDs, so these are sliding-window frequency
     # features (amount_recurrence_before, amount_recurrence_after, degree_ratio),
@@ -85,12 +67,7 @@ BANKSIM_CONFIG = {
     "test_size"      : 0.20,  # used only by split="stratified"
     "val_size"       : 0.10,
     "random_state"   : 42,
-    # See the DATA_CONFIG note: 3,000 rows put ULB below _MIN_FRAUD_ROWS and made
-    # its surrogate validate on memorised rows. BankSim was never affected (its
-    # 3,000-row pool held 38 unique fraud against a floor of 30) but is raised
-    # with it so both datasets run the same code path — and so the margin is not
-    # 8 rows on a dataset whose fraud rate could change with a re-split.
-    "eval_subset"    : 36_000,
+    "eval_subset"    : 3_000,
 
     # Windowing arm: "customer" (entity-linked) or "global" (bank-wide stream).
     "ordering"       : "customer",
@@ -238,23 +215,6 @@ ADTCN_CONFIG = {
     "hidden_neurons"     : 128,
     "epoch_count"        : 30,
     "steps_per_epoch"    : 150,
-
-    # --- DB-BOA surrogate evaluation protocol (OBJ-13) -----------------------
-    # Before the repair the surrogate redrew its 70/30 split and its torch seed
-    # on every call, so fitness was a random function of its input: a fixed
-    # config re-evaluated 25x on ULB spanned Obf2 3.4497-5.0000 and hit the
-    # 5.0000 ceiling once with no search involved.  That is why all five
-    # optimisers "found" exactly 5.0000.
-    #   "deterministic" - split + seed fixed at construction; fitness is a pure
-    #                     function of the candidate.  1x cost.  Default.
-    #   "averaged"      - surrogate_k pre-drawn draws shared by every candidate
-    #                     (common random numbers), fitness is their mean.  Kills
-    #                     the best-of-N ceiling artefact.  k x cost.
-    #   "legacy"        - the pre-repair behaviour, kept so the old numbers stay
-    #                     reproducible.  Do not use for new results.
-    "surrogate_eval_mode": "deterministic",
-    "surrogate_k"        : 3,
-    "surrogate_rows"     : None,   # None -> _ADTCNObjective._SURROGATE_ROWS (2000)
 
     # Architecture flags
     # activation: ReLU is used (hardcoded in _Conv1dClassifier); TanH was the

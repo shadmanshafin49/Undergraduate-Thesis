@@ -75,6 +75,17 @@ def parse_args():
                    help="Federation round number override")
     p.add_argument("--attack",   action="store_true",
                    help="Run Phase 8: attack resilience simulation (BankC always reports fraud)")
+    p.add_argument("--dataset",  choices=["ulb", "banksim"], default="ulb",
+                   help="Which dataset to run the whole pipeline on. "
+                        "'ulb' (default) is the 284,807-tx credit-card set with "
+                        "no customer IDs; 'banksim' is the 594,643-tx BankSim set "
+                        "with 4,112 customer IDs, which additionally supports "
+                        "entity-linked windows and entity-disjoint bank splits.")
+    p.add_argument("--partition", choices=["stratified", "customer"], default=None,
+                   help="Federated split. 'stratified' (default) is the volume "
+                        "split of one institution used throughout the thesis; "
+                        "'customer' deals whole customers to banks so no "
+                        "customer's history sits at two banks (BankSim only).")
     return p.parse_args()
 
 
@@ -118,8 +129,18 @@ def main():
     # ══════════════════════════════════════════════════════════════════════════
     header("PHASE 0  ─  DATA LOADING & ENGINEERING")
 
-    loader = FinancialDataLoader()
+    from config import get_loader, DATASETS
+    print(f"[DATA]  Dataset: {DATASETS[args.dataset]['label']}", flush=True)
+    loader = get_loader(args.dataset)
+    if args.partition:
+        if args.dataset != "banksim":
+            raise SystemExit("--partition is only meaningful with --dataset banksim "
+                             "(ULB has no customer IDs to partition by)")
+        loader.cfg["partition"] = args.partition
     X_train, X_val, X_test, y_train, y_val, y_test = loader.load(verbose=True)
+    # Tell the detector how many leading columns are real features — see
+    # ADTCN.fit. Without this BankSim's 79 features are truncated to 33.
+    ADTCN_CONFIG["n_raw_features"] = loader.raw_feature_count
     X_opt, y_opt = loader.get_eval_subset(X_train, y_train)
     print(f"[DATA]  Optimisation subset: {X_opt.shape[0]:,} samples "
           f"({X_opt.shape[1]} features)", flush=True)
@@ -279,6 +300,14 @@ def main():
             if isinstance(v, (int, float, np.floating))
         },
         "db_boa_stats"        : adtcn.opt_stats if hasattr(adtcn, "opt_stats") else {},
+        # OBJ-13: which surrogate protocol chose `optimal_hyperparams`.  The
+        # version of this file produced before 2026-09-04 has no such key and is
+        # therefore `legacy` — its db_boa_stats max of -4.999999999991326 is the
+        # 5.0000 ceiling artefact, i.e. a best-of-N over a fitness that could not
+        # rank its candidates.  See OBJECTIVE_noise_audit.md.
+        "surrogate_eval_mode" : ADTCN_CONFIG.get("surrogate_eval_mode", "legacy"),
+        "surrogate_k"         : ADTCN_CONFIG.get("surrogate_k"),
+        "surrogate_rows"      : ADTCN_CONFIG.get("surrogate_rows"),
         "leader_node"         : leader_idx,
         "leader_cost"         : float(leader_node.cost),
         "leader_ct"           : float(leader_node.ct),
@@ -310,6 +339,12 @@ def main():
 
     # 1. Split data across orgs
     org_splits = loader.split_for_orgs(X_train, y_train)
+    # Per-org window groups, when the loader can supply them (BankSim under
+    # partition="customer").  None elsewhere → global windows, which is all the
+    # ULB stratified protocol can support.
+    org_groups  = getattr(loader, "last_org_groups", {}) or {}
+    test_groups = (getattr(loader, "groups_test", None)
+                   if any(g is not None for g in org_groups.values()) else None)
 
     # 2. Create one FederatedADTCN per org and train locally
     org_models = {}
@@ -319,9 +354,9 @@ def main():
               flush=True)
         m = FederatedADTCN(cfg=ADTCN_CONFIG)
         m.optimal_params = adtcn.optimal_params   # reuse DB-BOA Job 1 results
-        m.fit(X_org, y_org, verbose=False)
+        m.fit(X_org, y_org, verbose=False, groups=org_groups.get(org_name))
         m._n_trained = len(y_org)
-        m_metrics = m.evaluate(X_test, y_test, verbose=False)
+        m_metrics = m.evaluate(X_test, y_test, verbose=False, groups=test_groups)
         org_pre_fed_metrics[org_name] = m_metrics
         print(f"[FED]  {org_name} accuracy (pre-fed): "
               f"{m_metrics['Accuracy']:.2f}%", flush=True)
@@ -348,7 +383,8 @@ def main():
 
         # Collect current org metrics for metadata
         org_metrics = {
-            name: m.evaluate(X_test, y_test, verbose=False)
+            name: m.evaluate(X_test, y_test, verbose=False,
+                             groups=test_groups)
             for name, m in org_models.items()
         }
 
@@ -375,7 +411,8 @@ def main():
         accuracy_deltas = {}
         print("[FED]  Post-federation accuracy:", flush=True)
         for name, m in org_models.items():
-            post  = m.evaluate(X_test, y_test, verbose=False)
+            post  = m.evaluate(X_test, y_test, verbose=False,
+                               groups=test_groups)
             delta = post["Accuracy"] - org_metrics[name]["Accuracy"]
             accuracy_deltas[name] = delta
             print(f"         {name}: {post['Accuracy']:.2f}%  "
@@ -517,7 +554,8 @@ def main():
               "(attacker hurts coalition Obf2)", flush=True)
 
         atk_org_metrics = {
-            name: m.evaluate(X_test, y_test, verbose=False)
+            name: m.evaluate(X_test, y_test, verbose=False,
+                             groups=test_groups)
             for name, m in attack_models.items()
         }
         atk_fed_manager = FederationManager(n_orgs=3)

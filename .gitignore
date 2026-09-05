@@ -35,6 +35,12 @@ fabric/fabric-samples/bin/
 *.toc
 *.synctex.gz
 
+# ...but `*.log` above was written for LaTeX and was silently swallowing
+# EXPERIMENT run logs, which are provenance, not build artifacts: they carry
+# the wall-clock, the per-cell ordering and the environment banner for runs
+# that cost hours and are not cheap to repeat. Keep those.
+!db_boa_framework/results/**/*.log
+
 # Windows "downloaded from internet" metadata
 *:Zone.Identifier
 

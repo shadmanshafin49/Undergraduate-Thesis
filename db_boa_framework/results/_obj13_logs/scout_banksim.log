@@ -1,0 +1,14 @@
+﻿  BankSim [customer] train=417,848 test=122,278 features=79
+  search pool    : 19,999 rows, 252 fraud
+  yardstick pool : 20,001 rows, 253 fraud  (row-disjoint from the search pool)
+
+  scouting legacy at pop=4 x 3 iters (filters [5,255]) ...
+  34 evals in 79 s = 2.32 s/eval  (chose 76f/214spe, own-best 4.3086)
+
+  PROJECTION at pop=20 x 30 (50x this scout), 3 seeds:
+            legacy: ~1700 evals x 1 draw(s) x 3 seeds = 3.3 h
+     deterministic: ~1700 evals x 1 draw(s) x 3 seeds = 3.3 h
+          averaged: ~1700 evals x 3 draw(s) x 3 seeds = 9.8 h
+             TOTAL: ~16.4 h
+
+  NOTE: per-eval cost scales with the filter count a candidate proposes, and this scout's 76 filters is one draw from that distribution — treat the projection as an order of magnitude, not a promise.
