@@ -235,6 +235,9 @@ class FinancialDataLoader:
         if org_splits is None:
             org_splits = ORG_DATA_SPLITS
         orgs = list(org_splits.keys())
+        # API symmetry with BankSimDataLoader: ULB has no account IDs, so there
+        # are never window groups to hand back.
+        self.last_org_groups = {o: None for o in orgs}
 
         splits = {}
         remaining_X = X_train.copy()
@@ -268,6 +271,16 @@ class FinancialDataLoader:
         return splits
 
     # ── class property ───────────────────────────────────────────────────────
+
+    @property
+    def raw_feature_count(self):
+        """
+        Leading columns of the engineered matrix that the temporal model
+        consumes: the 30 base features plus the 3 recurrence features when they
+        are enabled.  Everything after them is the PTC/NTC documentation block,
+        which `ADTCN._make_sequences` deliberately discards.
+        """
+        return self.cfg["n_features"] + (3 if self.cfg.get("use_graph_features") else 0)
 
     @property
     def n_engineered_features(self):

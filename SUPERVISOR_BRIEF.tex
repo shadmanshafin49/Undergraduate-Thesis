@@ -29,6 +29,13 @@
   title={\small\bfseries In plain terms: #1}, fonttitle=\color{black},
   coltitle=black, colbacktitle=boxbg, attach title to upper=\hspace{0pt}}
 
+% Scoping / caveat box -- for the limits a claim must always be quoted with
+\newtcolorbox{caveat}[1]{
+  colback=boxbg, colframe=boxline, boxrule=1.1pt, arc=2pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt, breakable,
+  title={\small\bfseries Read before quoting: #1}, fonttitle=\color{black},
+  coltitle=black, colbacktitle=boxbg, attach title to upper=\hspace{0pt}}
+
 \newcommand{\reportnote}[1]{%
   \par\vspace{3pt}%
   {\small\color{soft}$\hookrightarrow$\ \textbf{Where this is in the report:} #1}\par\vspace{2pt}}
@@ -220,37 +227,99 @@ non-fraud right. $0$ means ``no better than guessing.'' It can't be fooled by th
 trick. Our detector scores \textbf{MCC 0.677} --- genuinely useful.
 \end{plain}
 
-Honest caveat we state openly: our \emph{auto-tuned} detector (0.677) is actually a touch \emph{worse}
-than a hand-set default (0.785). So DB-BOA's real value is \emph{removing the manual tuning work}, not
-beating a human expert --- and we say exactly that.
+Honest caveat we state openly: our \emph{auto-tuned} detector does \emph{not} beat a hand-set
+default --- and it does not lose to one either. Measured across five seeds, the tuned configuration
+averages MCC $0.753 \pm 0.055$ against the default's $0.706 \pm 0.076$: a difference of $+0.047$ at
+$p = 0.34$, which is indistinguishable from zero. (An earlier draft of this brief reported the tuned
+detector \emph{trailing} a default at MCC $0.785$. That claim is withdrawn: a 13-run reproducibility
+study showed it was measuring CPU thread count rather than the optimiser.) So DB-BOA's real value is
+\emph{removing the manual tuning work}, not beating a human expert --- and we say exactly that.
 
 \subsection{The centrepiece result: the privacy-vs-fairness fix}
-Moving the privacy noise from the model weights onto the small contribution scores improves the privacy
-dial at which rewards stay \emph{fair} (in the right order) by about \textbf{60 times}:
+Moving the privacy noise from the model weights onto the small contribution scores keeps the reward
+split \emph{honest} at privacy settings where the old approach pays people in the wrong order. We state
+this in the two forms that survive scrutiny; neither depends on an arbitrary cut-off, and both are
+measured in all three run conditions.
+
+\textbf{(1) The ordering.} The contribution channel keeps rewards better-ordered than the weight channel
+at \textbf{essentially every privacy budget} --- 11 of 11 on rank-correlation in all three conditions,
+and 11/11, 11/11 and 10/11 on the stricter mis-ranking-rate metric. The one counter-example sits at
+$\epsilon=1$ on BankSim/entity-disjoint (weight mis-ranks 85/100, contribution 88/100), where
+\emph{both} channels fail near-totally. This is a \emph{paired} comparison --- the same noise draw drives
+both channels in the same iteration --- so more data changes its precision, not its direction. It has now
+held across three conditions, two sample sizes (100 and 1000 draws) and two metrics.
+
+\textbf{(2) Reward quality at a fixed, stated budget.} At $\epsilon=50$, the correlation between paid
+tokens and true contribution ($-1$ to $1$):
 
 \begin{center}
 \small
 \begin{tabularx}{0.92\linewidth}{Xcc}
 \toprule
-& \textbf{Old way (noise on weights)} & \textbf{Our way (noise on scores)} \\
+\textbf{Condition} & \textbf{Old way (noise on weights)} & \textbf{Our way (noise on scores)} \\
 \midrule
-Privacy needed for fair rewards & $\epsilon^* = 3000$ (basically no privacy) & $\epsilon^* = 50$ (usable privacy) \\
-Reward fairness at $\epsilon=50$ (corr., $-1$ to $1$) & $\approx -0.29$ (rewards backwards!) & $\approx +0.95$ (rewards correct) \\
+ULB                      & $-0.199$ (rewards backwards!) & $\mathbf{+0.995}$ \\
+BankSim, stratified      & $+0.017$ (no signal)          & $\mathbf{+0.945}$ \\
+BankSim, entity-disjoint & $-0.070$ (no signal)          & $\mathbf{+0.805}$ \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-In words: the old approach only gave fair rewards if you switched privacy off almost entirely
-($\epsilon=3000$); our approach gives fair rewards at a genuinely private setting ($\epsilon=50$). The
-``$-0.29$'' is striking --- at that setting the old method actually pays the \emph{worst} contributors
-the \emph{most}. Our method gets it right ($+0.95$, almost perfect ordering).
+That table is the centrepiece. At a genuinely private setting the old channel pays contributors in an
+order uncorrelated with --- on ULB actively opposite to --- what they actually contributed, and the new
+channel gets it nearly right. No threshold, no grid, no extrapolation.
 
-\subsection{Security holds where it's supposed to}
+\begin{caveat}{why we no longer headline a ``$60\times$ more privacy'' figure}
+The factor is $\epsilon^*(\text{weight})/\epsilon^*(\text{score})$, where $\epsilon^*$ is the largest
+budget at which rewards are still mis-ranked \emph{at all}. We extended the grid to $\epsilon=30000$ and
+re-measured the deciding budgets at 1000 draws instead of 100. Three things came out of it.
+\textbf{(i) $\epsilon^*$ can only ever move up.} More draws, or more budgets, can only \emph{find}
+additional mis-rankings --- never remove one. Extending the grid raised BankSim/entity-disjoint from
+``$\geq\!10\times$'' to $33\times$; the 1000-draw pass raised it again to $\geq\!100\times$ and pushed it
+back outside our grid, so it is a lower bound once more, resting on a single mis-ranked draw in a
+thousand. Two increases from looking harder, in one day.
+\textbf{(ii) The factor is not stable under its own definition.} Setting the threshold at a small
+non-zero mis-ranking rate instead of ``any at all'' gives, for ULB / BankSim-stratified /
+BankSim-entity-disjoint: $60\times$, $30\times$, $\geq\!100\times$ at rate $>0$; $20\times$, $60\times$,
+$33\times$ at rate $>0.01$; and $33\times$, $20\times$, $33\times$ at rate $>0.05$. The value swings
+between $20\times$ and $\geq\!100\times$ and the \emph{ranking of the three conditions} changes with the
+choice. A number that mobile cannot carry a claim, so our summary is ``\textbf{one to two orders of
+magnitude, definition-sensitive}'', with the ordering and the correlation table doing the real work.
+\textbf{(iii) What we did confirm:} thresholds that had rested on a single draw in 100 were \textbf{real,
+not flukes} --- at 1000 draws they returned as 7, 11, 16 and 10 per 1000, all consistent with a true rate
+near $0.01$. The earlier fragility was about precision, not about whether the effect existed.
+\end{caveat}
+
+\begin{caveat}{a reproducibility failure we are disclosing}
+The ULB result we stored on 2026-08-30 does \emph{not} reproduce under our current environment: 13 of 18
+shared cells moved. Both BankSim conditions reproduce \textbf{bitwise}, and ULB reproduces \emph{itself}
+on same-day re-run, so the pipeline is deterministic --- but the cause of the drift is
+\textbf{unexplained}. We eliminated every code change on the path, all six configuration dicts, and the
+CPU thread count; the library version in use at the time is unrecoverable, because the version pin was
+added afterwards. Every sweep result now records its full software environment so this cannot recur. The
+ULB figures above come from re-verified 2026-09-04 runs and stand on their own evidence; they cannot be
+reconciled with the older stored number.
+\end{caveat}
+
+\subsection{Security holds where it's supposed to --- but security is not accuracy}
 We tested Krum against four kinds of sabotage attack, in the conditions where its mathematical guarantee
 is meant to apply (enough honest banks). Krum \textbf{caught and rejected the attacker in all 8 test
-cases}, keeping the shared model at \textbf{$\approx$99.9\%} balanced accuracy. Without Krum, the worst
-attack dragged a plain average down to \textbf{$\approx$87.5\%}. So the security claim is real --- within
-stated limits.
+cases}, keeping the shared model at \textbf{$\approx$99.9\%} balanced accuracy on ULB. Without Krum, the
+worst attack dragged a plain average down to \textbf{$\approx$87.5\%}. So the security claim is real ---
+within stated limits. \textbf{Catching the attacker is in fact our most robust result: 8 out of 8 in all
+three run conditions} (ULB, and BankSim under both a stratified and an entity-disjoint bank split).
+
+\begin{caveat}{what Krum does \emph{not} buy}
+\textbf{The accuracy Krum gains does not carry over.} That $+12.49$ pp advantage over an unprotected
+average is a \textbf{ULB} number. Run the same experiment on BankSim and the advantage goes
+\emph{negative} --- Krum throws the attacker out and the model it picks is still worse than the plain
+average --- in 7 of 8 cells on the stratified split and 8 of 8 on the entity-disjoint one.
+\textbf{Why it costs accuracy there is unexplained, and we say so rather than inventing a reason.} An
+earlier explanation --- that it was caused by banks holding disjoint sets of customers --- was withdrawn
+on 2026-09-04 by our own control experiment, which found the same cost on a split where the banks
+\emph{share} customers. Two consequences for the writing: report ``attacker rejected'' and ``accuracy
+gained'' as \textbf{separate claims}, and retire the phrase ``Krum's value shows up under attack''.
+\end{caveat}
 
 \subsection{Each ingredient's effect, side by side (an honest ablation)}
 \begin{center}
@@ -291,7 +360,11 @@ Three things, strongest first, in words that will survive a tough examiner:
 \begin{enumerate}
   \item \textbf{A new privacy-preserving reward mechanism} --- the idea of putting the privacy noise on
   the \emph{contribution score} instead of the \emph{model weights}, which makes fair rewards survive
-  ${\sim}60\times$ more privacy. \emph{This is the one genuinely new piece.}
+  rank-faithful rewards at a genuinely private budget (correlation $+0.995$ against $-0.199$ at
+  $\epsilon=50$ on ULB, same direction in all three conditions). The budget improvement is one to two
+  orders of magnitude but sensitive to how the threshold is defined --- see the caveat in \S5; the new
+  channel
+  wins at \emph{every} budget we tried, in all three). \emph{This is the one genuinely new piece.}
   \item \textbf{A clear characterisation of the privacy-vs-fairness trade-off} --- real evidence that
   naïvely combining strong privacy with fair-reward scoring makes rewards \emph{worse than random}, plus
   a map of exactly where that breakdown happens. \emph{A legitimate ``negative result'' finding.}
@@ -318,9 +391,13 @@ We state these plainly in the report. Examiners trust honest limitations far mor
 story.
 
 \begin{itemize}
-  \item \textbf{The ``three banks'' are really one dataset split three ways.} We didn't have three real
-  banks' data, so we split one public dataset into three portions. That means we never truly tested banks
-  whose data looks genuinely \emph{different} from each other.
+  \item \textbf{The ``banks'' are simulated, not genuinely separate institutions.} We didn't have several
+  real banks' data, so we split public datasets into portions. This has since been strengthened --- a
+  second dataset (BankSim, 594{,}643 transactions with 4{,}112 real customer IDs) was added and the system
+  experiments re-run on it under \emph{both} a volume split and a genuinely customer-disjoint one, so five
+  of our six headline claims now rest on two datasets rather than one. But even the customer-disjoint
+  split deals out the customers of a \emph{single} source, so we still never test banks whose data comes
+  from genuinely \emph{different} institutions.
   \item \textbf{The fairness/reward defence only works in some situations.} It can isolate a coordinated
   \emph{majority} of cheaters, but it does \emph{not} catch a lone attacker or a quiet free-rider (who
   contributes nothing but isn't actively malicious). Fixing free-riding needs an extra rule we leave for
@@ -351,10 +428,17 @@ central finding is that these good properties \textbf{fight each other}: turn pr
 level and the fair-reward mechanism breaks so badly it pays the worst contributors the most, and the
 model collapses. We pinned down exactly why --- the privacy noise was being applied in the wrong place
 --- and fixed it by noising the small contribution score instead of the huge model, which restores fair
-rewards at roughly $60\times$ stronger privacy. The sabotage defence works as promised within stated
-limits, and our blockchain numbers are measured rather than invented. So the contribution is: one new
-mechanism, one honest characterisation of a real trade-off, and a complete working system --- with its
-limitations (single dataset, conditional reward defence, simulated network) stated openly.
+rewards at a genuinely private budget (correlation $+0.995$ against $-0.199$ at $\epsilon=50$ on ULB).
+The corresponding budget-improvement factor spans one to two orders of magnitude and is
+definition-sensitive ($20\times$ to $\geq\!100\times$, see \S5), so we report the ordering rather than a
+single multiplier; what holds
+everywhere is that the new channel wins at every privacy budget we tried). The sabotage defence catches
+the attacker every time in all three conditions --- though on our second dataset catching it \emph{costs}
+accuracy instead of gaining it, which we report as measured and do not explain away --- and our
+blockchain numbers are measured rather than invented. So the contribution is: one new mechanism, one
+honest characterisation of a real trade-off, and a complete working system --- with its limitations
+(simulated rather than genuinely multi-institution federation, conditional reward defence, simulated
+network) stated openly.
 \end{quote}
 
 %==================================================================
@@ -412,7 +496,9 @@ instead of 100{,}000 --- so the damage drops by roughly two orders of magnitude.
 survive at a genuinely private setting ($\epsilon\approx50$).
 
 \begin{plain}{the punchline}
-\emph{Where} you inject the privacy noise relocates the honesty boundary by about $60\times$. We turned a
+\emph{Where} you inject the privacy noise relocates the honesty boundary by one to two orders of
+magnitude ---
+we never found the point where the old channel stops failing, so that number is a floor. We turned a
 ``you can't have both'' negative result into a ``here's how you get both'' positive one.
 \end{plain}
 

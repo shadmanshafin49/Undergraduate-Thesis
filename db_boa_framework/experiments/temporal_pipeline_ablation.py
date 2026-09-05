@@ -196,7 +196,7 @@ def write_draft(s, cells):
     L.append(concl)
     out = os.path.abspath(os.path.join(ROOT, "..", "final_report_data",
                                        "TASKB3_temporal_pipeline.md"))
-    with open(out, "w") as f:
+    with open(out, "w", encoding="utf-8") as f:
         f.write("\n".join(L))
     print(f"  wrote draft → {out}", flush=True)
 

@@ -78,6 +78,6 @@ L.append("- Single-host test-network (2 orgs); not a geo-distributed multi-bank 
 
 out = os.path.abspath(os.path.join(ROOT, "..", "final_report_data",
                                    "B2_fabric_consensus_measured.md"))
-with open(out, "w") as f:
+with open(out, "w", encoding="utf-8") as f:
     f.write("\n".join(L))
 print(f"[B2] wrote draft → {out}")

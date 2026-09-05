@@ -7,6 +7,13 @@ scikit-learn>=1.2
 scipy>=1.10
 matplotlib>=3.6
 
-# Optional — for GPU-accelerated ADTCN (PyTorch variant)
-# torch>=2.0
-# torchvision>=0.15
+# PyTorch is REQUIRED, not optional: models/adtcn.py imports it unconditionally
+# and every detector result in results/ comes from it.
+#
+# The version is pinned deliberately.  ADTCN training is bitwise reproducible
+# only for a fixed (torch version, CPU thread count) pair — see
+# experiments/detector_multiseed.py.  Changing either changes the float
+# reduction order inside the convolutions, and for the large-batch DB-BOA-tuned
+# configuration that is enough to move test MCC by ~0.09.  Detector numbers
+# reported in the thesis were produced with:
+torch==2.12.0

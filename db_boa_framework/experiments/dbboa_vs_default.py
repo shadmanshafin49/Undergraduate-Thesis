@@ -63,7 +63,7 @@ def main():
     path = os.path.join(RESULTS_DIR, "dbboa_vs_default.json")
 
     def save():
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(out, f, indent=2)
         print(f"[SAVE] {path}", flush=True)
 

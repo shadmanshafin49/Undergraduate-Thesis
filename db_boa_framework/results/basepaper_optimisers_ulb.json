@@ -1,0 +1,265 @@
+{
+  "dataset": "ulb",
+  "ordering": "time",
+  "split_note": "first 80 % by Time -> train, last 20 % -> test; time-ordered global windows (ULB has no customer IDs)",
+  "protocol": {
+    "seq_len": 10,
+    "epochs": 5,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "quick": false,
+    "n_features": 30,
+    "n_train": 227845,
+    "n_test": 56962,
+    "train_fraud": 417,
+    "test_fraud": 75
+  },
+  "provenance": "base-paper baselines re-implemented in models/basepaper_models.py, algorithms/mbo.py, algorithms/wsa.py and run here; the paper's own published numbers are never quoted (divergence D4)",
+  "optimiser_search_space": {
+    "filters": [
+      8.0,
+      64.0
+    ],
+    "steps_per_epoch": [
+      50.0,
+      250.0
+    ],
+    "population": 10,
+    "iterations": 8,
+    "fitness": "Obf2 = 2*MCC + Spec + Pre + NPV (bounded form)",
+    "tuned_architecture": "dilated_attn"
+  },
+  "optimisers": {
+    "MBO": {
+      "MCC": 0.2814744118190179,
+      "MCC_std": 0.04778038555092489,
+      "Precision": 10.150728350298719,
+      "Precision_std": 3.766107116405939,
+      "Sensitivity": 81.3333333332249,
+      "Sensitivity_std": 2.6666666666631116,
+      "Accuracy": 98.9255995224885,
+      "Accuracy_std": 0.4134624026151631,
+      "Specificity": 98.94879322164975,
+      "Specificity_std": 0.41751560981361646,
+      "FPR": 1.0512067783500605,
+      "FPR_std": 0.41751560981361896,
+      "TP": 61.0,
+      "FP": 598.0,
+      "FN": 14.0,
+      "TN": 56289.0,
+      "train_seconds": 84.26421054204305,
+      "n_params": 25248,
+      "seeds": 3,
+      "MCC_runs": [
+        0.2685308230370604,
+        0.3343930885109404,
+        0.24149932390905296
+      ],
+      "obf2_stats": {
+        "best": 4.999999999987162,
+        "worst": 4.402748480468451,
+        "median": 4.999999999966332,
+        "mean": 4.800916160140648,
+        "std": 0.34482332556202794
+      },
+      "search_seconds": 249.3056437174479,
+      "n_evals": 90,
+      "chosen_filters": [
+        55,
+        17,
+        17
+      ],
+      "chosen_steps_per_epoch": [
+        92,
+        192,
+        50
+      ]
+    },
+    "WSA": {
+      "MCC": 0.22427742276809318,
+      "MCC_std": 0.04567034690744857,
+      "Precision": 6.30840158631132,
+      "Precision_std": 2.3010185636334977,
+      "Sensitivity": 83.55555555544414,
+      "Sensitivity_std": 1.5396007178369535,
+      "Accuracy": 98.16134733096901,
+      "Accuracy_std": 0.772784519592206,
+      "Specificity": 98.18060365285548,
+      "Specificity_std": 0.7724257413443151,
+      "FPR": 1.8193963471443355,
+      "FPR_std": 0.7724257413443147,
+      "TP": 62.666666666666664,
+      "FP": 1035.0,
+      "FN": 12.333333333333334,
+      "TN": 55852.0,
+      "train_seconds": 95.4218905766805,
+      "n_params": 4269,
+      "seeds": 3,
+      "MCC_runs": [
+        0.2301571322929536,
+        0.2667231642733573,
+        0.1759519717379687
+      ],
+      "obf2_stats": {
+        "best": 4.999999999982997,
+        "worst": 4.684103918967661,
+        "median": 4.999999999974664,
+        "mean": 4.89470130630844,
+        "std": 0.18238268740774616
+      },
+      "search_seconds": 459.4841316541036,
+      "n_evals": 169,
+      "chosen_filters": [
+        18,
+        35,
+        49
+      ],
+      "chosen_steps_per_epoch": [
+        82,
+        153,
+        156
+      ]
+    },
+    "DBOA": {
+      "MCC": 0.2444448699311769,
+      "MCC_std": 0.021129894040698326,
+      "Precision": 7.6078256652714815,
+      "Precision_std": 1.5662154728663675,
+      "Sensitivity": 80.88888888878104,
+      "Sensitivity_std": 3.079201435673899,
+      "Accuracy": 98.63593272708106,
+      "Accuracy_std": 0.3244503694150237,
+      "Specificity": 98.65933048558236,
+      "Specificity_std": 0.3285729790479506,
+      "FPR": 1.3406695144174685,
+      "FPR_std": 0.3285729790479523,
+      "TP": 60.666666666666664,
+      "FP": 762.6666666666666,
+      "FN": 14.333333333333334,
+      "TN": 56124.333333333336,
+      "train_seconds": 42.65217638015747,
+      "n_params": 2694,
+      "seeds": 3,
+      "MCC_runs": [
+        0.2659420855650602,
+        0.22370252846940156,
+        0.24368999575906897
+      ],
+      "obf2_stats": {
+        "best": 4.999999999982997,
+        "worst": 4.69621103815967,
+        "median": 4.999999999966332,
+        "mean": 4.898737012702999,
+        "std": 0.17539263888072387
+      },
+      "search_seconds": 442.634437640508,
+      "n_evals": 166,
+      "chosen_filters": [
+        13,
+        13,
+        18
+      ],
+      "chosen_steps_per_epoch": [
+        70,
+        146,
+        85
+      ]
+    },
+    "BOA": {
+      "MCC": 0.2553528153497205,
+      "MCC_std": 0.08023674212266424,
+      "Precision": 8.51836340075459,
+      "Precision_std": 5.634596337161468,
+      "Sensitivity": 83.999999999888,
+      "Sensitivity_std": 2.6666666666631116,
+      "Accuracy": 98.42936226490157,
+      "Accuracy_std": 0.8148587030507457,
+      "Specificity": 98.44838598156564,
+      "Specificity_std": 0.8190364131726269,
+      "FPR": 1.551614018434203,
+      "FPR_std": 0.8190364131726224,
+      "TP": 63.0,
+      "FP": 882.6666666666666,
+      "FN": 12.0,
+      "TN": 56004.333333333336,
+      "train_seconds": 73.17537077267964,
+      "n_params": 2415,
+      "seeds": 3,
+      "MCC_runs": [
+        0.20723883421551023,
+        0.34797888350302014,
+        0.21084072833063106
+      ],
+      "obf2_stats": {
+        "best": 4.999999999982997,
+        "worst": 4.684103918967661,
+        "median": 4.89406865202495,
+        "mean": 4.85939085699187,
+        "std": 0.16077778329570008
+      },
+      "search_seconds": 439.6648283004761,
+      "n_evals": 170,
+      "chosen_filters": [
+        12,
+        19,
+        48
+      ],
+      "chosen_steps_per_epoch": [
+        190,
+        50,
+        135
+      ]
+    },
+    "DB-BOA": {
+      "MCC": 0.23505820962334453,
+      "MCC_std": 0.024274978549186442,
+      "Precision": 6.8768224443859225,
+      "Precision_std": 1.34574082508097,
+      "Sensitivity": 82.66666666655644,
+      "Sensitivity_std": 0.0,
+      "Accuracy": 98.45745116627442,
+      "Accuracy_std": 0.3518054885653818,
+      "Specificity": 98.47826978630133,
+      "Specificity_std": 0.35226931002972545,
+      "FPR": 1.521730213698499,
+      "FPR_std": 0.3522693100297262,
+      "TP": 62.0,
+      "FP": 865.6666666666666,
+      "FN": 13.0,
+      "TN": 56021.333333333336,
+      "train_seconds": 89.86376531918843,
+      "n_params": 15378,
+      "seeds": 3,
+      "MCC_runs": [
+        0.20764699701571845,
+        0.2538376360952462,
+        0.24368999575906897
+      ],
+      "obf2_stats": {
+        "best": 4.999999999987162,
+        "worst": 4.684103918967661,
+        "median": 4.999999999966332,
+        "mean": 4.894701306307052,
+        "std": 0.1823826874065434
+      },
+      "search_seconds": 361.8496117591858,
+      "n_evals": 139,
+      "chosen_filters": [
+        41,
+        38,
+        18
+      ],
+      "chosen_steps_per_epoch": [
+        69,
+        210,
+        83
+      ]
+    }
+  },
+  "wall_clock_seconds": 7032.2383444309235
+}

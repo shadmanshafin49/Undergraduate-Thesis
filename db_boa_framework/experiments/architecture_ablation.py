@@ -113,7 +113,7 @@ def run(quick=False, epochs=None, seeds=None):
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
     jp = os.path.join(RESULTS_DIR, "architecture_ablation.json")
-    with open(jp, "w") as f:
+    with open(jp, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     print(f"  saved {jp}", flush=True)
     write_draft(summary)
@@ -150,7 +150,7 @@ def write_draft(s):
              "baseline exactly; `'dilated_attn'` is the report-faithful model.")
     out = os.path.abspath(os.path.join(ROOT, "..", "final_report_data",
                                        "TASKB3_architecture_ablation.md"))
-    with open(out, "w") as f:
+    with open(out, "w", encoding="utf-8") as f:
         f.write("\n".join(L))
     print(f"  wrote draft → {out}", flush=True)
 

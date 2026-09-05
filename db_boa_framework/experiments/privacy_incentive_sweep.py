@@ -424,7 +424,7 @@ def write_report(summary: dict):
     out_dir = os.path.join(ROOT, "..", "final_report_data")
     out_dir = os.path.abspath(out_dir)
     md_path = os.path.join(out_dir, "TASKA_privacy_incentive_results.md")
-    with open(md_path, "w") as f:
+    with open(md_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print(f"[A]  wrote draft → {md_path}", flush=True)
 
@@ -441,7 +441,7 @@ def main():
     summary = run_sweep(quick=args.quick)
 
     json_path = os.path.join(RESULTS_DIR, "privacy_incentive_sweep.json")
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     print(f"[A]  saved {json_path}", flush=True)
 

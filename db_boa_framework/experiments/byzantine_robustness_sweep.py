@@ -51,7 +51,8 @@ sys.path.insert(0, ROOT)
 
 from config                    import (RESULTS_DIR, ADTCN_CONFIG,
                                        FEDERATION_CONFIG, make_org_splits)
-from data.data_loader          import FinancialDataLoader
+from experiments._dataset      import (redraft, add_dataset_args, resolve, provenance,
+                                       suffix, suffix_of, apply_to_model_cfg)
 from models.federated_adtcn    import FederatedADTCN
 from models.federation_manager import FederationManager
 from utils.metrics             import compute_all_metrics
@@ -106,18 +107,20 @@ def fedavg(weights_list):
 
 # ─── per-regime simulation ────────────────────────────────────────────────────
 
-def run_regime(n_orgs, byz_f, n_attackers, epoch_cnt, n_eval, seed):
+def run_regime(n_orgs, byz_f, n_attackers, epoch_cnt, n_eval, seed,
+               dataset="ulb", partition=None):
     """
     Train n honest orgs, then for each attack replace `n_attackers` of them with a
     weight-poisoned vector and compare Krum vs FedAvg on the resulting global model.
     """
     rng = np.random.default_rng(seed)
-    loader = FinancialDataLoader()
+    loader = resolve(dataset, partition, verbose=False)
     Xtr, Xv, Xte, ytr, yv, yte = loader.load(verbose=False)
     org_splits = loader.split_for_orgs(Xtr, ytr, org_splits=make_org_splits(n_orgs))
     org_names  = list(org_splits.keys())
 
     cfg_model = dict(ADTCN_CONFIG); cfg_model["epoch_count"] = epoch_cnt
+    apply_to_model_cfg(cfg_model, loader)
 
     honest_models  = {}
     honest_weights = {}
@@ -210,11 +213,15 @@ def run_regime(n_orgs, byz_f, n_attackers, epoch_cnt, n_eval, seed):
 
 # ─── driver ───────────────────────────────────────────────────────────────────
 
-def run_sweep(quick=False):
+def run_sweep(quick=False, dataset="ulb", partition=None):
     t0 = time.time()
     epoch_cnt = 4 if quick else 12
     n_eval    = 1500 if quick else 5000
     regimes   = REGIMES[:1] if quick else REGIMES
+    # resolved once: `raw_feature_count` re-encodes the CSV when cold (~6 s on
+    # BankSim), so it must not be called from inside the summary literal.
+    prov      = provenance(dataset, partition,
+                           resolve(dataset, partition, verbose=False))
 
     print("=" * 70, flush=True)
     print("  TASK D — STATISTICAL BYZANTINE FAULT TOLERANCE (Krum at f ≥ 1)", flush=True)
@@ -227,10 +234,12 @@ def run_sweep(quick=False):
               f"(n≥2f+3 ⇒ {n_orgs} ≥ {2*byz_f+3}) ──", flush=True)
         regime_results.append(
             run_regime(n_orgs, byz_f, n_atk,
-                       epoch_cnt=epoch_cnt, n_eval=n_eval, seed=42))
+                       epoch_cnt=epoch_cnt, n_eval=n_eval, seed=42,
+                       dataset=dataset, partition=partition))
 
     summary = {
         "task"         : "D — statistical Byzantine fault tolerance (weight-level Krum, f≥1)",
+        **prov,
         "metric"       : "balanced accuracy (Sens+Spec)/2 of the global model on test",
         "attacks"      : ATTACKS,
         "scale_lambda" : SCALE_LAMBDA,
@@ -296,7 +305,7 @@ def make_plots(summary):
     fig.suptitle("Task D — Statistical Byzantine fault tolerance: Krum at f≥1 "
                  "rejects weight-poisoned orgs", y=1.02, fontsize=12)
     fig.tight_layout()
-    p = os.path.join(RESULTS_DIR, "byzantine_robustness_krum_vs_fedavg.png")
+    p = os.path.join(RESULTS_DIR, f"byzantine_robustness_krum_vs_fedavg{suffix_of(summary)}.png")
     fig.savefig(p, dpi=130, bbox_inches="tight"); plt.close(fig)
     print(f"[D]  saved {p}", flush=True)
 
@@ -310,14 +319,103 @@ def write_report(summary):
     regime_str = ", ".join(f"n={reg['n_orgs']}/f={reg['byzantine_f']}"
                            for reg in summary["regimes"])
 
+    # Everything quoted below is computed from THIS run. The prose used to assert
+    # "always the L2 outlier", "≈99.9%" and "≈87.5%" unconditionally — ULB values
+    # that would have silently survived a non-replication on another dataset.
+    # Pre-registration (OBJ-15) calls a Krum failure the most valuable outcome
+    # available here, so it must not be paraphrased away by a static sentence.
+    _all = [dict(r, _ref_fedavg=reg["ref_fedavg_acc"], _ref_krum=reg["ref_krum_acc"],
+                 _n=reg["n_orgs"])
+            for reg in summary["regimes"] for r in reg["attacks"]]
+    _all_rejected = (n_def == n_tot)
+    _kr_lo, _kr_hi = min(r["krum_acc"] for r in _all), max(r["krum_acc"] for r in _all)
+    _worst = min(_all, key=lambda r: r["fedavg_acc"])
+    _misses = [f"{r['attack']}" for r in _all if r["attacker_selected"]]
+    _mg = [abs(r["score_margin"]) for r in _all if r["score_margin"]]
+
+    # Does Krum's SELECTION actually buy accuracy here?  Rejecting the attacker
+    # (a security property) and beating unprotected FedAvg (a utility property)
+    # are different claims and they can come apart.  The prose used to assert
+    # "damage prevented" / "FedAvg collapses" unconditionally, which reads as a
+    # contradiction the moment the advantage is negative.
+    #
+    # 2026-09-04 (OBJ-18): the mechanism this branch used to assert -- "Krum picks
+    # ONE org's weights, and when orgs hold disjoint customers that model
+    # generalises worse than an average over all of them" -- is WITHDRAWN.  The
+    # BankSim/stratified confound control fired the same negative advantage on a
+    # partition where orgs are NOT customer-disjoint (7 of 8 cells), so the
+    # sentence contradicted the very table it sat above.  The cost tracks the
+    # DATASET, not the partition; no mechanism for it is on record.  A generator
+    # reading one run's JSON cannot see a cross-condition effect at all, so it
+    # must state what it measured and defer the attribution to the collator.
+    # Do not re-introduce an explanation here.
+    _adv       = [r["krum_advantage"] for r in _all]
+    _n_ahead   = sum(1 for a in _adv if a > 0)
+    _krum_wins = _n_ahead > len(_adv) / 2
+    _adv_lo, _adv_hi = min(_adv), max(_adv)
+    # An attack that *raises* FedAvg above its own no-attack reference is a sign
+    # the metric is reacting to noise-induced positive bias, not to robustness.
+    # 0.5 pp, not epsilon: at a 99.95%% ceiling a +0.01 pp wobble is float noise,
+    # and flagging it would cry wolf on a dataset where nothing is wrong.
+    _PARADOX_PP = 0.5
+    _paradox = [r for r in _all if r["fedavg_acc"] > r["_ref_fedavg"] + _PARADOX_PP]
+
     L = ["# Task D — Statistical Byzantine Fault Tolerance (weight-level Krum, f ≥ 1)\n"]
-    L.append(f"> **Headline.** Run where Krum's theorem holds ({regime_str}), Krum **rejected "
-             f"the Byzantine org in {n_def}/{n_tot}** (regime × attack) cases — the attacker is "
-             "always the L2 outlier (score margin ≈10⁶ down to ≈10⁰), so it never enters the "
-             "global model, which holds at **≈99.9%** balanced accuracy. The concrete damage it "
-             "prevents is largest under norm-boosting, where unprotected FedAvg falls to "
-             "**≈87.5%**. This is genuine statistical BFT, not the f=0 outlier rejection of the "
-             "default n=3 pipeline.\n")
+    L.append(f"> **Headline.** Run where Krum's theorem holds ({regime_str}) on "
+             f"{summary.get('dataset_label', 'this dataset')}, Krum **rejected the "
+             f"Byzantine org in {n_def}/{n_tot}** (regime × attack) cases"
+             + ("" if _all_rejected else
+                f" — **it FAILED to reject in {n_tot - n_def}: "
+                f"{', '.join(_misses)}**. That is a non-replication and is the "
+                f"headline, not a footnote")
+             + f". The Krum-protected global model spans "
+             + (f"**{_kr_lo:.2f}%**" if abs(_kr_hi - _kr_lo) < 0.005
+                else f"**{_kr_lo:.2f}–{_kr_hi:.2f}%**")
+             + f" balanced accuracy across attacks. "
+             + (f"The largest concrete damage prevented is under "
+                f"**{_worst['attack']}**, where unprotected FedAvg falls to "
+                f"**{_worst['fedavg_acc']:.2f}%** against Krum's "
+                f"{_worst['krum_acc']:.2f}% ({_worst['krum_advantage']:+.2f} pp). "
+                if _krum_wins else
+                f"**But rejecting the attacker did not buy accuracy here.** Krum's "
+                f"advantage over *unprotected* FedAvg is "
+                f"{_adv_lo:+.2f} to {_adv_hi:+.2f} pp — negative in "
+                f"{len(_adv) - _n_ahead} of {len(_adv)} cases. Security and utility "
+                f"therefore come apart in this condition: the attacker is rejected "
+                f"and the selected model is still worse than the average. "
+                f"**No mechanism for the utility cost is established** — an earlier "
+                f"reading that blamed entity-disjoint orgs was withdrawn on "
+                f"2026-09-04 when the same negative advantage appeared under a "
+                f"stratified partition, and this draft reads a single run, which "
+                f"cannot attribute an effect to dataset or partition at all. For "
+                f"that decomposition see "
+                f"`final_report_data/OBJ15_two_factor_decomposition.md`. ")
+             + "This is genuine statistical BFT, not the f=0 outlier rejection of "
+             "the default n=3 pipeline.\n")
+
+    # Counting the flagged cells is not enough to make the table safe to quote: a
+    # reader needs to know WHICH Krum-advantage rows rest on an inflated FedAvg
+    # baseline.  Name them here and mark them in the tables (OBJ-17 sibling task).
+    _pdx_key = {(r["_n"], r["attack"]) for r in _paradox}
+    if _paradox:
+        L.append(f"> ⚠ **Read the FedAvg column with care.** In "
+                 f"{len(_paradox)} of {len(_all)} cases the *attacked* FedAvg model "
+                 f"scores **above** its own no-attack reference. An attack cannot genuinely "
+                 f"improve a model, so this is the balanced-accuracy metric "
+                 f"responding to noise that pushes the decision boundary toward the "
+                 f"positive class — the same direction-of-collapse effect the DP "
+                 f"sweep found on this dataset. It means \"FedAvg survived\" is not "
+                 f"evidence of robustness here, and the Krum-vs-FedAvg gap should "
+                 f"not be read as a clean utility comparison.\n")
+        _cells = ", ".join(f"**n={r['_n']} `{r['attack']}`** "
+                           f"({r['fedavg_acc']:.2f}% vs {r['_ref_fedavg']:.2f}% ref, "
+                           f"Krum advantage {r['krum_advantage']:+.2f} pp)"
+                           for r in _paradox)
+        L.append(f"> **The affected cells, named** (flagged ⚠ in the tables below, "
+                 f"threshold {_PARADOX_PP} pp): {_cells}. **Do not quote the Krum "
+                 f"advantage from these rows** — their baseline is contaminated. The "
+                 f"remaining {len(_all) - len(_paradox)} of {len(_all)} rows have a "
+                 f"clean no-attack reference and are the ones to cite.\n")
     L.append("_Auto-generated by `experiments/byzantine_robustness_sweep.py`. This is the "
              "experiment that backs the **\"Secure\"** title claim: Krum is run in the "
              "regime where its theorem actually holds (n ≥ 2f+3, f ≥ 1) against real "
@@ -338,28 +436,55 @@ def write_report(summary):
         L.append("|---|---|---|---|---|---|---|")
         for r in reg["attacks"]:
             rejected = "yes ✓" if not r["attacker_selected"] else "**NO ✗**"
+            flag = " ⚠" if (reg["n_orgs"], r["attack"]) in _pdx_key else ""
             L.append(f"| {r['attack']} | {r['krum_selected_org']} | {rejected} | "
-                     f"{r['krum_acc']:.2f}% | {r['fedavg_acc']:.2f}% | "
-                     f"{r['krum_advantage']:+.2f}% | {r['score_margin']:+.3e} |")
+                     f"{r['krum_acc']:.2f}% | {r['fedavg_acc']:.2f}%{flag} | "
+                     f"{r['krum_advantage']:+.2f}%{flag} | {r['score_margin']:+.3e} |")
         L.append("")
+        if any((reg["n_orgs"], r["attack"]) in _pdx_key for r in reg["attacks"]):
+            L.append("⚠ = the attacked FedAvg baseline beats its own no-attack "
+                     f"reference ({reg['ref_fedavg_acc']:.2f}%) by more than "
+                     f"{_PARADOX_PP} pp, so the FedAvg and Krum-advantage figures on "
+                     "that row are not a clean utility comparison.\n")
 
     # honest interpretation (n_def / n_tot computed above for the headline)
     L.append(f"**Result.** Across {n_tot} (regime × attack) cases, Krum rejected the "
              f"Byzantine org(s) in {n_def}/{n_tot} — its selection score (sum of squared "
-             "L2 distances to the k=n−f−2 nearest neighbours) flags the poisoned org as "
-             "the cluster outlier *every time*, so it is never the argmin and never enters "
-             "the global model. The margin is graded by how aggressive the attack is: "
-             "≈10⁶ for large-norm scaling, ≈10³ for sign-flip / Gaussian junk, down to ≈10⁰ "
-             "for the subtle retrained label-flip (whose weights sit only just outside the "
-             "honest spread). **The FedAvg comparison is honest, not uniform:** plain "
-             "averaging only *collapses* under the magnitude-dominant **scaled** attack "
-             "(≈87.5% vs Krum's ≈99.9%, a +12.5% gap); for sign-flip, Gaussian and "
-             "label-flip a single (or ≤f) poisoned vector is diluted by the honest "
-             "majority, so FedAvg happens to survive too. The point is therefore not that "
-             "FedAvg always fails, but that Krum gives a *uniform* guarantee — constant "
-             "≈99.9% and a provably-rejected attacker — whereas FedAvg's safety is "
-             "attack-dependent and fails catastrophically exactly when the adversary "
-             "boosts its norm. Figure: `results/byzantine_robustness_krum_vs_fedavg.png`.\n")
+             f"L2 distances to the k=n−f−2 nearest neighbours) flags the poisoned org as "
+             f"the cluster outlier "
+             + ("in every case tested here" if _all_rejected else
+                f"in {n_def} of {n_tot} cases, **missing {', '.join(_misses)}**")
+             + f", so it "
+             + ("is never the argmin and never enters the global model. "
+                if _all_rejected else
+                "entered the global model in the missed case(s) — report that row "
+                "rather than the aggregate. ")
+             + (f"Observed score margins span ≈{min(_mg):.1e} to ≈{max(_mg):.1e}, "
+                f"graded by how aggressive the attack is (crude norm-boosting is "
+                f"easiest to spot; a retrained label-flip sits closest to the honest "
+                f"spread). " if _mg else "")
+             + f"**The FedAvg comparison, stated as measured:** unprotected FedAvg's "
+             f"worst case is **{_worst['attack']}** at {_worst['fedavg_acc']:.2f}% "
+             f"against Krum's {_worst['krum_acc']:.2f}%. "
+             + ("For the subtler attacks a single (or ≤f) poisoned vector is diluted "
+                "by the honest majority, so FedAvg happens to survive too; the point is "
+                "not that FedAvg always fails, but that Krum gives a *uniform* guarantee — "
+                if _krum_wins else
+                "Krum's guarantee is uniform, but on this split it is not free — ")
+             + (f"{_kr_lo:.2f}%" if abs(_kr_hi - _kr_lo) < 0.005
+                else f"a narrow {_kr_lo:.2f}–{_kr_hi:.2f}% band")
+             + (" and a rejected attacker in every case here" if _all_rejected else
+                f" but **only {n_def}/{n_tot} rejections**")
+             + (" — whereas FedAvg's safety is attack-dependent and degrades exactly "
+                "when the adversary boosts its norm. "
+                if _krum_wins else
+                f" — but that band sits {abs(_adv_hi):.2f}–{abs(_adv_lo):.2f} pp "
+                f"*below* unprotected FedAvg here. The honest reading, as measured "
+                f"and no further: Krum bought **robustness** (attacker rejected in "
+                f"every case here) and **cost utility** in this condition, rather "
+                f"than dominating FedAvg outright. Why it costs utility is "
+                f"**unexplained**; state the measurement, not a mechanism. ")
+             + f"Figure: `results/byzantine_robustness_krum_vs_fedavg{suffix_of(summary)}.png`.\n")
     L.append("**Why this earns \"Secure\" (and the honest boundary).** Unlike the n=3/f=0 "
              "default, here the Krum precondition n≥2f+3 is satisfied, so this is genuine "
              "*statistical* Byzantine fault tolerance, not just outlier rejection. Limits "
@@ -374,8 +499,9 @@ def write_report(summary):
 
     out = os.path.abspath(os.path.join(ROOT, "..", "final_report_data"))
     os.makedirs(out, exist_ok=True)
-    md  = os.path.join(out, "TASKD_byzantine_robustness_results.md")
-    with open(md, "w") as f:
+    md  = os.path.join(out, f"TASKD_byzantine_robustness_results"
+                            f"{suffix_of(summary)}.md")
+    with open(md, "w", encoding="utf-8") as f:
         f.write("\n".join(L))
     print(f"[D]  wrote draft → {md}", flush=True)
 
@@ -384,12 +510,22 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--no-plots", action="store_true")
+    add_dataset_args(ap)
     args = ap.parse_args()
 
-    summary = run_sweep(quick=args.quick)
+    # Rebuild the draft/figures from the finished JSON, no compute.
+    if args.redraft:
+        redraft("byzantine_robustness_sweep", args.dataset, args.partition,
+                make_plots, write_report, RESULTS_DIR, no_plots=args.no_plots)
+        return
 
-    json_path = os.path.join(RESULTS_DIR, "byzantine_robustness_sweep.json")
-    with open(json_path, "w") as f:
+    summary = run_sweep(quick=args.quick, dataset=args.dataset,
+                        partition=args.partition)
+
+    json_path = os.path.join(
+        RESULTS_DIR,
+        f"byzantine_robustness_sweep{suffix(args.dataset, args.partition)}.json")
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     print(f"[D]  saved {json_path}", flush=True)
 

@@ -1,0 +1,63 @@
+{
+  "note": "collation only; no training performed here",
+  "sources": {
+    "ULB / stratified": "baselines.json",
+    "BankSim / stratified": "baselines_banksim_stratified.json",
+    "BankSim / entity-disjoint": "baselines_banksim_customer.json"
+  },
+  "mcc": {
+    "ULB / stratified": {
+      "FedAvg": 0.5693524784759046,
+      "FedAvg+Krum": 0.7762164491942695,
+      "FedAvg+DP": 0.0,
+      "DB-BOA-ADTCN": 0.0007972443262166401
+    },
+    "BankSim / stratified": {
+      "FedAvg": 0.7569921424833845,
+      "FedAvg+Krum": 0.7198742527724624,
+      "FedAvg+DP": 0.018006020990079426,
+      "DB-BOA-ADTCN": 0.025776986278364347
+    },
+    "BankSim / entity-disjoint": {
+      "FedAvg": 0.8267972131791435,
+      "FedAvg+Krum": 0.7932989193340523,
+      "FedAvg+DP": -0.00015033280460371605,
+      "DB-BOA-ADTCN": 0.009886223317009947
+    }
+  },
+  "dp_cost": {
+    "ULB / stratified": {
+      "delta_mcc": 0.5693524784759046,
+      "delta_acc": -0.10533338014816707,
+      "dp_precision": 0.0,
+      "dp_recall": 0.0,
+      "dp_fp": 0.0,
+      "dp_tp": 0.0,
+      "collapse_direction": "all-negative (predicts no fraud at all)"
+    },
+    "BankSim / stratified": {
+      "delta_mcc": 0.7389861214933051,
+      "delta_acc": 20.86475081371954,
+      "dp_precision": 1.4403051889913916,
+      "dp_recall": 28.030303030300907,
+      "dp_fp": 25319.0,
+      "dp_tp": 370.0,
+      "collapse_direction": "indiscriminate (mostly false positives)"
+    },
+    "BankSim / entity-disjoint": {
+      "delta_mcc": 0.8269475459837472,
+      "delta_acc": 97.54902762557442,
+      "dp_precision": 1.07935354402887,
+      "dp_recall": 99.01515151514401,
+      "dp_fp": 119784.0,
+      "dp_tp": 1307.0,
+      "collapse_direction": "all-positive (flags nearly everything)"
+    }
+  },
+  "krum_delta": {
+    "ULB / stratified": 0.20686397071836482,
+    "BankSim / stratified": -0.037117889710922114,
+    "BankSim / entity-disjoint": -0.033498293845091176
+  },
+  "confound": "BankSim stratified vs entity-disjoint differ in BOTH the partition scheme AND the windowing (only the entity-disjoint split leaves org rows customer-contiguous, so only it can use entity-linked windows). The delta cannot be attributed to partitioning alone."
+}
