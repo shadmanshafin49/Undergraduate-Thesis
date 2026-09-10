@@ -43,16 +43,18 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import DATASETS, get_loader
+from config import DATASETS, ENTITY_PARTITIONS, get_loader
 
 
 def add_dataset_args(ap):
     """Attach the standard --dataset / --partition / --redraft trio."""
     ap.add_argument("--dataset", choices=list(DATASETS), default="ulb",
                     help="which dataset to run the sweep on (default: ulb)")
-    ap.add_argument("--partition", choices=["stratified", "customer"], default=None,
-                    help="federated partition scheme; 'customer' is entity-disjoint "
-                         "and requires --dataset banksim")
+    ap.add_argument("--partition",
+                    choices=["stratified", "customer", "terminal"], default=None,
+                    help="federated partition scheme; 'customer' and 'terminal' are "
+                         "entity-disjoint and need a dataset carrying that ID "
+                         "(customer: banksim, handbook — terminal: handbook)")
     ap.add_argument("--redraft", action="store_true",
                     help="rebuild figures and the markdown draft from this run's "
                          "existing results JSON, without training anything")
@@ -100,14 +102,21 @@ def resolve(dataset: str = "ulb", partition: str = None, verbose: bool = True):
     """
     Instantiate the loader for `dataset` and pin its partition scheme.
 
-    `partition="customer"` deals whole customers to orgs (entity-disjoint, no
-    customer's history in two banks).  ULB has no customer IDs and therefore
-    cannot support it — that is a property of the data, not a missing feature,
-    so we fail loudly rather than silently falling back to stratified.
+    An entity partition deals whole entities to orgs (entity-disjoint, no
+    entity's history at two banks).  Which entities exist is a property of the
+    data, not a missing feature — ULB has none, BankSim has customers, the
+    Handbook has customers *and* terminals — so an unsupported request fails
+    loudly rather than silently falling back to stratified.  `ENTITY_PARTITIONS`
+    is the single place that mapping lives; before the Handbook landed this
+    check was spelled `dataset != "banksim"`, which would have rejected a valid
+    `--dataset handbook --partition customer`.
     """
-    if partition and dataset != "banksim":
-        raise SystemExit(
-            f"--partition requires --dataset banksim ({dataset} has no entity IDs)")
+    if partition and partition != "stratified":
+        allowed = ENTITY_PARTITIONS.get(dataset, ())
+        if partition not in allowed:
+            raise SystemExit(
+                f"--partition {partition} is not available on --dataset {dataset} "
+                f"(supported here: {', '.join(('stratified',) + allowed)})")
 
     loader = get_loader(dataset)
     if partition:

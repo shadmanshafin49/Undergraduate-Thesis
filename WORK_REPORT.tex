@@ -15,6 +15,7 @@
 \usepackage{array}
 \usepackage{multirow}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage[most]{tcolorbox}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.geometric,shadows.blur}
@@ -110,26 +111,60 @@
   {\small\color{steel}Reporting period: 30 August -- 5 September 2026 \textbullet\ Compiled 5 September 2026}
 \end{center}
 
-\vspace{0.8cm}
+\vfill
+{\footnotesize\color{steel}\noindent Every number in this document traces to a file produced by a
+script in this repository. Where a number is not safe to quote, the document says so and says why.
+Appendix~B lists which script produced which result.}
 
-\begin{keybox}{The report in six sentences}
-The thesis was accepted on 13 June 2026 with one genuine contribution, one honest set of negative
-results, and one structural weakness: \textbf{every claim it made rested on a single dataset that has no
-customer identities}. Over the last six days we added a second dataset, re-ran five of the six title
-claims on it, and then --- crucially --- ran a \emph{control} that separated ``the dataset changed'' from
-``the federation structure changed''. That control killed our own most quotable new finding, which is
-the single most valuable thing that happened in the period. We then audited the hyperparameter search
-the framework is named after and found it had been validating on rows it had trained on; we repaired
-it, re-ran the search at full deployment budget for 16.3 hours, and \textbf{the negative result about it
-survived unchanged}. Nothing in this report inflates a result: three headline claims were withdrawn or
-retired in these six days, all three by our own controls rather than by a reviewer. \textbf{The work is
-smaller than it looked on 30 August and much harder to argue with.}
+\newpage
+\thispagestyle{empty}
+
+\begin{keybox}{The short version --- in plain language}
+\small
+\textbf{What this project is.} Three banks want to catch fraud. None of them is allowed to show its
+customers' transactions to the other two. So instead of sharing data, they each train their own
+detector and share only the \emph{trained numbers} (the model weights). A blockchain keeps the record
+of who helped and who gets paid. The whole thing is called \textbf{FL-ADTCN}.
+
+\smallskip
+\textbf{Where we stood on 30 August.} The thesis had already been accepted. It had one genuinely new
+idea, an honest list of things that did not work, and one big weakness underneath everything:
+\textbf{every single claim had been tested on one dataset only} --- and that dataset does not tell you
+which customer made which payment.
+
+\smallskip
+\textbf{What we did in these six days, and why:}
+\begin{itemize}
+  \item \textbf{Added a second dataset (BankSim), and kept the first one.} \emph{Why:} a claim that
+  only holds on one file might be a fact about that file. Testing on two lets us tell the difference.
+  \item \textbf{Ran a ``control'' experiment.} A control changes \emph{one} thing at a time so you can
+  tell which thing actually caused an effect. Ours changed only the dataset and kept everything else
+  fixed. \emph{Why:} our most exciting new finding had changed two things at once, so we could not
+  know which one was responsible. \emph{Result: the control proved us wrong and we withdrew the claim.}
+  \item \textbf{Audited the search algorithm the framework is named after (DB-BOA).} \emph{Why:} five
+  completely different search algorithms had all returned exactly the same score, which is not
+  something that happens by chance. \emph{Result:} the search had been marking its own homework --- it
+  was testing itself on rows it had already trained on. We fixed it, re-ran it properly for 16.3 hours,
+  and the original bad news about it survived.
+  \item \textbf{Stopped quoting one of our own numbers} --- the ``privacy improvement factor''.
+  \emph{Why:} we proved the number \emph{grows the harder you look for it}, so it describes our search
+  effort, not the system. A number like that cannot safely be printed in a paper.
+  \item \textbf{Put all of it into version control.} \emph{Why:} before 5 September roughly 20 hours of
+  results existed only as untracked files on one machine.
+\end{itemize}
+
+\smallskip
+\textbf{What it added up to.} \textbf{Three of our own headline claims died in six days, and all three
+were killed by tests we ran on ourselves --- not by a reviewer.} That is the point of the period. The
+work is smaller than it looked on 30 August, and far harder to argue with.
 \end{keybox}
 
 \vfill
-{\footnotesize\color{steel}\noindent Every number in this document traces to a JSON file produced by a
-script in this repository. Where a number is not quotable, the document says so and says why.
-Appendix~B lists which script produced which result.}
+{\footnotesize\color{steel}\noindent\textbf{How to read this report.} It runs in order, as a story.
+If you only have five minutes, read the box above and then Section~8, the decision log. If you are
+about to write something and need to know which numbers are safe, go straight to
+Section~\ref{sec:quotable}. If a score or a term is unfamiliar, Section~\ref{sec:scores} explains the
+scores and Appendix~A is a full glossary.}
 
 \newpage
 \tableofcontents
@@ -138,52 +173,138 @@ Appendix~B lists which script produced which result.}
 % =====================================================================
 \section{What this document is}
 
-This is a work report, not a paper. It is written for two readers: a teammate who needs to pick the
-work up, and a supervisor who needs to know what changed and whether to trust it. It reads in order,
-as a story: where we stood, what was wrong with where we stood, what we decided to do about it, what
-happened, and what that leaves us with.
+This is a work report, not a paper. It is written for two readers: a teammate who has to pick the work
+up, and a supervisor who needs to know what changed and whether to trust it. Read it in order --- it is
+written as a story. Where we stood, what was wrong with where we stood, what we decided to do about it,
+what happened when we did it, and what we are left with.
 
-Three things it deliberately does:
+You do not need to already know the field to read it. Every technical term is explained the first time
+it appears, and there is a full glossary in Appendix~A. Where a section depends on understanding a
+score, the score is explained right there rather than assumed.
+
+Three things this document does on purpose:
 
 \begin{itemize}
-  \item \textbf{It names decisions and who made them.} At several points the work could have gone two
-  ways. Those forks are marked in blue boxes, with the question that was asked, the answer chosen, the
-  reason, and --- most importantly --- what the answer actually produced, including when it produced
-  something worse than the alternative would have.
-  \item \textbf{It reports failures as results.} Nine predictions written down before their experiments
-  ran turned out wrong. Those nine are the most useful material in the period, and they are printed
-  next to their original wording rather than quietly replaced.
-  \item \textbf{It marks what may not be quoted.} Several numbers that appear in older drafts and in the
-  supervisor brief are now invalid or definition-dependent. Section~\ref{sec:quotable} is the list.
+  \item \textbf{It names the decisions, and who made them.} Several times in these six days the work
+  could have gone two different ways. Each of those forks is printed in a blue box, with four things:
+  the question we faced, the answer we chose, the reason we chose it, and --- the important part ---
+  what that answer actually produced, \emph{including the times it produced something worse than the
+  road not taken}.
+  \item \textbf{It reports failures as results.} Before each experiment we wrote down what we expected
+  to happen. Nine of those written-down predictions turned out to be wrong. Those nine are the most
+  useful material in the whole period, so they are printed next to their original wording instead of
+  being quietly replaced with what actually happened.
+  \item \textbf{It marks the numbers that may no longer be used.} Several figures that appear in older
+  drafts and in the supervisor brief are now either invalid or depend on an arbitrary choice.
+  Section~\ref{sec:quotable} lists them, with what to say instead.
 \end{itemize}
 
 \begin{keybox}{Status at a glance, 5 September 2026}
 \small
 \begin{tabularx}{\linewidth}{@{}p{4.7cm} X@{}}
 \toprule
-\textbf{Phase} & Thesis accepted 13 June 2026. Paper extension active. Deadline \textbf{19 September 2026} (T--14). \\
-\textbf{Datasets} & ULB credit-card (284{,}807 tx, 0.17\% fraud, no customer IDs) \textbf{+} BankSim (594{,}643 tx, 1.211\% fraud, 4{,}112 customers). A third is gated on a go/no-go decision dated 12 September. \\
-\textbf{Conditions measured} & Three: ULB/stratified, BankSim/stratified, BankSim/entity-disjoint. The third exists only to separate two effects that used to move together. \\
-\textbf{Title claims off the original dataset} & \textbf{Five of six} measured on a second dataset; the sixth group (RL / consensus / blockchain) is dataset-independent by design. \\
-\textbf{CPU spent in the period} & Roughly 45 hours of experiments, of which 16.3 h was one deliberately expensive run. \\
-\textbf{Claims withdrawn or retired in the period} & \textbf{Three}, all by our own controls: the Krum utility mechanism, ``MC top-1 fails from $n\!\approx\!6$'', and the privacy-budget improvement factor as a headline. \\
-\textbf{Code state} & All work committed on branch \texttt{obj13-surrogate-repair}. Before 5 September the entire extension existed only as untracked files. \\
+\textbf{Phase} & Thesis accepted 13 June 2026. Paper extension active. Deadline \textbf{19 September 2026} --- 14 days away. \\
+\textbf{Datasets assessed} & \textbf{Five}, compared side by side in Section~\ref{sec:fivedatasets}: ULB, BankSim, Fraud Detection Handbook, IBM AMLSim, PaySim. \\
+\textbf{Datasets measured} & \textbf{Two.} ULB credit-card (284{,}807 transactions, 0.17\% fraud, \emph{no customer IDs}) and BankSim (594{,}643 transactions, 1.211\% fraud, 4{,}112 customers). The Handbook is loaded and verified but unrun --- go/no-go 12 September; AMLSim and PaySim were assessed and not run. \\
+\textbf{Conditions measured} & \textbf{Three}: ULB/stratified, BankSim/stratified, BankSim/entity-disjoint. The third is a \emph{control} --- it exists only to pull apart two effects that used to move together. \\
+\textbf{Promises tested on more than one dataset} & \textbf{Five of six.} The sixth group (RL, consensus, blockchain) does not depend on the dataset at all, by design. \\
+\textbf{Computer time spent} & Roughly 45 hours of experiments, of which one deliberately expensive run took 16.3 hours on its own. \\
+\textbf{Claims we withdrew or retired} & \textbf{Three}, and all three were killed by our own tests: the explanation for Krum's accuracy cost, ``the fast Shapley estimate fails from $n\!\approx\!6$'', and the privacy improvement factor as a headline number. \\
+\textbf{Code state} & Everything committed on branch \texttt{obj13-surrogate-repair}. Before 5 September the entire extension existed only as untracked files on one machine. \\
 \bottomrule
 \end{tabularx}
 \end{keybox}
 
 % =====================================================================
+\section{How to read the numbers in this report}
+\label{sec:scores}
+
+This report quotes a handful of scores over and over. This section says what each one means, why we
+chose it, and what a good or bad value looks like. If a number later in the document does not make
+sense, the explanation is here.
+
+\subsection{Why plain accuracy is almost useless to us}
+
+Fraud is rare. In our first dataset only \textbf{0.17\%} of transactions are fraud. So a detector that
+simply says ``not fraud'' to \emph{every single transaction} --- catching nothing at all --- scores
+\textbf{99.83\% accuracy}. That number looks excellent and the detector is worthless.
+
+This is not a hypothetical worry. It is exactly what bit us: in Section~\ref{sec:claims} a
+privacy-protected model is destroyed so badly that it becomes useless, and plain accuracy reports the
+damage as $-0.11$ percentage points. \textbf{Accuracy hides failure on rare-event data.} That is why we
+lead with MCC instead.
+
+\begin{center}\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{@{}p{3.1cm} p{2.6cm} X@{}}
+\toprule
+\textbf{Score} & \textbf{Range, and what good looks like} & \textbf{What it actually measures, in plain terms} \\
+\midrule
+\textbf{MCC} \newline (Matthews correlation coefficient) & $-1$ to $+1$. \newline $0$ = no better than guessing. \newline Our best $\approx 0.78$. & \textbf{Our headline score.} It asks: does the detector's ``fraud / not fraud'' answer actually correlate with the truth? It only goes up if the model gets \emph{both} classes right, so the ``say no to everything'' trick scores \textbf{0}, not 99.83\%. This is why we use it. \\
+\textbf{Balanced accuracy} & 0--100\%. \newline 50\% = guessing. & Accuracy worked out separately for fraud and for non-fraud, then averaged --- so the rare class counts as much as the common one. Used in the attack experiments. \emph{Warning: it can be fooled too --- see the box in Section~\ref{sec:control}.} \\
+\textbf{Accuracy} & 0--100\% & The plain percentage of transactions labelled correctly. We report it \emph{only} to show how misleading it is on data this imbalanced. Never used as a headline. \\
+\textbf{Precision / Recall} & 0--1 each & \emph{Recall:} of all the real frauds, how many did we catch? \emph{Precision:} of everything we flagged as fraud, how much really was? A model can max out one by wrecking the other, which is why neither is a headline on its own. \\
+\textbf{pp} \newline (percentage points) & --- & The gap between two percentages. Going from 90\% to 85\% is a fall of \textbf{5\,pp}. We use ``pp'' so a difference is never confused with a percentage \emph{of} a percentage. \\
+\textbf{\rh{}} \newline (Spearman rank correlation) & $-1$ to $+1$ & Are the three banks \emph{ranked} in the right order by how much they contributed? $+1$ = perfect order, $0$ = random order, $-1$ = exactly backwards. This matters because the banks get \textbf{paid} according to that ranking. \\
+\textbf{\eps{}} \newline (epsilon, the privacy budget) & small = private & The dial on the privacy protection. \textbf{Smaller \eps{} means more privacy and more added noise}, so more damage to the model. Larger \eps{} means less privacy and a more useful model. The whole privacy question is where to set this dial. \\
+\textbf{Latency / TPS} & ms / transactions per sec & Blockchain speed. \emph{Latency} is how long one record takes to be written and confirmed (ours: 2115.9\,ms). \emph{TPS} is how many we can write per second (ours: 40.3 at best). \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{keybox}{One habit that runs through the whole report: say which score you mean}
+Twice in these six days, two perfectly reasonable scores ranked the same experiment in \emph{opposite}
+directions. If you quote the flattering one without saying which one you picked, that is not reporting
+--- it is selecting. So every claim in this document names its score. It is the difference between a
+result and a choice.
+\end{keybox}
+
+% =====================================================================
 \section{The system, in one page}
 
-Before anything else, the unit of work needs to be clear, because a mistake we made ourselves in this
-period was judging the whole thesis by one of its components.
+Before anything else it has to be clear what the ``thing'' is that we are judging --- because one of
+the mistakes we made in this period was judging the entire thesis by one small piece of it.
 
-\textbf{The unit is FL-ADTCN}, a six-part system, not a classifier. Three banks (Bank A / B / C) each
-train a local fraud detector on their own transactions. Nobody's raw data moves. What moves is model
-weights, and around that movement sit five more mechanisms: differential privacy on what is shared,
-Krum to decide whose weights become the global model, Shapley values to decide who gets paid, a
-metaheuristic search to pick the detector's hyperparameters, and a Hyperledger Fabric ledger that
-records the payments and elects the round leader by reinforcement learning.
+\textbf{The thing is FL-ADTCN, a six-part system --- not a classifier.} Here is the whole idea in
+everyday terms. Three banks (call them A, B and C) each want a better fraud detector. Each bank has its
+own transactions and is not allowed to hand them to the other two. So instead of pooling the data, each
+bank trains a detector on its own transactions and shares only the \emph{trained numbers} inside that
+detector --- the model weights. Nobody's customer data ever leaves the building.
+
+That much is standard federated learning. Around that weight-sharing step our system adds five more
+mechanisms, and each one answers a different worry:
+
+\begin{itemize}
+  \item \textbf{Differential privacy} --- \emph{``could someone reconstruct my customers from the
+  numbers I shared?''} Deliberate random noise is added to the weights before they are shared.
+  \item \textbf{Krum} --- \emph{``what if one of the banks is lying?''} A rule that inspects all the
+  submitted weight sets and picks the single most typical one, so a sabotaged submission is never used.
+  \item \textbf{Shapley values} --- \emph{``who actually helped, and how much should they be paid?''}
+  A fairness calculation that splits the credit between the banks.
+  \item \textbf{DB-BOA} --- \emph{``what settings should the detector use?''} An automated search over
+  the detector's configuration, so the settings are not hand-guessed.
+  \item \textbf{A Hyperledger Fabric blockchain} --- \emph{``who keeps the books, and can we trust
+  them?''} A shared tamper-evident ledger records the payments, and picks which bank leads each round.
+\end{itemize}
+
+\begin{keybox}{FedAvg --- the baseline everything else is measured against}
+\textbf{FedAvg (Federated Averaging)} is the standard, original way to combine what the banks send back,
+and it is the yardstick we compare against all through this report. It is exactly as simple as it
+sounds: \textbf{take every bank's weights and average them, number by number.} If Bank A submits 0.4,
+Bank B submits 0.6 and Bank C submits 0.5 for the same weight, the global model gets 0.5. Do that for
+every weight in the model, send the averaged model back to all three banks, and repeat next round.
+(In our code it is a plain, unweighted mean --- \texttt{byzantine\_robustness\_sweep.py:102}.)
+
+\textbf{Its strength is that it is simple and it works.} \textbf{Its weakness is that an average has no
+defence against a liar.} One bank submitting deliberately enormous numbers drags the average wherever
+it likes, and the other two cannot outvote it, because averaging is not a vote --- everyone gets
+included by construction. That single weakness is the reason Krum exists.
+
+So whenever this report writes \textbf{``Krum $-$ FedAvg''}, it is asking one question:
+\emph{what do we gain, or lose, by picking the most typical bank instead of averaging all of them?}
+A positive number means Krum's protection also made the model better. A negative number means the
+protection cost us accuracy. Both happen, and Section~\ref{sec:control} is about finding out why.
+\end{keybox}
 
 \begin{figure}[h]
 \centering
@@ -224,76 +345,90 @@ used), Shapley is fairness (who gets paid). A Krum-rejected organisation can sti
 are not two stages of one pipeline, and describing them that way is a recurring error.}
 \end{figure}
 
-The title of the thesis makes six claims. Each is backed by a different part of the system, and this
-mapping is what a direction review has to score --- all six, not one:
+The thesis title makes six promises, and \textbf{a different part of the system is responsible for
+each one}. This table is the map. It matters because if you review only one component, you have
+reviewed only one promise --- which is precisely the mistake described in the red box below.
 
 \begin{center}\small
 \begin{tabularx}{\linewidth}{@{}p{3.5cm} p{5.0cm} X@{}}
 \toprule
-\textbf{Component} & \textbf{Job in the system} & \textbf{Title claim it backs} \\
+\textbf{Component} & \textbf{Its job, in plain terms} & \textbf{Which promise it backs} \\
 \midrule
-Federated ADTCN & per-org detector; the weight channel & substrate --- backs none on its own \\
-Differential privacy & noises shared weights & \textbf{Secure} (privacy half) \\
-Krum & rejects outlier / poisoned weight vectors & \textbf{Secure} (Byzantine half) \\
-Shapley values & contribution attribution $\rightarrow$ token rewards & \textbf{Incentivized}, \textbf{Scalable} \\
-DB-BOA & hyperparameter and leader search & automation --- backs none directly \\
-RL leader + Fabric & Q-learning election, on-chain ledger & \textbf{RL}, \textbf{Blockchain-Integrated}, \textbf{Consensus} \\
+Federated ADTCN & the detector each bank runs, and the channel they share weights over & the foundation --- backs no promise by itself \\
+Differential privacy & adds noise so shared weights cannot be traced back to customers & \textbf{Secure} (the privacy half) \\
+Krum & throws out a bank whose weights look sabotaged & \textbf{Secure} (the attack half) \\
+Shapley values & works out who contributed what, so the rewards are fair & \textbf{Incentivized}, \textbf{Scalable} \\
+DB-BOA & searches automatically for the detector's settings & automation --- backs no promise directly \\
+RL leader + Fabric & learns which bank should lead each round, and records it on-chain & \textbf{RL}, \textbf{Blockchain-Integrated}, \textbf{Consensus} \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\begin{warnbox}{A mistake we made, recorded because it cost a day}
-On 1 September an internal direction review judged the entire thesis by where ADTCN ranked among seven
-classifiers. Its numbers were all correct and its conclusion was completely wrong: ADTCN's rank is a
-\emph{component ablation} and backs none of the six title claims. The review silently dropped four of
-them and recommended re-framing the paper around two. \textbf{The correction --- judge the system, not a
-component --- became a standing rule, and it reversed the recommendation entirely}: the dataset
-expansion was under-done, not over-done. Everything in Section~\ref{sec:work} follows from that reversal.
+\begin{warnbox}{A mistake we made ourselves --- written down because it cost a day}
+On 1 September we ran an internal review of our own direction, and it judged the \emph{entire} thesis
+by a single thing: where our detector, ADTCN, ranked against six other detectors. \textbf{Every number
+in that review was correct, and its conclusion was completely wrong.}
+
+Here is why. Look at the table above: ADTCN's ranking backs \emph{none} of the six promises. It is the
+foundation the other parts sit on, not a promise in itself. So a review built on that one ranking
+silently threw away four of the six promises, and then recommended rewriting the paper around the two
+that happened to be left.
+
+The correction --- \textbf{judge the whole system, not one component} --- became a standing rule, and it
+turned the recommendation completely round: the dataset work was \emph{under}-done, not over-done.
+Everything in Section~\ref{sec:work} follows from that reversal.
 \end{warnbox}
 
 % =====================================================================
 \section{Where we stood on 30 August --- what was good}
 
-The thesis had already been through one painful self-audit before submission, and that audit is the
-reason the rest of it is believable.
+Before the thesis was submitted it went through one painful audit of its own work, and that audit is
+the reason the rest of it can be believed. Six things were already solid on 30 August.
 
 \begin{enumerate}[label=\textbf{G\arabic*.}]
-  \item \textbf{The central contribution is real, specific, and nobody else had characterised it.}
-  Differential privacy applied to the \emph{weight} channel destroys the Shapley contribution signal
-  that drives on-chain token rewards --- the noise makes the ranking of who contributed most
-  meaningless, so honest participants get paid wrongly. Moving the noise to the \emph{released
-  contribution} channel instead (output perturbation) restores rank-faithful rewards at a far smaller
-  privacy budget. This is a coupling between two mechanisms that are normally studied separately, and
-  it is the paper's actual novelty.
+  \item \textbf{The central new idea is real, specific, and nobody else had described it.} Here it is in
+  plain terms. The banks add noise to their shared weights to protect privacy. Separately, the system
+  works out how much each bank contributed, and pays them accordingly. \textbf{What nobody had noticed
+  is that the first of these breaks the second.} The privacy noise scrambles the contribution
+  calculation so badly that the ranking of who helped most becomes meaningless --- so honest banks get
+  paid the wrong amounts. Our fix is to move the noise: instead of noising the \emph{weights}, noise the
+  \emph{published contribution score}. That protects privacy just as well and leaves the ranking intact,
+  at a fraction of the privacy cost. Two mechanisms that are normally studied in separate papers turn
+  out to interfere with each other, and that interference is the thesis's actual contribution.
 
-  \item \textbf{The blockchain layer is genuinely deployed, not simulated.} There is real chaincode on
-  a real Hyperledger Fabric test network, and it was measured: mean commit latency
-  \textbf{2115.9\,ms} over 50 transactions, peak goodput \textbf{40.3\,TPS} at concurrency~10, with an
-  MVCC conflict knee immediately after it (50\% of transactions fail at concurrency~20, 70\% at 40).
+  \item \textbf{The blockchain is really running, not simulated.} There is working chaincode on a real
+  Hyperledger Fabric test network, and we measured it rather than estimating it: \textbf{2115.9\,ms}
+  average time to commit one record (over 50 transactions), and a best throughput of \textbf{40.3
+  transactions per second} at 10 concurrent clients. Push past that and it falls apart quickly --- half
+  the transactions fail at 20 concurrent clients, 70\% at 40.
 
-  \item \textbf{The Byzantine layer was implemented where its theorem actually holds}, at
-  $n\ge 2f+3$, and swept: the attacker is rejected \textbf{8 out of 8} times across four attack types.
+  \item \textbf{The attack defence was built where its maths actually applies.} Krum's guarantee only
+  holds when there are enough honest participants relative to attackers, so we ran it in that regime
+  and swept four different attack types. \textbf{The attacker was caught 8 times out of 8.}
 
-  \item \textbf{The work had already caught and removed its own fabricated numbers.} A divergence audit
-  retired nine claims that no script had produced --- 97.38\% accuracy, MCC 0.966, 85\,TPS, 180\,ms, an
-  eight-model comparison table, paired $t$-tests, leader-frequency and token-balance tables. That
-  self-correction, documented in \texttt{final\_report\_data/00\_report\_vs\_code\_divergences.md}, is
-  what makes every surviving number worth reading.
+  \item \textbf{The work had already found and deleted its own invented numbers.} An earlier audit
+  removed nine claims that no script had ever produced --- a 97.38\% accuracy, an MCC of 0.966, 85\,TPS,
+  180\,ms, a comparison table of eight models, some statistical tests, and two more tables. They were
+  written but never computed. That clean-out is what makes the numbers that survived worth reading.
 
-  \item \textbf{Negative results were kept as results.} DB-BOA does not beat a hand-tuned default.
-  Monte-Carlo Shapley is not faithful at the sizes we can check. The economic layer does not stop a lone
-  attacker or a free-rider. Krum has no guarantee at $n=3$. None of these was hidden or softened.
+  \item \textbf{Results that came out badly were kept as results.} The automated search does not beat a
+  setting we picked by hand. The fast approximation of the fairness calculation is not reliable at the
+  sizes we can check. The reward system does not stop a lone attacker or a free-rider. Krum has no
+  guarantee with only three banks. \textbf{None of these was hidden, softened or spun.}
 
-  \item \textbf{Every headline number traced to a script and a JSON file.} There was no figure in the
-  report that could not be regenerated.
+  \item \textbf{Every headline number could be traced back to a script and a data file.} There was no
+  figure in the report that could not be regenerated from scratch.
 \end{enumerate}
 
 % =====================================================================
 \section{Where we stood on 30 August --- what was bad}
 \label{sec:bad}
 
-The weaknesses were not sloppiness. They were all one shape: \emph{the evidence was narrower than the
-claims built on it}, and in several places the narrowness was invisible from inside the repository.
+None of the weaknesses were sloppiness. They all had the same shape: \textbf{the evidence underneath a
+claim was narrower than the claim standing on it} --- and in several cases you could not see how narrow
+it was from inside the project. That is the dangerous kind: it survives your own review because
+everything looks consistent, and it fails somebody else's review because they ask where the second
+example is.
 
 {\small
 \renewcommand{\arraystretch}{1.25}
@@ -306,58 +441,73 @@ claims built on it}, and in several places the narrowness was invisible from ins
 & \textbf{The weakness} & \textbf{Why it was a problem --- what a reviewer would do with it} \\
 \midrule
 \endhead
-\textbf{B1} & All six title claims rested on \textbf{one dataset}, ULB, and ULB has no customer identities.
-& Any behaviour we reported could be dismissed as a property of one anonymised 0.17\%-fraud file. Worse: the detector's 10-transaction ``sequences'' were stitched together from \emph{unrelated cardholders}, so a temporal architecture was being judged on inputs that were not sequences at all. \\
-\textbf{B2} & Four of the six system-sweep scripts \textbf{hard-coded the ULB loader}, and none of their result files recorded which dataset produced them.
-& The expansion was not merely undone, it was not \emph{possible} without code work --- and results with no provenance cannot be compared later even if you do the work. \\
-\textbf{B3} & The detector headline was a \textbf{single seed}, and two of our own files disagreed: MCC \textbf{0.677} in one, \textbf{0.313} in another.
-& An unexplained contradiction inside your own results is the first thing anyone finds, and it makes every other number in the table suspect. \\
-\textbf{B4} & The \textbf{measured} Fabric numbers were not in the report; the fabricated ones had been removed but nothing replaced them.
-& A blockchain-integration claim with no measured blockchain behaviour is an assertion. \\
-\textbf{B5} & \textbf{The hyperparameter search had never been audited.} On ULB, all five optimisers we compared reported a best objective of exactly \textbf{5.0000} --- the theoretical ceiling.
-& Five different search algorithms agreeing to four decimal places is not a fact about the algorithms. It is a fact about the objective function, and it means the framework's namesake component was unexamined. \\
-\textbf{B6} & The three ``banks'' were a \textbf{stratified volume split of one institution}.
-& Cross-institution shift was never exercised, so Shapley values came out near-uniform ($[0.167, 0.165, 0.165]$) and the incentive layer had essentially nothing to attribute. \\
-\textbf{B7} & \textbf{\epsst{} was quoted as a measurement} (``a 60\x{} improvement'') when the weight channel was still failing at the top of the swept grid.
-& It was a \emph{censored lower bound} presented as a measured quantity --- the exact class of overstatement the earlier purge existed to remove. \\
-\textbf{B8} & Two of the six words in the title are \textbf{overstated}: ``Scalable'' (we have scalable \emph{contribution attribution}, not throughput) and ``Consensus Mechanisms'' (Raft is stock Fabric). & Reviewers read titles as claims. \\
-\textbf{B9} & \textbf{Retracted numbers had crept back into live drafts}, because the only way to refresh generated prose was to re-run a multi-hour experiment. & While a stale draft is cheaper to leave broken than to fix, it stays broken. This is a process defect, not a typo. \\
+\textbf{B1} & \textbf{All six promises rested on one dataset} --- ULB --- and ULB does not say which customer made which payment. & Anything we reported could be waved away as a quirk of one anonymous file where only 0.17\% of rows are fraud. And it was worse than that: our detector reads ``sequences'' of 10 consecutive transactions, but with no customer column those 10 rows belong to \emph{ten different unrelated people}. We were testing a model designed to learn a person's habits on input that contained nobody's habits. \\
+\textbf{B2} & \textbf{Four of the six experiment scripts had the ULB file hard-wired into them}, and none of the result files recorded which dataset they came from. & So testing on a second dataset was not merely something we had not done --- it was not \emph{possible} without writing code first. And results that do not record where they came from cannot be compared with anything later, even after you do that work. \\
+\textbf{B3} & \textbf{The detector's headline score came from a single run}, and two of our own files disagreed about it: one said MCC \textbf{0.677}, another said \textbf{0.313}. & A contradiction inside your own results, with no explanation, is the very first thing a reader finds --- and once found it makes every other number on the page look unreliable too. \\
+\textbf{B4} & \textbf{The real, measured blockchain numbers were missing from the report.} The invented ones had been deleted, but nothing had been put in their place. & Claiming ``blockchain-integrated'' while showing no measurement of the blockchain is an assertion, not a result. \\
+\textbf{B5} & \textbf{The automated search had never been checked.} On ULB, all five different search algorithms we compared reported the same best score: exactly \textbf{5.0000}, which happens to be the highest score possible. & Five genuinely different algorithms agreeing to four decimal places tells you nothing about the algorithms. It tells you something is wrong with the \emph{scoring function} they all share. And that meant the component the whole framework is named after had never been examined. \\
+\textbf{B6} & \textbf{The three ``banks'' were not really three banks} --- they were one bank's transactions dealt into three equal piles. & Real banks differ from each other; three piles from one source do not. So there was nothing for the fairness calculation to find, and it duly reported all three as near-identical contributors ($[0.167, 0.165, 0.165]$). The reward layer had essentially nothing to reward. \\
+\textbf{B7} & \textbf{We quoted a privacy number as if we had measured it} (``a 60\x{} improvement'') when in fact our test had run out of range before finding the answer. & The true value was somewhere \emph{beyond} where we stopped looking, so what we had was a floor, not a measurement --- and we had printed it as a measurement. That is exactly the kind of overstatement the earlier clean-out existed to remove. \\
+\textbf{B8} & \textbf{Two of the six words in the title claim more than we delivered:} ``Scalable'' (what scales is the \emph{fairness calculation}, not the transaction throughput) and ``Consensus Mechanisms'' (we use Fabric's stock Raft, we did not build one). & Reviewers read a title as a list of claims, and check them one by one. \\
+\textbf{B9} & \textbf{Numbers we had formally retracted kept reappearing in live drafts}, because the only way to refresh a generated document was to re-run an experiment lasting hours. & So nobody refreshed them. A stale draft is cheaper to ignore than to fix, which means it stays broken indefinitely. This is a broken process, not a typo. \\
 \bottomrule
 \end{xltabular}}
 
-\begin{keybox}{The one sentence that summarises the ``before'' state}
-The thesis had a real contribution and honest negative results, but \textbf{single-dataset evidence,
-an unaudited search, and one censored statistic presented as measured}. All three are the kind of
-weakness that survives internal review and does not survive external review.
+\begin{keybox}{The ``before'' state in one sentence}
+The thesis had a genuine contribution and an honest list of things that did not work --- sitting on top
+of \textbf{evidence from one dataset, a search nobody had ever checked, and one number we had presented
+as measured when we had not actually measured it.} All three are the kind of weakness that gets past
+your own review and does not get past anybody else's.
 \end{keybox}
 
 % =====================================================================
 \section{How we decided to work}
 \label{sec:method}
 
-Before describing the experiments, the working method has to be described, because it is the single
-biggest change of the period and it is what produced most of the findings.
+Before the experiments, the \emph{method} --- because changing how we worked was the single biggest
+change of these six days, and it is what produced most of the findings. The experiments themselves were
+fairly ordinary. The discipline around them was not.
 
-\subsection{Twelve standing rules}
+\subsection{The standing rules}
 
-A short rule set governs every run. The ones that did real work in this period:
+A short list of rules governs every run. Here are the ones that actually did work in this period, in
+plain language:
 
 \begin{itemize}
-  \item \textbf{Rule 1 --- Novel and completely honest. When they conflict, honesty wins.}
-  \item \textbf{Rule 2 --- No number ships that a script did not produce.} If it does not exist, run it or cut it.
-  \item \textbf{Rule 3 --- Negative results stay negative.} They are the contribution; do not ``fix'' them.
-  \item \textbf{Rule 4 --- No result-shopping, and pre-register.} Never pick a dataset, seed or split because it flatters us; and write down what you expect \emph{before} the run.
-  \item \textbf{Rule 8 --- A new dataset must be able to overturn something, and breadth across \emph{claims} beats breadth across \emph{datasets}.} A claim tested on three datasets while four sibling claims sit on one is a lopsided table, not rigour.
-  \item \textbf{Rule 9 --- Judge the system, not a component.} (Added after the direction-review error above.)
-  \item \textbf{Rule 11 --- State which metric you are quoting, and why that one.} If a script computes two ratios and the prose quotes the flattering one without naming the switch, that is result-shopping with extra steps.
-  \item \textbf{Rule 12 --- A control that can overturn a finding you already have outranks a dataset that can add a new one.} (Added 4 September, after a three-hour control killed our best claim.)
+  \item \textbf{Rule 1 --- Be novel and be completely honest. If those two ever pull in opposite
+  directions, honesty wins.} Every other rule is a consequence of this one.
+  \item \textbf{Rule 2 --- No number goes in a document unless a script produced it.} If the number does
+  not exist yet, either run the experiment or delete the sentence. There is no third option.
+  \item \textbf{Rule 3 --- Bad results stay bad.} When something does not work, that \emph{is} the
+  finding. Do not go looking for a version of the experiment that makes it look better.
+  \item \textbf{Rule 4 --- Do not shop for results, and write your prediction down first.} Never pick a
+  dataset, a random seed or a split because it makes us look good --- and write down what you expect to
+  happen \emph{before} you run, so you cannot quietly adjust the expectation afterwards.
+  \item \textbf{Rule 8 --- A new dataset has to be able to prove something wrong, and covering all your
+  claims beats piling up datasets.} One claim tested on three datasets while its four siblings sit on
+  one is a lopsided table, and a reviewer will simply attack the four.
+  \item \textbf{Rule 9 --- Judge the whole system, not one component.} (Added after the review mistake
+  described on the previous page.)
+  \item \textbf{Rule 11 --- Always say which score you are quoting, and why that one.} If a script
+  computes two different numbers and the write-up quotes the nicer one without mentioning the choice,
+  that is result-shopping wearing a disguise.
+  \item \textbf{Rule 12 --- An experiment that could destroy a finding you already have is worth more
+  than one that could add a new finding.} (Added 4 September, immediately after a three-hour control run
+  destroyed our best claim.)
 \end{itemize}
 
 \subsection{Pre-registration, and what it bought}
 
-Before each run we wrote down what we expected, \emph{and what it would mean if we were wrong}, and
-then never edited those words --- results were scored underneath them. Across five runs in this period
-we recorded \textbf{26 predictions}. Nine were wrong.
+``Pre-registration'' sounds formal but the idea is simple: \textbf{before starting a run, write down
+what you expect to happen and what it would mean if you turned out to be wrong --- then never edit those
+words.} When the results arrive you write them underneath, next to the prediction, whatever they say.
+
+The reason to do it is that human memory is generous. Without it, a surprising result quietly becomes
+``well, that is roughly what we thought'' by the time it is written up. With it, being wrong is a
+recorded event you cannot talk your way out of.
+
+Across five runs in this period we wrote down \textbf{26 predictions. Nine of them were wrong} --- and
+those nine are the most valuable material in this report.
 
 \begin{center}\small
 \begin{tabularx}{\linewidth}{@{}p{5.4cm} c c X@{}}
@@ -375,11 +525,15 @@ Surrogate repair side-by-side (4--5 Sep) & 6 & 3 & Determinism does not make a n
 \end{tabularx}
 \end{center}
 
-\begin{keybox}{Why this matters more than any individual result}
-Three of our own headline claims died in these six days. Because the falsifying outcome had been
-written down in advance each time, each death arrived as \emph{a finding we could report} rather than
-as an objection we could not answer. The confound control cost about three hours; skipping it would
-have cost the claim in public. \textbf{That trade is the methodological result of the period.}
+\begin{keybox}{Why this matters more than any single result in the report}
+Three of our own headline claims died in these six days. Because we had written down in advance what
+would count as being wrong, each of those deaths arrived as \textbf{a finding we could publish} rather
+than as an objection we had no answer to. The difference is entirely in the timing: the same fact,
+discovered by us first, is a contribution; discovered by a reviewer first, it is a retraction.
+
+The control run that killed our best claim cost about three hours. Skipping it would have cost us the
+claim anyway --- just later, and in public. \textbf{That trade is the real methodological result of the
+period.}
 \end{keybox}
 
 % =====================================================================
@@ -425,55 +579,75 @@ is cut, not the writing.}
 
 \subsection{First, close the three loose ends a reviewer would find (31 August)}
 
-Before adding anything new we closed the three defects from Section~\ref{sec:bad} that were cheapest
-to fix and most damaging to leave.
+Before adding anything new, we closed the three problems from Section~\ref{sec:bad} that were cheapest
+to fix and most embarrassing to leave open.
 
-\textbf{The MCC contradiction (B3) was resolved, and the resolution was not what the report guessed.}
-Thirteen full 30-epoch runs established that training is bitwise deterministic for a fixed triple of
-\emph{(seed, torch version, CPU thread count)} --- but two of our scripts were using different thread
-counts, so they had never been running the same arithmetic. At seed 42 the tuned configuration scores
-0.708 / 0.746 / 0.800 at 4 / 2 / 8 threads, while the hand-set default is bitwise \emph{invariant}. So
-the report's ``large batch causes instability'' hypothesis was right about the cause and wrong about
-its nature: this is float reduction-order sensitivity, not run-to-run randomness. \textbf{MCC 0.313 is
-withdrawn} --- it is not reproducible under any condition we tested. Over five seeds the honest
-headline became a distribution: \textbf{tuned 0.753\,$\pm$\,0.055, default 0.706\,$\pm$\,0.076,
-difference $+0.047$ at $p=0.34$} --- statistically indistinguishable, and the \emph{default} is the
-noisier of the two. The root cause was that \texttt{torch} was listed as optional and unpinned; it is
-now pinned at 2.12.0, and \textbf{every reported detector number now requires a stated torch version
-and thread count}.
+\textbf{First: the two contradictory scores (B3), and the answer was not what we had guessed.} Recall
+the problem --- one of our files said the detector scored MCC 0.677, another said 0.313, and nobody knew
+why. Thirteen full training runs settled it. Training is perfectly repeatable, \emph{provided} three
+things stay fixed: the random seed, the version of the maths library, and \textbf{the number of CPU
+threads}. That third one was the culprit. Two of our scripts were using different thread counts, so they
+had never actually been doing the same arithmetic.
 
-\textbf{The measured Fabric data went into the report (B4)}, replacing the retired 85\,TPS / 180\,ms
-with 2115.9\,ms mean latency and the 40.3\,TPS goodput curve. The measurement also exposed a design
-mismatch the simulated layer had hidden: the incentive scheme awards a \textbf{+15-token bonus for
-latency below 300\,ms}, which is \emph{unreachable} on a 2.1-second Raft floor.
+Why would thread count matter? Because adding up a million numbers in a different order gives a very
+slightly different answer in floating-point arithmetic, and over 30 training epochs those tiny
+differences compound. At the same seed, the tuned configuration scores \textbf{0.708, 0.746 and 0.800}
+on 4, 2 and 8 threads respectively. So our old guess --- ``large batches make training unstable'' --- had
+the right suspect and the wrong crime. \textbf{MCC 0.313 is withdrawn}: it does not reproduce under any
+condition we could construct.
 
-\textbf{And the objective function was de-duplicated:} \texttt{metrics.py} still held a superseded
-unbounded formula while the methodology chapter described a bounded one. There is now one definition,
-verified bit-identical over 2{,}000 random metric dictionaries.
+The honest replacement is not a single number but a range over five runs: \textbf{tuned 0.753
+$\pm$ 0.055, hand-set default 0.706 $\pm$ 0.076, a difference of $+0.047$ with $p = 0.34$.} In plain
+terms, \textbf{$p = 0.34$ means a gap this size would turn up about a third of the time by pure chance},
+so we cannot claim the tuned version is better --- and, awkwardly for us, the \emph{default} is the more
+stable of the two. The underlying cause was that the maths library was never pinned to a version; it now
+is, and every detector number we report from here on has to state its library version and thread count
+or it means nothing.
+
+\textbf{Second: the real blockchain numbers went into the report (B4).} The invented 85\,TPS / 180\,ms
+were replaced with the measured 2115.9\,ms average latency and the 40.3\,TPS curve. Measuring it also
+exposed something the simulated version had been hiding: \textbf{our reward scheme pays a 15-token bonus
+for committing a record in under 300\,ms, and the real network's floor is 2.1 seconds.} That bonus can
+never be earned by anyone. It was a design mismatch that only appeared once real hardware was involved.
+
+\textbf{Third: we deleted a duplicate definition.} The scoring formula existed in two versions --- an old
+unbounded one still sitting in the code, and the bounded one described in the methodology chapter. There
+is now exactly one, checked against the other over 2{,}000 random inputs and identical every time.
 
 \subsection{The dataset question --- and the decision to keep ULB}
 \label{sec:ulb}
 
-This is the fork the rest of the work hangs on.
+This is the fork the whole rest of the work hangs on, so it is worth setting out carefully.
 
-\begin{decision}{1 --- Add a second dataset, and \emph{keep} the first one as a live condition}
-\qlabel{Question raised:} ULB has no customer identities, so the detector's windows stitch together
-unrelated cardholders. That may be the whole reason our temporal architecture lost to a plain CNN
-(0.770 vs 0.459 on the original ablation). Do we \textbf{replace} ULB with an entity-linked dataset,
-or \textbf{keep} it and run both?
+\textbf{The problem.} Our detector is built to spot suspicious \emph{patterns over time} in a person's
+spending. To do that it reads 10 consecutive transactions at once. But ULB has no customer column, so
+those 10 transactions belong to 10 unrelated strangers. \textbf{We had been testing a model designed to
+learn habits on data that contained no habits} --- and it had duly lost to a much simpler model (0.770
+against 0.459). We could not tell whether our architecture was genuinely bad or had simply never been
+given a fair test.
 
-\qlabel{Decision taken:} Keep ULB, add BankSim, and re-run \emph{every} comparison on both under the
-same code. BankSim first among the candidates --- one CSV, 594{,}643 transactions, 7{,}200 frauds,
-4{,}112 customers with roughly a hundred transactions each, small enough to iterate in minutes.
+\begin{decision}{1 --- Add a second dataset, and \emph{keep} the first one running too}
+\qlabel{Question raised:} Do we \textbf{replace} ULB with a dataset that has customer identities, or
+\textbf{keep} ULB and run both side by side?
 
-\qlabel{Why:} Three reasons. (i)~ULB is the dataset the accepted thesis stands on; dropping it would
-make every extension result incomparable with the submitted report, and the report would be orphaned.
-(ii)~A claim can only be shown to be \emph{dataset-dependent} if both datasets are measured --- a
-single new dataset replaces one narrow story with a different narrow story. (iii)~Rule~4: choosing the
-dataset on which our architecture looks better, and dropping the one where it does not, is
-result-shopping.
+\qlabel{Decision taken:} Keep ULB, add BankSim, and re-run \emph{every} comparison on both, through the
+same code. BankSim was picked first out of the candidates because it is a single CSV file with 594{,}643
+transactions, 7{,}200 frauds and 4{,}112 customers who each have about a hundred transactions --- small
+enough to iterate on in minutes. (The full five-way comparison is Section~\ref{sec:fivedatasets}.)
 
-\qlabel{Outcome --- and it cut both ways:}
+\qlabel{Why:} Three reasons, and the third is the one that mattered.
+\begin{enumerate}[topsep=2pt,label=(\roman*)]
+\item \textbf{ULB is what the accepted thesis stands on.} Drop it and every new result becomes
+incomparable with the submitted report, leaving that report stranded.
+\item \textbf{You can only show a result depends on the dataset if you measure both.} Swapping one
+dataset for another does not broaden the evidence --- it just replaces one narrow story with a different
+narrow story.
+\item \textbf{Rule 4.} Keeping the dataset where our architecture looks good and dropping the one where
+it looks bad is result-shopping, however reasonable the excuse sounds at the time. This is exactly the
+situation the rule exists for, and it was tempting.
+\end{enumerate}
+
+\qlabel{Outcome --- and it genuinely cut both ways:}
 \begin{itemize}[topsep=2pt]
 \item \textbf{It paid immediately.} Entity-linked windows help \emph{every} architecture by
 $+0.0999$ to $+0.1717$ MCC, so ``temporal complexity does not pay'' was a statement about
@@ -490,51 +664,196 @@ failure is recorded as \emph{unexplained}. Keeping ULB bought us the knowledge a
 \end{decision}
 
 \begin{warnbox}{A trap the second dataset nearly set --- caught before it ran}
-BankSim's raw CSV emits fraudulent rows \emph{adjacently inside each time step}: 3{,}635 adjacent fraud
-pairs in file order versus 84 after shuffling within the step. A \texttt{step} is a whole day, so that
-adjacency is an artefact of how the simulator wrote the file, not a property of the world. Had we
-windowed in file order, the \emph{global-window control arm} would have shown
-$P(\text{fraud}_t \mid \text{fraud}_{t-1}) = 0.50$ --- the control would have looked strongly
-predictive and the entire entity-linkage experiment would have been quietly destroyed. With a seeded
-within-step tie-break the numbers are global \textbf{0.0117} against a base rate of 0.0121 (no signal,
-which correctly reproduces the ULB situation) and customer-linked \textbf{0.3615}. \emph{Any dataset
-whose time column is coarser than its row order carries an implicit ordering that is an artefact of
-generation.} This check is now mandatory before windowing any new dataset.
+BankSim's raw file lists fraudulent transactions \textbf{next to each other} within each day ---
+3{,}635 adjacent fraud pairs in file order, against only 84 once you shuffle within the day. The reason
+is mundane: the simulator that generated the file wrote its frauds out together. It says nothing
+whatsoever about the real world.
+
+But here is what it would have done to us. Our whole experiment compares customer-linked windows against
+ordinary sequential ones. If we had built the sequential windows straight from file order, the
+\emph{comparison arm} would have found that a fraud is followed by another fraud 50\% of the time ---
+making it look strongly predictive, for a completely fake reason. \textbf{The comparison would have been
+poisoned and the entity-linkage result destroyed, and nothing would have looked wrong.}
+
+Shuffling within each day fixes it, and the corrected numbers behave exactly as they should: sequential
+windows \textbf{0.0117} against a base rate of 0.0121 --- no signal at all, which correctly matches what
+we see on ULB --- and customer-linked windows \textbf{0.3615}.
+
+The general lesson, which is now a mandatory check before any new dataset: \textbf{if a dataset's time
+column is coarser than its row order, the row order is carrying hidden information that came from how
+the file was written, not from the world.}
 \end{warnbox}
+
+\subsection{All five datasets, compared}
+\label{sec:fivedatasets}
+
+Decision~1 says which two datasets we run. This section says \textbf{which five we looked at}, what each
+one is, what each could and could not prove, and exactly how far each one got. Two are measured, one is
+wired up and ready but has not been run, and two were investigated and deliberately not run.
+
+\begin{keybox}{Read this before the table --- what ``compared'' means here}
+\textbf{Five datasets are compared on this page. Two of them have results.} That distinction is the
+whole point of the table, so it is printed in its own column and never blurred. Under Rule~2, a dataset
+with no run behind it gets no numbers of its own --- it gets its measured properties, its cost, and an
+honest statement of what it would answer if it were run.
+
+Anyone who needs a one-line answer: \textbf{ULB and BankSim are measured; the Fraud Detection Handbook
+is loaded, verified and awaiting a go/no-go on 12 September; AMLSim and PaySim were assessed and
+rejected for this deadline, for different and specific reasons.}
+\end{keybox}
+
+{\small
+\renewcommand{\arraystretch}{1.3}
+\begin{xltabular}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.45cm} >{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{3.15cm} X@{}}
+\toprule
+\textbf{Dataset} & \textbf{What is in it} & \textbf{Who/what it can link} & \textbf{Status, and why} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Dataset} & \textbf{What is in it} & \textbf{Who/what it can link} & \textbf{Status, and why} \\
+\midrule
+\endhead
+\textbf{1. ULB credit card} \newline {\footnotesize real transactions, anonymised} &
+284{,}807 transactions, \textbf{0.17\% fraud} (492 cases). Features are anonymised, so no column means anything human-readable. &
+\textbf{Nothing.} No customer column at all. A ``sequence'' of 10 rows is 10 different strangers. &
+\textcolor{okgreen}{\textbf{MEASURED}} --- 1 condition. The dataset the accepted thesis stands on. Kept deliberately (Decision~1): dropping it would orphan the submitted report, and it is the \emph{only} reason we found two of our worst bugs. \\
+\textbf{2. BankSim} \newline {\footnotesize simulated retail banking} &
+594{,}643 transactions, \textbf{1.211\% fraud} (7{,}200 cases), 50 merchants, 180 daily steps. &
+\textbf{Customers} --- 4{,}112 of them, roughly a hundred transactions each. Time resolves to \emph{one day}. &
+\textcolor{okgreen}{\textbf{MEASURED}} --- 2 conditions. Chosen first because it is one CSV file, small enough to iterate on in minutes, and it directly fixes ULB's missing-customer problem. \\
+\textbf{3. Fraud Detection Handbook} \newline {\footnotesize simulated, ULB research group} &
+\textbf{1{,}754{,}155} transactions --- three times BankSim --- \textbf{0.837\% fraud} (14{,}681 cases) over 183 days. &
+\textbf{Customers (4{,}990) \emph{and} terminals (10{,}000)}, with exact timestamps to \textbf{one second}. The only candidate that links both. &
+\textcolor{amber}{\textbf{LOADED, NOT RUN}} --- loader landed 8 Sep, 42 acceptance checks pass, \textbf{zero results}. Cost measured at \textbf{about 11\,h} of CPU (the original 6\,h budget was too low). Go/no-go \textbf{12 September}. \\
+\textbf{4. IBM AMLSim} \newline {\footnotesize simulated multi-bank network} &
+Configurable. Its distinguishing feature is not size but structure: it models \emph{several institutions}, not one. &
+\textbf{Real bank identities} --- a federation we would not have to invent by dealing customers into piles. &
+\textcolor{steel}{\textbf{ASSESSED, DEFERRED}} --- right dataset, wrong fortnight. It is a Java generator needing a whole configuration pipeline before a single transaction exists, and the question it was going to settle got settled for free by our control run (Section~\ref{sec:control}). Revisit after the deadline. \\
+\textbf{5. PaySim} \newline {\footnotesize simulated mobile money} &
+6.36M transactions with sender, receiver and account balances. Much the biggest of the five. &
+\textbf{Little that is useful.} No bank identities, and a sending account may appear only once or twice --- so there is no history to build a sequence from. &
+\textcolor{badred}{\textbf{ASSESSED, REJECTED}} --- fails Rule~8. It cannot test the federated story (no banks) and it cannot test the sequence story (no repeat customers). Being the largest file on the list buys nothing if it answers neither open question. \\
+\bottomrule
+\end{xltabular}}
+
+\subsubsection*{What each one can actually overturn}
+
+Size is not the point. \textbf{A dataset earns its CPU time by being able to prove one of our claims
+wrong} (Rule~8), so this is the column that decided the ordering:
+
+\begin{itemize}
+  \item \textbf{ULB} can overturn anything that turns out to depend on having customer identities ---
+  and it does exactly that: entity-linked windows help every architecture, which we could only learn by
+  keeping the dataset that has no entities.
+  \item \textbf{BankSim} could overturn ``our temporal model fails'' --- and it did, partly. It showed
+  the \emph{windows} were the problem, not the sequence model. But its clock only resolves to one day,
+  so it can only half-answer the timing question.
+  \item \textbf{Handbook} is the only one that can finish that job, because its clock resolves to one
+  second and it links terminals as well as customers. Reconnaissance found a fraud-adjacency signal of
+  \textbf{71.65$\times$} on terminals, the strongest linkage in the project. It is also the cheapest way
+  to ask the live question: \emph{is Krum's utility cost a BankSim quirk, or a general property?}
+  \item \textbf{AMLSim} was going to be the deciding experiment for that same Krum question, because it
+  has genuine institutional boundaries. \textbf{Then our own three-hour control answered the question
+  without it}, and its promotion rationale was spent. We recorded that demotion as a result following
+  the data, not as a convenience.
+  \item \textbf{PaySim} can overturn nothing we currently claim. That is the entire verdict.
+\end{itemize}
+
+\begin{warnbox}{A sixth file that looked like a dataset and was not}
+\texttt{datasets/bsNET140513\_032310.csv} sits on disk next to the BankSim file and looks for all the
+world like extra data. \textbf{It is not.} We checked it row by row: its columns
+\texttt{Source,Target,Weight,typeTrans,fraud} are \emph{byte-identical} to
+\texttt{customer,merchant,amount,category,fraud} in the file we already load, across all 594{,}643 rows.
+It is a strict subset of BankSim with four columns deleted, so it carries \textbf{zero} information the
+loaded file does not already have.
+
+It is recorded here because it is the sort of thing that quietly becomes ``we used four datasets'' in a
+later draft. \textbf{Counting a file twice is not breadth.} The check cost twenty minutes and it is
+written down so nobody spends that twenty minutes again.
+\end{warnbox}
+
+\begin{keybox}{Why the answer is two datasets and not five, stated plainly}
+It would read better to say we tested on five datasets. Rule~2 does not allow it, so here is the honest
+version.
+
+Getting a dataset from ``interesting'' to ``a column in our results table'' costs a loader, a
+reconnaissance pass, and then a full re-run of every sweep --- \textbf{roughly 11 hours of CPU for the
+Handbook, and that is the \emph{cheapest} of the three remaining candidates}. With 14 days to a deadline
+and a repaired hyperparameter search that has to be re-run first, five measured datasets was never on
+the table.
+
+The choice was therefore between \emph{two datasets with all six claims tested on them}, and
+\emph{three datasets with one claim tested and five claims left on ULB}. Rule~8 picks the first, because
+a reviewer attacks the five claims you left behind, not the one you showed off. \textbf{So: five
+datasets assessed, two measured, and this page saying exactly which is which.}
+\end{keybox}
 
 \subsection{What the second dataset said about our own detector (31 August)}
 
-With BankSim wired in we re-implemented the base paper's comparison honestly --- all four of its
-classifiers and all four of its optimisers, re-run on our data rather than copied from its tables ---
-and ran a $2\times 7$ grid (two window types $\times$ seven architectures, three seeds).
+With BankSim wired in, we could finally ask the question ULB could not answer: \textbf{is our detector
+actually bad, or had it just never been given real sequences to look at?}
+
+To answer it we ran every combination of two things: \textbf{seven different detector architectures}
+(ours, plus six alternatives including the base paper's) against \textbf{two ways of building the
+10-transaction window} --- either 10 rows straight from the file, which is what ULB forced on us, or 10
+transactions belonging to the \emph{same customer}, which is what BankSim makes possible. Three runs
+each, so the numbers are averages rather than single throws. We also re-implemented the base paper's
+four classifiers and four optimisers ourselves on our own data, rather than copying figures out of its
+tables.
+
+\textbf{The answers were not comfortable, and they were not all in the same direction.}
 
 \begin{center}\small
 \begin{tabularx}{\linewidth}{@{}p{4.6cm} X@{}}
 \toprule
-\textbf{Result} & \textbf{Reading} \\
+\textbf{What we measured} & \textbf{What it means} \\
 \midrule
-Entity-linked windows help every architecture, $+0.0999$ to $+0.1717$ MCC & The window was the problem, not the sequence model. The ULB negative result does not generalise. \\
-On linked windows ADTCN ranks \textbf{7 of 7} (0.7089), behind its own no-attention ablation DTCN (0.7733) and a plain CNN & \dots but ADTCN is still the wrong sequence model. Best linked: LSTM 0.7805. \\
-On ULB global windows ADTCN ranks \textbf{5 of 7} (0.3296); ResNet-1D leads at 0.5995 & Consistent with the above: our detector is a measured component, not a winning one. \\
-Attention's contribution \textbf{flips sign} between the two settings: $-0.0645$ on BankSim linked, $+0.0502$ on ULB global & A single-factor ablation (DTCN is deliberately ADTCN-minus-attention) showing the architecture choice is setting-dependent. \\
-On ULB, \textbf{all five optimisers hit exactly 5.0000} --- the theoretical ceiling & Not a result about optimisers. This is what opened the surrogate audit in Section~\ref{sec:obj13}. \\
+Giving each architecture \emph{customer-linked} windows instead of file-order ones improved \textbf{every single one} of the seven, by $+0.0999$ to $+0.1717$ MCC. & \textbf{The window was the problem, not the model.} ``Temporal complexity does not pay'' turns out to have been a statement about windows containing no real sequences. It does not generalise. \\
+On those linked windows our detector ranks \textbf{last of seven} (0.7089) --- behind even its own simplified version with the attention removed (0.7733), and behind a plain CNN. The best is a standard LSTM at 0.7805. & \dots\ but our architecture is still the wrong one. Fixing the window did not rescue it, and we report that. \\
+On ULB's file-order windows our detector ranks \textbf{5th of seven} (0.3296); ResNet-1D leads at 0.5995. & Same conclusion from the other direction. \textbf{Our detector is a component we measured honestly, not one that wins.} \\
+The attention mechanism --- the ``A'' in ADTCN --- \textbf{helps in one setting and hurts in the other}: $-0.0645$ on BankSim linked windows, $+0.0502$ on ULB file-order windows. & A clean single-factor test, since the comparison model is deliberately just ours with the attention removed. It says the right architecture \emph{depends on the setting}, which is a more interesting result than either number alone. \\
+On ULB, \textbf{all five optimisers returned exactly 5.0000} --- the highest score the scale allows. & Not a fact about optimisers at all. Five different algorithms agreeing perfectly means something is wrong with the thing they are all being scored by. \textbf{This one line opened the entire audit in Section~\ref{sec:obj13}.} \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\begin{keybox}{How we report ADTCN and DB-BOA --- a decision, not an accident}
-Neither is a title claim, so neither has to win, but neither may be \emph{described} as winning. They
-are reported as \textbf{measured components}: ``we built it, measured it honestly, and it did not beat
-the simple baseline'' is a legitimate result in a systems paper. What is not legitimate is quietly
-choosing the setting where it looks better. We also state plainly that \textbf{no number from the base
-paper is reproduced} --- their results are MATLAB runs on their own data; we re-ran their methods on
-ours, and the filter ceiling was cut identically for every optimiser to fit a CPU budget.
+\begin{keybox}{How we talk about our own detector and search --- a decision, not an accident}
+Our detector (ADTCN) came last of seven. Our search (DB-BOA) does not beat a setting we picked by hand.
+It would be easy to bury both. Here is the position we took instead, and why it is defensible.
+
+\textbf{Neither of them is one of the six promises in the title.} Look back at the component table in
+Section~3: the detector is the foundation the system is built on, and the search is an automation
+convenience. Neither one has to \emph{win} for the thesis to hold. So we report them as \textbf{measured
+components}: we built it, we measured it honestly, and it did not beat the simple baseline. In a systems
+paper that is a perfectly legitimate result.
+
+\textbf{What would not be legitimate} is quietly picking whichever dataset or setting makes them look
+better and reporting only that. So we report every setting we ran, including the ones where we come
+last.
+
+One more thing we state plainly rather than let a reader assume: \textbf{we do not reproduce a single
+number from the base paper.} Their results are MATLAB runs on their own data. We re-implemented their
+methods and ran them on \emph{ours}, with the same computational budget cut applied identically to every
+one of them. Comparing our table against theirs directly would be comparing two different experiments.
 \end{keybox}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_architecture_scoreboard.png}
+\caption{The $2\times7$ grid, drawn. \textbf{(a)} On BankSim, entity-linked windows beat global windows
+for \emph{every} one of the seven architectures --- and ADTCN comes last of seven on exactly the linked
+windows it was designed for. \textbf{(b)} On ULB, where there are no customer identities and only global
+windows exist, the same seven re-rank and ADTCN sits fifth. \textbf{(c)} What the window buys, per
+architecture: positive everywhere, $+0.0999$ to $+0.1717$ MCC. This is why we report \emph{the window},
+not the sequence model, as the thing that mattered. Bars are means of three seeds, $\pm1$ s.d.}
+\label{fig:archgrid}
+\end{figure}
 
 \subsection{Taking the system claims off one dataset (1 September)}
 
-The expansion had reached the detector and stopped. Four of the six title claims were still backed by
-ULB alone --- not by choice, but because four sweep scripts hard-coded the ULB loader (B2).
+At this point the second dataset had reached the detector and gone no further. Four of the six promises
+were still resting on ULB alone --- not because we had chosen that, but because four of the experiment
+scripts had the ULB file wired into them and physically could not read anything else (B2).
 
 \begin{decision}{2 --- Breadth across \emph{claims} before breadth across \emph{datasets}}
 \qlabel{Question raised:} With one new dataset working, do we add a \emph{third} dataset (which sounds
@@ -559,12 +878,18 @@ and reads from the data.}
 \subsection{The control that killed our best new claim (1--4 September)}
 \label{sec:control}
 
-The BankSim sweeps produced a striking finding: Krum, which rejects poisoned weight vectors perfectly,
-appeared to \emph{pay} 1.5--12.6 percentage points of accuracy for that protection when organisations
-hold disjoint customers. We had a mechanism for it, and it was the most quotable thing in the objective.
+The BankSim runs produced a genuinely exciting finding. Krum --- the rule that throws out a sabotaged
+bank --- catches the attacker every single time, but it appeared to \textbf{charge us 1.5 to 12.6
+percentage points of accuracy} for that protection whenever the banks held completely separate sets of
+customers. We even had a tidy explanation for why. It was the most quotable sentence we had written all
+week.
 
-It was also confounded. Every BankSim-vs-ULB comparison had changed \textbf{two things at once}: the
-dataset \emph{and} the way organisations were partitioned.
+\textbf{It was also confounded}, and that word is worth defining because the rest of this section turns
+on it. A comparison is \emph{confounded} when you change two things at the same time and then credit the
+result to one of them. Every comparison we had run changed both the \textbf{dataset} (ULB
+$\rightarrow$ BankSim) \emph{and} the \textbf{way customers were dealt out to the three banks}
+(mixed together $\rightarrow$ kept separate). So when the number moved, we had no way of knowing which
+of the two changes moved it --- and we had confidently credited the second one.
 
 \begin{figure}[h]
 \centering
@@ -606,6 +931,14 @@ $-0.322$ on the partition axis. \textbf{Every divergence we had attributed to fe
 actually BankSim.}
 \end{decision}
 
+The table below is how that was worked out, and it is worth reading slowly. \textbf{Each number is
+``Krum minus FedAvg''} --- how many percentage points of balanced accuracy we gained (positive) or lost
+(negative) by picking the most typical bank instead of averaging all of them. The first three columns
+are the three conditions we ran. \textbf{The last two columns are the answer:} the \emph{dataset}
+column isolates what changed when only the data changed, and the \emph{partition} column isolates what
+changed when only the customer split changed. Before the control run, those two columns could not be
+separated at all.
+
 \begin{center}\small
 \begin{tabularx}{\linewidth}{@{}X r r r r r@{}}
 \toprule
@@ -623,47 +956,80 @@ $n{=}7$ label-flip & $+0.00$ & $-11.61$ & $-6.32$ & $-11.61$ & \textbf{$+5.28$} 
 \end{tabularx}
 \end{center}
 
-\textbf{What survives, and it is worth keeping:} Krum rejects the attacker \textbf{8 out of 8 in all
-three conditions} --- the security property replicates and is now three-condition solid. Krum
-\emph{can} cost utility, by an amount that tracks the dataset. \textbf{No mechanism for that cost is
-currently on record, and saying so is the honest position.} An unexplained measured effect is a
-result; a mechanism invented to cover it is not.
+\textbf{What survived, and it is worth having.} The security property is untouched and is now stronger
+than before: \textbf{Krum catches the attacker 8 times out of 8 in all three conditions.} That is the
+claim Krum is actually there to support, and it now holds on two datasets and three splits.
 
-\begin{warnbox}{A metric artefact we then had to map, cell by cell}
-In several runs the \emph{attacked} FedAvg model scores \emph{above} its own no-attack reference. An
-attack cannot genuinely improve a model --- this is balanced accuracy rewarding noise that pushes the
-decision boundary toward the positive class. The contamination is condition-graded: \textbf{0 of 8
-(ULB), 2 of 8 (BankSim/stratified), 5 of 8 (BankSim/entity-disjoint)} --- i.e.\ worst precisely in the
-condition we had headlined, and \emph{every} cell worse than $-5$\,pp there is a contaminated one. On
-the clean cells only, the entity-disjoint cost is $-4.73$ to $-1.48$\,pp, not $-12.57$ to $-1.48$.
-Crucially, on the three cells that are clean in \emph{all three} conditions the withdrawal reproduces
---- so it survives the filter rather than being produced by it.
+What we lost is the \emph{explanation} for the accuracy cost, not the cost itself. Krum can cost
+accuracy; the amount tracks the dataset; and \textbf{we do not currently know why.} Writing that down is
+uncomfortable and it is the correct thing to do --- a measured effect with no explanation is a result,
+while an explanation invented afterwards to cover a measurement is not. Question~Q3 in Section~12
+carries it as an open problem rather than papering over it.
+
+\begin{warnbox}{A trap in the score itself, which we then had to map cell by cell}
+While reading those results we noticed something impossible: in several runs, the model that had been
+\textbf{attacked} scored \emph{higher} than the same model with no attack at all. An attack cannot
+genuinely improve a model, so the score was misleading us.
+
+Here is what was happening. Balanced accuracy treats catching fraud and catching non-fraud as equally
+important. The attacker's noise happened to push the model toward flagging more transactions as fraud.
+That caught more of the rare frauds, and balanced accuracy rewarded it --- even though the model had
+become useless in every practical sense. \textbf{So the score was crediting the damage.}
+
+We mapped exactly which results this affected, and the pattern is uncomfortable: \textbf{0 of 8 cells on
+ULB, 2 of 8 on BankSim/stratified, and 5 of 8 on BankSim/entity-disjoint} --- worst, in other words,
+precisely in the condition we had built our headline on. Every cell there worse than $-5$\,pp is a
+contaminated one. Throwing out the contaminated cells, the real cost is $-4.73$ to $-1.48$\,pp, not the
+$-12.57$ to $-1.48$ we had been quoting.
+
+\textbf{And the important part: the withdrawal survives the clean-up.} On the three cells that are
+uncontaminated in all three conditions, the same conclusion still holds --- so it is a real finding, not
+an artefact of our own filtering.
 \end{warnbox}
 
 \subsection{Propagating a withdrawal is its own job (4 September)}
 
-A claim is not withdrawn when you decide it is wrong. It is withdrawn when it is out of the generators.
+\textbf{A claim is not withdrawn when you decide it is wrong. It is withdrawn when the last script that
+prints it has stopped printing it.} Those are different days, and the gap between them is where
+retracted numbers come back to life.
 
-A repository-wide sweep found the dead mechanism alive in \textbf{two script-generated drafts} and the
-supervisor brief carrying a separate over-claim. All were fixed \emph{at the generator} and
-regenerated. The sweep also exposed a class of bug worth naming: the offending sentence was emitted by
-a \textbf{single-run} generator --- a script that reads one result file \emph{structurally cannot} see a
-dataset-versus-partition effect, so any attribution it prints is unfalsifiable by its own evidence.
-\textbf{A generator may only assert what its own input can falsify.} Attribution now lives only in the
-collator that reads all three conditions.
+So we searched the whole repository for the claim we had just killed, and found it \textbf{still alive
+in two automatically generated drafts}, plus a separate over-claim sitting in the supervisor brief. We
+fixed all of them \emph{in the scripts that write them}, not in the documents, and regenerated.
 
-One incidental discovery: the supervisor brief's PDF had been silently stuck two revisions behind its
-source for days, because the LaTeX installation was missing scalable Type\,1 fonts and
-\texttt{microtype}'s auto-expansion was aborting every build. \textbf{The document the supervisor
-actually reads had not been rebuilt, and nobody would have seen it.} Fixed.
+That search also turned up a bug worth naming, because it will happen again. \textbf{The offending
+sentence was written by a script that reads only one result file.} Think about what that means: a script
+looking at a single condition \emph{cannot possibly} tell whether an effect came from the dataset or
+from the customer split --- it has never seen the other conditions. So any explanation it prints is one
+its own evidence could never contradict. The rule we adopted: \textbf{a script may only assert something
+its own input could have proved wrong.} Explanations now come only from the one script that reads all
+three conditions together.
+
+One accidental discovery along the way: \textbf{the supervisor brief's PDF had been silently stuck two
+revisions behind its source for days.} The LaTeX installation was missing a font package, which was
+quietly aborting every build --- so the file on disk kept being the old one. The document the supervisor
+actually reads had not been rebuilt, and nothing anywhere reported an error. Fixed.
 
 \subsection{The privacy budget: we measured it, and then retired it}
 \label{sec:obj17}
 
-The censored statistic from B7 was the cheapest thing on the board to fix, and it was the only open item
-that could \emph{un-withdraw} a claim. \epsst{} is defined as the largest privacy budget at which
-rewards are still mis-ranked; the weight channel was still failing at $\eps=3000$, the top of the grid,
-so every improvement factor we quoted was a lower bound.
+This one needs a short setup, because the mistake in it is subtle and it is the most instructive thing
+in the report.
+
+\textbf{The setup.} The banks add noise to protect privacy. Too much noise and the ``who contributed
+most'' ranking comes out wrong, so banks get paid the wrong amounts. The dial controlling how much noise
+is added is \eps{} (epsilon): \textbf{small \eps{} means heavy noise and strong privacy; large \eps{}
+means light noise and weak privacy.} Our contribution is that noising the \emph{published contribution
+score} survives far heavier noise than noising the \emph{weights}. To put a number on ``far'', we
+defined \epsst{}: \textbf{the heaviest noise setting at which the payments still came out mis-ranked.}
+Compare the two channels' \epsst{} and you get an improvement factor --- we had been quoting ``60 times
+better''.
+
+\textbf{The problem with that number (B7).} We had only tested up to $\eps = 3000$, and the weight
+channel was \emph{still failing} at the very top of that range. So the true crossover was somewhere
+beyond where we had bothered to look. What we had was a floor --- ``at least 60 times'' --- and we had
+printed it as a measurement. This was the only open item that could actually \emph{un-withdraw} a claim,
+and it was the cheapest thing on the board to fix, so we fixed it.
 
 \begin{decision}{4 --- Extend the grid \emph{and} the draw count, on one shared grid for all three conditions}
 \qlabel{Question raised:} Extend the grid (test further out) or raise the repeat count (measure the
@@ -682,21 +1048,34 @@ became a measurement rather than a lower bound. \textbf{And then the measurement
 wrong thing to quote.}
 \end{decision}
 
-\begin{keybox}{The correction that reframed the whole objective --- and it came from reading code, not from a result}
-$\epsst = \max\{\eps : \text{inversion rate} > 0\}$ is \textbf{monotone non-decreasing in both the draw
-count and the grid extent}. The random draws are seeded by repeat index, so a 1000-draw run strictly
-\emph{contains} the 100-draw run; and a longer grid can only add candidates to a maximum.
-\textbf{Neither knob can ever lower \epsst.} So ``de-censoring'' never means a population quantity was
-located --- it means the budgets we added happened to show no failures. \epsst{} is properly read as
-\emph{``the largest budget at which a failure was caught''}, and it gets worse the harder anyone looks.
-That is a property of the estimator, not of the mechanism.
+\begin{keybox}{The correction that reframed the whole objective --- and it came from reading our own code, not from a result}
+Then, reading the code rather than the output, we realised something that invalidates the number
+entirely.
+
+\epsst{} is defined as \emph{the largest noise setting at which we caught a mis-ranking}. Look carefully
+at what that definition does when you test harder:
+
+\begin{itemize}[topsep=2pt]
+\item \textbf{Run more trials at each setting} and you can only ever \emph{find} more failures, never
+fewer --- the extra trials are added to the old ones, they do not replace them.
+\item \textbf{Test further out} and you can only ever add new candidates for the maximum, never remove
+existing ones.
+\end{itemize}
+
+\textbf{So neither knob can ever push \epsst{} down. It can only go up, or stay put, forever.} Which
+means our number was never converging on a true value at all --- it was simply recording \emph{how hard
+we had looked so far}. Read it correctly, \epsst{} means ``the largest setting at which we happened to
+catch a failure'', and it gets bigger every time anyone tries harder. That is a fact about our
+measuring procedure, not about the system we were measuring.
 \end{keybox}
 
-The two passes then demonstrated exactly that, twice in one day. After the grid pass,
-BankSim/entity-disjoint was the \emph{best}-supported column and we wrote that it should be preferred
-over ULB. Six hours later, looking $10\times$ harder found one failure in a thousand at the top of its
-probe grid --- its threshold rose, its factor rose from $33\times$ to $\ge 100\times$, and \textbf{it
-became a lower bound again}. The trustworthiness ordering flipped back.
+And then the same day demonstrated it to us twice, in the most direct way possible. After the first
+pass, BankSim/entity-disjoint looked like our best-supported column and we wrote down that it should be
+preferred over ULB. \textbf{Six hours later, looking ten times harder found exactly one failure in a
+thousand trials} at the top of its range. That single failure pushed its threshold up, pushed its factor
+from $33\times$ to ``at least $100\times$'', and turned the number straight back into a floor. The
+ranking of which condition to trust flipped back to where it had started --- \textbf{on the strength of
+one event in a thousand.}
 
 \begin{center}\small
 \begin{tabularx}{\linewidth}{@{}X c c c@{}}
@@ -767,42 +1146,61 @@ what stops the next one costing the same.}
 \subsection{The search the framework is named after (4--5 September)}
 \label{sec:obj13}
 
-The last and largest piece of work in the period. It started from B5 --- five different optimisers
-reporting exactly 5.0000 on ULB --- and it ended somewhere considerably worse than we expected.
+The last and largest piece of work in the period. It started with the loose thread from B5 --- five
+completely different search algorithms all reporting a score of exactly 5.0000 --- and it ended
+somewhere considerably worse than we had expected.
 
-\subsubsection*{The diagnosis} DB-BOA searches for the detector's hyperparameters by scoring candidate
-configurations on a small surrogate model. That scoring function \textbf{re-drew its own train/validation
-split and its own random seed on every call}, which makes it a \emph{random function of its input}. Three
-measurements followed:
+\subsubsection*{First, what DB-BOA is supposed to do} The detector has settings that have to be chosen:
+how many filters, how many training steps, and so on. Trying every combination on the real model would
+take weeks, so DB-BOA does what every hyperparameter search does --- it trains a small, fast stand-in
+model (a \textbf{surrogate}) for each candidate setting, scores it, and uses those scores to decide
+where to look next. The whole method rests on one assumption: \textbf{that the score is a fair
+reflection of the setting.}
+
+\subsubsection*{The diagnosis} It was not. The scoring function \textbf{picked a fresh random sample of
+rows and a fresh random seed every single time it was called}. So asking it to score the same setting
+twice gave two different answers. Three measurements pinned down how bad this was:
 
 \begin{itemize}
-  \item A \textbf{fixed} configuration re-evaluated 25 times on ULB spans 3.4497--5.0000 and touches
-  the theoretical ceiling \emph{once, with no search involved}.
-  \item Changing which rows are sampled moves the score about as much as changing the model does
-  (between-seed spread 1.0471 against a configuration-to-configuration range of 1.0794).
-  \item \textbf{One of the two search axes was arithmetically dead.} A batch-size floor,
-  \texttt{max(32, 1400 // spe)}, evaluated to 32 for \emph{every} value of \texttt{steps\_per\_epoch} in
-  the searched range. The advertised two-dimensional search was one-dimensional, and every reported
-  \texttt{steps\_per\_epoch} optimum was arbitrary.
+  \item \textbf{The same setting, scored 25 times, ranged from 3.4497 to 5.0000} --- and hit the
+  theoretical maximum once, purely by luck, with no searching involved at all. That alone explains the
+  five identical 5.0000s.
+  \item \textbf{Changing the random sample moved the score about as much as changing the model did}
+  (1.0471 versus 1.0794). In other words, roughly half of what the search was ``learning'' was
+  which candidates got lucky draws.
+  \item \textbf{One of the two things it was searching over did nothing at all.} A formula meant to
+  pick a batch size, \texttt{max(32, 1400 // spe)}, worked out to 32 for \emph{every single value} in
+  the range being searched. So the advertised two-dimensional search was really one-dimensional, and
+  every ``optimal'' value we had reported for that second setting was arbitrary.
 \end{itemize}
 
-\textbf{This strengthens the negative result rather than softening it}: a search that cannot rank its
-candidates returns an essentially arbitrary one, so tying a sensible hand-set default is the
-\emph{expected} outcome.
+\textbf{Note which way this cuts.} It would be easy to read ``the search was broken'' as an excuse ---
+\emph{our method never really got a fair trial}. It is the opposite. A search that cannot reliably rank
+its own candidates is effectively returning one at random, and \textbf{a randomly chosen setting tying
+with a sensibly hand-picked one is exactly what you would expect.} The broken search does not rescue the
+negative result; it explains it.
 
 \subsubsection*{Then the shipped path was checked, and it was worse}
 
-\begin{warnbox}{The audit had never measured the pipeline that ships}
-The diagnostic script built its surrogate from a 6{,}000-row pool. The \emph{deployed} pipeline uses a
-different function that returns \textbf{3{,}000 rows}. At ULB's 0.173\% fraud rate, that pool holds
-\textbf{5 unique fraud transactions} --- against a minimum of 30 the surrogate demands. So it drew 30
-``fraud rows'' \emph{with replacement}: 5 transactions repeated about six times each. After the 70/30
-split, \textbf{9 of 9 validation positives were copies of rows in the training half}.
+\begin{warnbox}{We had audited a script --- but not the code that actually runs}
+Our diagnostic script built its stand-in model from a pool of 6{,}000 rows. \textbf{The real pipeline
+uses a different function, and that one returns 3{,}000.} We had spent three days auditing something
+adjacent to the thing that ships.
 
-\textbf{The 5.0000 ceiling was memorisation, not luck on nine rare rows.} And the repair we had spent
-three days designing did \emph{not} close it: stratifying the split guarantees positives on both sides,
-which with five unique transactions is precisely how copies land on both sides. BankSim was clean
-throughout (38 and 75 unique frauds). \textbf{Diagnostics must run on the path that ships.}
+Follow the arithmetic on the real one. ULB is 0.173\% fraud, so a 3{,}000-row pool contains about
+\textbf{5 fraud transactions}. The stand-in model demands at least 30 to train on. It cannot conjure 25
+more, so it drew 30 ``with replacement'' --- meaning it took the same 5 transactions over and over,
+about six times each. Then it split those 30 rows into 21 for training and 9 for testing. Since all 30
+were copies of the same 5, \textbf{all 9 test rows were duplicates of rows it had just trained on.}
+
+The model was being tested on its own training data. It scored perfectly. \textbf{The 5.0000 was not
+luck --- it was memorisation}, and it would have happened every time.
+
+Two things make this worse. First, \textbf{the repair we had already designed would not have fixed it}:
+our plan was to force the split to include fraud on both sides, which with only 5 unique transactions is
+precisely the mechanism that puts copies on both sides. Second, BankSim was completely clean throughout
+(38 and 75 unique frauds), so \textbf{a project using only the second dataset would never have seen
+this.} The rule we took away: \textbf{audit the code path that ships, not one that resembles it.}
 \end{warnbox}
 
 \begin{figure}[h]
@@ -836,6 +1234,21 @@ throughout (38 and 75 unique frauds). \textbf{Diagnostics must run on the path t
 repair operated, which is why the repair could not reach it.}
 \end{figure}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_memorisation_before_after.png}
+\caption{The same repair, measured rather than drawn --- the memorisation-to-learning transition, before
+and after. \textbf{(a)} The 3{,}000-row pool held \emph{five} distinct fraud transactions on ULB against
+a draw that asks for thirty; the 36{,}000-row pool holds 62. \textbf{(b)} With five available, the draw
+took each one about six times over; afterwards every drawn row is distinct on both datasets.
+\textbf{(c)} The consequence, and the defect itself: before the repair \emph{every} ULB validation
+positive was a copy of a row in the training half, in both surrogate modes --- the 5.0000 ceiling was
+memorisation, not luck. BankSim was clean throughout, in both states, which is precisely why keeping the
+second dataset is what exposed the bug. Read from the pre- and post-repair runs of
+\texttt{obj13\_shipped\_path\_check.py}.}
+\label{fig:memorisation}
+\end{figure}
+
 \begin{decision}{6 --- Fix the pool by enlarging it, not by re-weighting or clamping}
 \qlabel{Question raised:} Three ways to stop the surrogate validating on memorised rows. (a)~Enlarge the
 pool so 30 genuinely distinct fraud rows exist at the real rate. (b)~Oversample fraud \emph{into} the
@@ -855,8 +1268,9 @@ would fix today's datasets and let the next one reintroduce it without a sound.
 
 \subsubsection*{The repair, and three defects it would have shipped with}
 
-Applying a patch to the scoring function turned up three ways it would have quietly corrupted its own
-evidence, all found by checking rather than trusting:
+Fixing the scoring function turned out to be the easy part. Applying that fix turned up \textbf{three
+separate ways the repair would have quietly destroyed the evidence for its own necessity} --- all three
+found by checking the output rather than trusting the exit code:
 
 \begin{enumerate}
   \item The patch \textbf{silently re-pointed the diagnostic script} --- the one that produced this
@@ -914,33 +1328,71 @@ real difference ``noise''.}
 
 \subsubsection*{Two findings that inverted what we had predicted}
 
-\begin{keybox}{1. Common random numbers, not determinism, is what makes a noisy search reproducible}
-We predicted the chosen configuration would keep scattering across seeds in \emph{every} mode. The
-spread of chosen filter counts: \texttt{legacy} \textbf{66}, \texttt{deterministic} \textbf{81 ---
-wider than legacy}, \texttt{averaged} \textbf{12} (on a 5--255 range). \textbf{Freezing the random draw
-does nothing; sharing the same draws across candidates is what converges the search.} That design
-detail was added almost as an implementation convenience and is empirically the half of the repair that
-does the work. This is the most transferable finding of the period and it applies to any noisy
-optimisation.
+\begin{keybox}{1. What fixes a noisy search is not freezing the randomness --- it is sharing it}
+This one surprised us completely, and it is the most useful thing in the report for anyone doing similar
+work.
+
+There are two obvious ways to stop random scoring from wrecking a search. \textbf{(a) Freeze the
+randomness:} use the same fixed seed every time, so the scoring function stops being random.
+\textbf{(b) Share the randomness:} let it be random, but score \emph{every candidate on the same random
+sample}, so they are all judged on the same test. We expected (a) to be the fix, and we had predicted
+that neither would fully work.
+
+Look at how widely each mode's chosen answer scattered across three runs (the setting ranges from 5 to
+255): \texttt{legacy} (broken) scattered by \textbf{66}. Merely freezing the seed --- \texttt{deterministic}
+--- scattered by \textbf{81}, which is \emph{worse than doing nothing}. Sharing the sample ---
+\texttt{averaged} --- scattered by \textbf{12}.
+
+\textbf{Freezing the randomness achieved nothing. Sharing it collapsed the scatter almost to zero.} The
+reason is simple in hindsight: a frozen seed still gives every candidate a \emph{different} sample, so
+the comparison between them is still corrupted. What matters is not that the noise is repeatable, but
+that all candidates face the identical test. That detail was added to our code almost as an
+implementation convenience, and it turns out to be the half of the repair that does all the work.
 \end{keybox}
 
-\begin{keybox}{2. The mode that converges generalises \emph{worst} --- the noise was accidental regularisation}
-On held-out draws: \texttt{deterministic} 3.5857 $>$ \texttt{legacy} 3.5552 $>$ \texttt{averaged}
-\textbf{3.4237}. The converged mode is the worst, because with only three shared draws a search that can
-finally rank reliably will exploit \emph{those three draws} --- and it converges onto high-filter
-configurations (137, 146, 149) that overfit them. \textbf{Making the objective rankable made the search
-better at overfitting it.} Both halves of that sentence are measured, and neither is a reason to prefer
-the broken objective.
+\begin{keybox}{2. The mode that works best at searching is the one that generalises \emph{worst}}
+Now the sting. Having fixed the search so it finally converges, we scored all three modes on fresh data
+they had never seen. The winner should have been the fixed one. It came last:
+\texttt{deterministic} 3.5857, \texttt{legacy} (broken) 3.5552, \texttt{averaged} (fixed)
+\textbf{3.4237}.
+
+The explanation is straightforward once you see it. Sharing the same three samples across all candidates
+is what let the search rank them reliably --- but it also means the search can now relentlessly optimise
+\emph{for those three particular samples}. And it did: it converged on high-filter settings (137, 146,
+149) that fit those samples beautifully and generalise worse. \textbf{Making the scoring function
+rankable made the search much better at exploiting it.}
+
+The random noise in the broken version had been acting as an accidental brake on overfitting. That is a
+real and slightly funny finding, and it is emphatically \textbf{not} an argument for keeping the broken
+version --- a brake that works by accident is not a brake you can rely on.
 \end{keybox}
 
 \subsubsection*{And one defect the repair itself revealed}
 
-The repair only touched the \emph{surrogate}. The final deployed model still uses the old floored
-formula --- but at roughly 400{,}000 training rows that floor never binds, \textbf{so the final model's
-second axis was always live and only the surrogate's was dead}. The search was therefore blind to a
-dimension the deployed model genuinely responds to. That is worse than ``one axis was wasted'', and the
-decision on whether to change it is deliberately still open, because changing it invalidates every
-trained model.
+Our repair only touched the stand-in model. The real deployed model still uses the old formula --- and
+here is the twist: on the real model, which trains on roughly 400{,}000 rows rather than 2{,}000, that
+formula does \emph{not} collapse to a constant. \textbf{The second setting was dead in the search but
+alive in the deployed model.}
+
+That is worse than simply wasting one of the two search dimensions. It means the search was blind to a
+setting the real model genuinely responds to --- it could not have found a good value for it even in
+principle. Whether to change the deployed formula is \textbf{deliberately still an open question},
+because changing it would invalidate every model we have trained so far, and that is not a decision to
+take quietly at the end of a section.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_process_optimisation.png}
+\caption{The search the framework is named after, audited. \textbf{(a)} The scoring function's
+run-to-run noise, divided by the whole configuration-to-configuration range it is meant to rank, at four
+surrogate sizes on both datasets: it never falls below $0.36$, so at every size we can afford, a large
+part of what the search is ranking is draw luck. \textbf{(b)} The nine full searches of the 16.3-hour
+run, scored on seven \emph{shared} held-out draws: not one of the nine clears the hand-set default (red).
+\textbf{(c)} What each search chose. The mode that shares its random draws across candidates
+(\texttt{averaged}) collapses the spread to 12 filters; the merely \emph{deterministic} mode is the
+widest of the three at 81. Sharing draws --- not fixing the seed --- is what converges a noisy search.}
+\label{fig:procopt}
+\end{figure}
 
 \begin{keybox}{The verdict, and why it is the right outcome}
 \textbf{The repair works, changes which configuration the search picks, and still does not beat a
@@ -954,7 +1406,9 @@ direct paired measurement, under three surrogate protocols, at three seeds, at t
 % =====================================================================
 \section{The decision log}
 
-Every fork in the period, with what it produced. This is the part to read if you read nothing else.
+Every fork in the road during these six days, on one page, with what each choice actually produced.
+\textbf{If you read only one section of this report, read this one.} The pattern worth noticing is that
+the choices which produced the most value were mostly the ones that went looking for trouble.
 
 {\footnotesize
 \renewcommand{\arraystretch}{1.22}
@@ -983,19 +1437,24 @@ Every fork in the period, with what it produced. This is the part to read if you
 
 % =====================================================================
 \section{Where the six claims stand now}
+\label{sec:claims}
+
+This is the scoreboard. For each of the six promises in the thesis title: which datasets it has now been
+tested on, and what the evidence says after the period. \textbf{Bold text marks what changed in these
+six days.}
 
 \begin{center}\small
 \renewcommand{\arraystretch}{1.2}
 \begin{tabularx}{\linewidth}{@{}p{3.1cm} p{2.6cm} X@{}}
 \toprule
-\textbf{Title claim} & \textbf{Datasets} & \textbf{Status after the period} \\
+\textbf{The promise} & \textbf{Tested on} & \textbf{Where it stands now} \\
 \midrule
-\textbf{Secure} (privacy) & ULB + BankSim $\times2$ splits & \textbf{Replicates, and the second dataset added a new finding.} The DP model collapses to MCC $\approx 0$ everywhere --- but the \emph{direction} differs: on ULB it goes all-negative and accuracy moves only $-0.11$\,pp (it looks almost unharmed while being useless); on BankSim it goes all-positive with 119{,}784 false positives and accuracy $-97.55$\,pp. \emph{An accuracy-reported DP pipeline on 0.17\%-fraud data hides the failure completely} --- an argument for our metric choice, not just for the privacy claim. \\
-\textbf{Secure} (Byzantine) & ULB + BankSim $\times2$ & \textbf{Rejection replicates 8/8 in all three conditions.} Krum can cost utility, by an amount that tracks the \textbf{dataset}; the entity-disjointness mechanism is \textbf{withdrawn} and no mechanism is currently on record. \\
-\textbf{Incentivized} (collusion) & ULB + BankSim $\times2$ & \textbf{Replicates three times}: 2-of-3 collusion caught, $+40.78/+44.39/+47.40$ (always-fraud) and $+79.52/+86.95/+89.73$ (label-flip). The lone-attacker story \emph{changed}: isolation now fires 3/3 on BankSim (0/3 on ULB) but improves accuracy on \textbf{0 of 3 in every condition} --- the layer fires and does not help. That negative is now three-condition solid. \\
-\textbf{Incentivized} (privacy $\leftrightarrow$ incentive) & ULB + BankSim $\times2$ & \textbf{The ordering holds everywhere} (12/12 probed budgets; 11/11, 11/11, 10/11 on the full grid, with one counter-example at $\eps=1$ where \emph{both} channels fail near-totally). The improvement factor is \textbf{retired as a headline}; the $\rh$-gap at a stated budget carries it instead. \\
-\textbf{Scalable} (attribution) & ULB + BankSim $\times2$ & Exact-Shapley cost replicates and is \textbf{structural} (113.5 / 140.3 / 120.6\,s at $n{=}12$ over the same 4{,}095 coalitions) --- confirmed and expected, not news. \textbf{``MC top-1 fails from $n\!\approx\!6$'' is withdrawn}: it is intermittent (5/10, 5/10, 3/10) with no consistent pattern. The Monte-Carlo estimator is barely a speed-up below $n\!\approx\!10$ and on ULB at $n{=}5$ it is \emph{slower} than exact. \\
-\textbf{RL / Consensus / Blockchain} & dataset-independent & Gini 0.90 $\to$ 0.782 over 5 seeds; degraded-node election 100\% $\to$ 15.2\%; Fabric 2115.9\,ms mean latency, 40.3\,TPS at concurrency 10 with an MVCC knee immediately after. \\
+\textbf{Secure} \newline {\footnotesize (the privacy half)} & 2 datasets, 3 conditions & \textbf{Holds --- and the second dataset revealed something new.} Adding privacy noise to the weights destroys the model everywhere (MCC drops to roughly 0). But \emph{how} it fails differs: on ULB the wrecked model flags nothing, and plain accuracy records the disaster as a fall of $0.11$\,pp. On BankSim it flags everything --- 119{,}784 false alarms --- and accuracy falls $97.55$\,pp. \textbf{Same failure, one dataset reporting it as harmless.} That is an argument for our choice of score as much as for the privacy claim itself. \\
+\textbf{Secure} \newline {\footnotesize (the attack half)} & 2 datasets, 3 conditions & \textbf{The security property holds everywhere: the attacker is caught 8 times out of 8 in all three conditions.} What changed is the explanation for its accuracy cost. Krum can cost accuracy, the amount tracks the \emph{dataset}, and \textbf{our explanation for why is withdrawn} with nothing yet in its place. \\
+\textbf{Incentivized} \newline {\footnotesize (catching cheats)} & 2 datasets, 3 conditions & \textbf{Holds three times over.} Two banks colluding are caught in every condition ($+40.78/+44.39/+47.40$ and $+79.52/+86.95/+89.73$ on the two attack types). But the lone-attacker story changed: the isolation mechanism now \emph{fires} on BankSim (3 of 3, versus 0 of 3 on ULB) while \textbf{improving accuracy in 0 of 3 cases in every condition}. It goes off, and it does not help. That negative result is now solid across three conditions. \\
+\textbf{Incentivized} \newline {\footnotesize (privacy vs rewards)} & 2 datasets, 3 conditions & \textbf{The core contribution holds everywhere.} Noising the published contribution beats noising the weights at 12 out of 12 tested noise levels, and 11/11, 11/11, 10/11 across the full range --- the one exception being the most extreme setting, where \emph{both} approaches fail almost completely. \textbf{The ``improvement factor'' is retired as a headline}; the ranking gap at a stated noise level carries the claim instead. \\
+\textbf{Scalable} \newline {\footnotesize (fair attribution)} & 2 datasets, 3 conditions & The exact fairness calculation is expensive, and that cost is \textbf{structural} rather than dataset-specific (113.5 / 140.3 / 120.6\,s for 12 banks over the same 4{,}095 combinations) --- confirmation, not news. \textbf{``The fast approximation fails from about 6 banks onward'' is withdrawn}: the failures are intermittent (5/10, 5/10, 3/10) with no threshold at all. Worse, below about 10 banks the ``fast'' version is barely faster, and on ULB with 5 banks it is \emph{slower} than doing it exactly. \\
+\textbf{RL / Consensus / Blockchain} & does not depend on the dataset & Leader election spreads the work far more evenly (inequality falls from 0.90 to 0.782 over 5 runs) and largely stops picking unhealthy nodes (100\% $\to$ 15.2\%). The real Fabric network commits in 2115.9\,ms on average and peaks at 40.3\,TPS, with performance collapsing immediately after that peak. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -1011,61 +1470,185 @@ tracks the dataset rather than the federation structure.}
 \end{figure}
 
 % =====================================================================
+\section{The comparisons, side by side}
+\label{sec:comparisons}
+
+The earlier sections tell the story in order. This section is for the reader who wants to see the
+comparisons themselves, laid out rather than narrated --- every condition scored on every metric, plus
+the four things a reviewer normally asks to see drawn: what changed between datasets, the full score
+table, the statistical tests behind the two negative results, and the measured system performance.
+
+\textbf{Nothing in this section is new evidence.} Every panel is drawn by one script ---
+\texttt{experiments/\allowbreak make\_\allowbreak report\_\allowbreak figures.py} --- reading the same
+stored result files quoted earlier. That
+script does no training and no sampling of its own, so it cannot introduce a number that was not already
+measured.
+
+\begin{keybox}{Count the columns before you read them}
+Every figure in this section has \textbf{three} columns, and it is worth being clear about why, because
+Section~\ref{sec:fivedatasets} compares \emph{five} datasets.
+
+The three columns are \textbf{ULB/stratified}, \textbf{BankSim/stratified} and
+\textbf{BankSim/entity-disjoint}. That is \textbf{two datasets in three conditions}, not three datasets.
+The third column is a \emph{control} --- it exists purely to separate ``the data changed'' from ``the
+customer split changed'', which is the whole subject of Section~\ref{sec:control}.
+
+Of the other three datasets on the five-way comparison: the Handbook is loaded and verified but has not
+been run (a go/no-go on 12 September), and AMLSim and PaySim were assessed and not run at all. Under
+Rule~2 an unrun dataset gets no column, so it has none here. \textbf{Every figure below has three
+columns because three is exactly what was measured.}
+\end{keybox}
+
+\subsection{What changed when the dataset changed}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_cross_dataset_comparison.png}
+\caption{The three conditions, compared on the things that moved. \textbf{(a)} The same four federated
+methods scored under each condition: the ordering of FedAvg and FedAvg+Krum \emph{swaps} between ULB and
+BankSim, and the DP arm is at MCC $\approx 0$ in all three. \textbf{(b)} Why the metric choice is part
+of the claim: differential privacy destroys the model in every condition, but accuracy reports that as
+$-0.11$\,pp on ULB and $+97.55$\,pp on BankSim/entity-disjoint --- the same failure, read as almost
+harmless on the 0.17\%-fraud file. \textbf{(c)} What Krum costs: positive on ULB, negative on both
+BankSim conditions, tracking the \emph{dataset} rather than the federation structure. That is the
+measurement that killed our best new claim.}
+\label{fig:crossdataset}
+\end{figure}
+
+\subsection{The score index --- every metric, every condition}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_score_index.png}
+\caption{The full score index as small multiples: six metrics, four federated methods, three conditions.
+The panels are worth reading against each other rather than one at a time --- accuracy separates the
+methods least and MCC separates them most, and the DP arm is the case that proves it.}
+\label{fig:scoreindex}
+\end{figure}
+
+\begin{center}
+{\footnotesize
+\setlength{\tabcolsep}{3.4pt}
+\renewcommand{\arraystretch}{1.12}
+\input{db_boa_framework/results/figures/score_index_table.tex}}
+\end{center}
+
+\vspace{-2pt}
+{\small\color{steel} Every number above is read from the three \texttt{baselines*.json} files, one per
+condition; the machine-readable form is \texttt{results/figures/score\_index.csv}. DP runs at $\eps=1$,
+$\delta=10^{-5}$ throughout. The DB-BOA-ADTCN row on ULB is a degenerate all-positive model --- that is
+why its accuracy is 0.21\% and its recall 100\%. It is reported, not hidden.}
+
+\subsection{The two negative results, tested}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_statistical_significance.png}
+\caption{Both negative results carry a test, not an assertion. \textbf{(a)} The detector headline over
+five training seeds: the tuned and default configurations interleave, and two seeds put the default
+above the tuned one. \textbf{(b)} The paired difference is $+0.048$ with a 95\% interval of
+$[-0.074,\,+0.169]$ --- it contains zero ($t=1.09$, $p=0.34$, $n=5$). \textbf{(c)} The stronger version
+of the same result, from the 16.3-hour run: each of the nine searches differenced against the hand-set
+default \emph{on the same seven held-out draws}, so draw luck cancels. All nine means are below zero;
+the mean of the nine is $-0.1982$. Paired on shared draws is the honest comparison here; the $\pm0.4$
+spread of the individual means would call a real difference ``noise''.}
+\label{fig:significance}
+\end{figure}
+
+\subsection{The system, measured}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_system_performance.png}
+\caption{The blockchain layer, on a real Hyperledger Fabric network. \textbf{(a)} Commit latency over 50
+transactions is tightly clustered around 2.1\,s --- and the incentive scheme's $+15$-token bonus for
+committing below 300\,ms (red) is unreachable on a Raft floor an order of magnitude above it. That
+design mismatch was found by measuring, not by reading. \textbf{(b)} Goodput peaks at 40.3\,TPS at
+concurrency 10. \textbf{(c)} What happens immediately after the peak: at concurrency 20 half the
+transactions fail and at 40 seventy per cent do. The knee is MVCC read-write conflict on the same keys,
+not queueing --- so it is a property of how the chaincode writes, and it is the number to quote.}
+\label{fig:sysperf}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\linewidth]{db_boa_framework/results/figures/fig_scalability.png}
+\caption{Contribution attribution. \textbf{(a)} Exact Shapley cost grows with the coalition count and
+the Monte-Carlo estimator is barely a speed-up in the range we can check --- the cost is structural,
+which is confirmation rather than news. \textbf{(b)} Monte-Carlo top-1 agreement against the exact
+values: it fails at $n=6$, agrees at 7 and 9, fails at 8, 10, 11 and 12. There is no federation size
+after which it stays wrong, which is why ``MC top-1 fails from $n\!\approx\!6$'' is withdrawn in
+Section~\ref{sec:quotable} rather than restated with a different threshold.}
+\label{fig:scalability}
+\end{figure}
+
+% =====================================================================
 \section{What may be quoted, and what may not}
 \label{sec:quotable}
 
-This section exists because several numbers in older drafts and in the supervisor brief are no longer
-safe. \textbf{If you are writing anything, read this list first.}
+Several numbers in older drafts, and in the brief the supervisor has already read, are no longer safe to
+use. Some are simply wrong; others depend on a choice we made arbitrarily and could just as easily have
+made differently. \textbf{If you are writing anything at all --- a slide, a paragraph, an email --- read
+this list first.} The left column is what not to say; the right column is what to say instead.
 
 \begin{center}\small
 \renewcommand{\arraystretch}{1.2}
 \begin{tabularx}{\linewidth}{@{}p{5.6cm} X@{}}
 \toprule
-\textbf{Do not quote} & \textbf{Quote instead} \\
+\textbf{Do not say this} & \textbf{Say this instead --- and here is why} \\
 \midrule
-``Krum pays 1.5--12.6\,pp under entity-disjointness'' & Krum rejects the attacker 8/8 in all three conditions; it can cost utility by an amount that tracks the dataset; \textbf{no mechanism is on record}. Use the \emph{clean-cell} ranges: $-4.73$ to $-1.48$\,pp (entity-disjoint), $-9.15$ to $+0.54$\,pp (stratified). \\
-``a 60\x{} privacy-budget improvement'' (or 30\x, 33\x, $\ge$100\x) & The \textbf{ordering} (paired, 12/12 probed budgets) and the \textbf{$\rh$-gap at a stated $\eps$}. If a magnitude is unavoidable: ``one to two orders of magnitude, definition-sensitive''. \\
-``MC-Shapley top-1 fails from $n\ge6$'' & Top-1 agreement is \textbf{intermittent, not a threshold}: 5/10, 5/10, 3/10, and it first fails at $n{=}3$ on BankSim. \\
-Any number from \texttt{db\_boa\_results.json} or \texttt{baselines.json} (including MCC 0.677 as a tuned result) & \textbf{Invalid for three separate reasons} --- a search that could not rank candidates, a surrogate validating on memorised rows, and the unexplained ULB divergence. Two are fixed; the third is not. Regenerate before quoting, and scope the third explicitly. \\
-MCC 0.313, 97.38\% accuracy, MCC 0.966, 85\,TPS, 180\,ms & Withdrawn before submission or during the multi-seed work. The detector headline is \textbf{0.753\,$\pm$\,0.055 over five seeds}, and Fabric is \textbf{2115.9\,ms / 40.3\,TPS}. \\
-A repaired \texttt{steps\_per\_epoch} optimum as a precise value & The \emph{implied batch size}. The repaired axis yields only 23 distinct batch sizes across 201 values, and a third of the range collapses into two bins. \\
-Any pre-1 September ULB result & Nothing yet --- the reproduction failure is unexplained. BankSim is unaffected; both partitions reproduced bitwise. \\
+``Krum costs 1.5--12.6\,pp when banks hold separate customers'' & The explanation was falsified by our own control (Section~\ref{sec:control}), and part of the range came from a contaminated score. Say: \textbf{Krum catches the attacker 8/8 in all three conditions}; it can cost accuracy by an amount that \textbf{tracks the dataset}; \textbf{we do not yet know why}. If you need numbers, use the uncontaminated cells only: $-4.73$ to $-1.48$\,pp (separate customers), $-9.15$ to $+0.54$\,pp (mixed). \\
+``a 60\x{} privacy improvement'' --- or 30\x, 33\x, or $\ge$100\x & \textbf{All four of these are the same data read with different arbitrary cut-offs.} The number is not stable, so no version of it is safe. Say instead: the \textbf{ordering} (the output channel wins at 12 of 12 tested settings) and the \textbf{ranking gap at a stated noise level}. If a magnitude is truly unavoidable: ``one to two orders of magnitude, and sensitive to definition''. \\
+``the fast Shapley estimate fails from 6 banks onward'' & There is no threshold. The failures are \textbf{intermittent} --- 5/10, 5/10, 3/10 --- and on BankSim the first failure is at 3 banks, not 6. Say it is unreliable in a way that does not depend on size. \\
+Any number out of \texttt{db\_boa\_results.json} or \texttt{baselines.json}, including MCC 0.677 as a tuned result & \textbf{Invalid for three separate reasons}: a search that could not rank its own candidates, a stand-in model tested on rows it had memorised, and the unexplained ULB reproduction failure. The first two are now fixed; the third is not. Regenerate before quoting anything, and state the third limitation explicitly. \\
+MCC 0.313, 97.38\% accuracy, MCC 0.966, 85\,TPS, 180\,ms & All withdrawn --- either before submission or during the multi-run work. The detector headline is \textbf{0.753 $\pm$ 0.055 over five runs}; the blockchain figures are \textbf{2115.9\,ms and 40.3\,TPS}. \\
+A repaired ``steps per epoch'' value quoted as a precise optimum & Quote \textbf{the batch size it implies} instead. Even repaired, that setting produces only 23 distinct batch sizes across 201 possible values, and a third of the range collapses into just two of them --- so a precise-looking value is not precise. \\
+Any ULB result generated before 1 September & \textbf{Nothing yet.} The reproduction failure is genuinely unexplained, so those numbers cannot be defended. BankSim is unaffected --- both of its splits reproduced exactly. \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\begin{keybox}{Two framing rules that apply to everything above}
-\textbf{Name the metric (Rule 11).} Twice in this period two metrics ranked the same cell oppositely:
-Monte-Carlo rank fidelity and top-1 agreement disagree about which dataset is better, and the privacy
-ordering scores 11/11 on one metric and 10/11 on the other. Stating which one you are quoting is not
-pedantry --- it is the difference between a claim and a selection.
+\begin{keybox}{Two habits that apply to everything in that table}
+\textbf{1. Always name the score you are quoting (Rule 11).} Twice in these six days, two perfectly
+reasonable scores ranked the same result in \emph{opposite} directions --- two different measures of the
+Shapley estimator disagree about which dataset is better, and the privacy ordering scores 11 out of 11
+on one measure and 10 out of 11 on another. Saying which one you used is not pedantry. \textbf{It is the
+difference between reporting a result and choosing one.}
 
-\textbf{Say ``measured on the evidence swept'', not ``measured''.} Several quantities here get larger
-the harder anyone looks. That is a property of how they are defined, and it belongs next to the number.
+\textbf{2. Say ``measured as far as we looked'', not ``measured''.} Several numbers in this report get
+bigger the harder anyone searches --- \epsst{} is the clearest case. That is a property of how the
+number is defined, not of the system, and it belongs written next to the number rather than discovered
+later by a reader.
 \end{keybox}
 
 % =====================================================================
 \section{What is left, and the plan to 19 September}
 
+Three things remain, and \textbf{the order they are in is not negotiable} --- each one would be wasted
+work if done before the one above it.
+
 \begin{center}\small
-\begin{tabularx}{\linewidth}{@{}c p{4.4cm} X c@{}}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{@{}c p{4.2cm} X c@{}}
 \toprule
-\textbf{\#} & \textbf{Task} & \textbf{Why it is in this position} & \textbf{Cost} \\
+\textbf{\#} & \textbf{What has to be done} & \textbf{Why it sits in this position} & \textbf{Cost} \\
 \midrule
-1 & Finish the re-runs the surrogate repair forces --- regenerate the two invalid result files on the fixed pool, then re-run the multi-seed detector with the repaired configuration as an extra arm & The multi-seed headline ($+0.047$, $p=0.34$) currently compares a \emph{noise-selected} configuration against the default. The plumbing is already done. \textbf{Read the ULB reproduction freeze first} --- a regenerated ULB number is quotable only if that third defect is addressed or explicitly scoped. & 3--5\,h \\
-2 & Third dataset (Fraud Detection Handbook), \textbf{go/no-go 12 September} & Must come \emph{after} item 1, or its search arm is generated on a surrogate we already know is broken and paid for twice. & loader + $\sim$6\,h \\
-3 & Formalise the DP threat model; scope the two overstated title words & Both flagged must-fix before publication. Both are writing, not code. & writing \\
+1 & \textbf{Re-run what the surrogate repair forces us to re-run.} Regenerate the two now-invalid result files using the fixed pool, then re-run the five-seed detector test with the repaired configuration added as an extra arm. & Our detector headline ($+0.047$, $p = 0.34$) currently compares the default against a configuration that a \emph{broken} search picked --- so it is not really a comparison of anything. The code is already written. \textbf{Read the note on the ULB reproduction failure first:} a regenerated ULB number is only safe to quote if that third problem is fixed or stated explicitly alongside it. & 3--5\,h \\
+2 & \textbf{The third dataset} (Fraud Detection Handbook). \textbf{Go/no-go on 12 September.} & It has to come \emph{after} item 1. Run it before, and its search results are produced by a search we already know is broken --- and we pay for the whole thing twice. & loader \newline + about 11\,h \\
+3 & \textbf{Writing:} set out the privacy threat model properly, and narrow the two title words that currently claim too much (B8). & Both were flagged as must-fix before publication, and both are writing rather than code, so neither is blocked by anything above. & writing only \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\begin{keybox}{Two hard commitments}
-\textbf{The 16--19 September writing block is protected.} If the third dataset overruns, \textbf{the
-dataset is cut, not the writing}. A half-run third column is unusable \emph{and} it invites exactly the
-lopsided-table criticism Rule~8 exists to prevent.
+\begin{keybox}{Two commitments we are making in advance, so they cannot be renegotiated later}
+\textbf{1. The 16--19 September writing block is protected.} If the third dataset runs over, \textbf{the
+dataset gets cut, not the writing.} A third column that is only half-run is unusable on its own
+\emph{and} it invites exactly the lopsided-table criticism Rule~8 exists to prevent. There is no version
+of this where we arrive at the deadline with results and no paper.
 
-\textbf{The 12 September go/no-go is decided on the date, not on sunk cost.} If the loader is not
-producing sane sweeps by then, it is dropped.
+\textbf{2. The 12 September go/no-go is decided on the date, not on how much we have already spent.} If
+the Handbook is not producing sensible runs by then, it is dropped --- regardless of the hours already
+in it. Writing this down now is the only way to stop sunk cost making the decision on the day.
 \end{keybox}
 
 \subsection{Open questions we are carrying honestly}
@@ -1092,53 +1675,76 @@ producing sane sweeps by then, it is dropped.
 % =====================================================================
 \section{Closing assessment}
 
-Six days ago the work had one real contribution resting on one dataset, an unaudited search at its
-centre, and a censored statistic quoted as a measurement. It now has the same contribution resting on
-two datasets and three conditions, an audited search with a stronger negative result than before, and a
-statistic we have deliberately stopped quoting.
+Six days ago the work had one genuine contribution standing on one dataset, an unexamined search sitting
+at its centre, and a number quoted as measured that had never been measured.
 
-Three headline claims died in the process. All three died to controls we ran on ourselves, each of
-which had written down in advance what its own failure would mean. That is the difference between a
-result and an objection.
+It now has the same contribution standing on \textbf{two datasets and three conditions}, a search that
+has been examined thoroughly and whose bad news came out \emph{stronger} for the examination, and a
+number we have deliberately stopped quoting because we proved it was not stable enough to print.
 
-\begin{keybox}{The honest summary for the supervisor}
-\textbf{The work is smaller than it looked on 30 August, and considerably harder to argue with.} The
-paper's contribution --- that weight-channel differential privacy destroys the contribution signal that
-pays participants, and that moving the noise to the released contribution channel restores it ---
-survives on two datasets and three federation conditions, and it now rests on two threshold-free
-statements rather than on a ratio that moves with its own definition. Everything that did not survive
-is written down as not having survived.
+\textbf{Three headline claims died along the way.} All three were killed by tests we ran on ourselves,
+and in each case we had written down in advance what failure would look like before we ran the test.
+That advance writing is the whole difference between publishing a finding and answering an objection ---
+the fact is identical, but who found it first is not.
+
+\begin{keybox}{The honest summary, for the supervisor}
+\textbf{The work is smaller than it looked on 30 August, and considerably harder to argue with.}
+
+The contribution itself is intact. In plain terms: \textbf{protecting privacy by adding noise to the
+shared model weights destroys the calculation that decides who gets paid --- and moving that noise to
+the published contribution score instead fixes the problem without giving up any privacy.} That result
+now holds on two datasets across three different federation setups, and it rests on two statements that
+do not depend on any arbitrary cut-off, rather than on a ratio that moved every time we redefined it.
+
+Everything that did not survive is written down as not having survived, in Section~\ref{sec:quotable},
+in the language a reader would need to check it.
 \end{keybox}
 
-\newpage
+\clearpage
 % =====================================================================
 \appendix
 \section{Glossary}
 
-\begin{center}\small
+Every term this report uses, in the order a reader meets them. Nothing here assumes prior knowledge of
+the field.
+
+{\small
 \renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\linewidth}{@{}p{3.5cm} X@{}}
+\begin{xltabular}{\linewidth}{@{}p{3.5cm} X@{}}
 \toprule
-\textbf{Term} & \textbf{Meaning in this work} \\
+\textbf{Term} & \textbf{What it means, in plain language} \\
 \midrule
-\textbf{FL-ADTCN} & The whole system: federated Adaptive Deep Temporal Context Networks + differential privacy + Krum + Shapley + DB-BOA + reinforcement-learning leader election on Hyperledger Fabric. \\
-\textbf{ADTCN} & Our detector. A 1-D convolutional network over a window of 10 consecutive transactions, with a pooling step over time. Measured as a component; it ranks 5th of 7 on ULB and 7th of 7 on BankSim's customer-linked windows. \\
-\textbf{DB-BOA} & Dynamic Butterfly--Billiards Optimisation Algorithm, the hybrid metaheuristic from the base paper, used here to search the detector's hyperparameters. \\
-\textbf{Surrogate / objective} & The small, fast model DB-BOA trains to \emph{score} a candidate configuration. Not the deployed model. Most of Section~\ref{sec:obj13} is about this distinction. \\
-\textbf{Differential privacy (DP), $\eps$} & Calibrated random noise added before sharing. Smaller $\eps$ means more privacy and more noise. \\
-\textbf{Weight channel vs output channel} & \emph{Where} the noise is added: to the model weights an organisation shares, or to the contribution value it publishes. The choice between these is the paper's contribution. \\
-\textbf{Krum} & A rule that picks the single most ``central'' weight vector among the organisations, so an outlier or poisoned one is never used. Security, not fairness. \\
-\textbf{Shapley value} & A cooperative-game measure of how much each organisation contributed, used here to split token rewards. Fairness, not security. \\
-\textbf{Rank inversion} & The reward ranking coming out in the wrong order after noise --- i.e.\ someone is paid as if they contributed more than they did. \\
-\textbf{\epsst} & The largest privacy budget at which a rank inversion was still \emph{caught}. Section~\ref{sec:obj17} explains why this is not a stable statistic. \\
-\textbf{MCC} & Matthews correlation coefficient. The right headline metric on 0.17\%-fraud data, where accuracy is uninformative. \\
-\textbf{Stratified vs entity-disjoint split} & How transactions are dealt to the three banks: by preserving the fraud ratio (volume split of one institution) versus by dealing whole \emph{customers}, so no customer's history appears in two banks. \\
-\textbf{Confound control} & An extra run that changes only one factor, so an effect can be attributed. Section~\ref{sec:control}. \\
-\textbf{Pre-registration} & Writing down the expected result --- and what being wrong would mean --- before the run, then scoring underneath without editing. \\
-\textbf{Common random numbers} & Scoring every candidate on the \emph{same} random draws, so the comparison between them is not corrupted by draw-to-draw luck. The finding of Section~\ref{sec:obj13}. \\
+\endfirsthead
+\toprule
+\textbf{Term} & \textbf{What it means, in plain language} \emph{\footnotesize (continued)} \\
+\midrule
+\endhead
+\multicolumn{2}{@{}l}{\textit{\color{steel}The system and its parts}} \\
+\textbf{Federated learning} & Training one shared model across several organisations \emph{without} any of them handing over their data. Each trains locally; only the trained numbers are shared. \\
+\textbf{FL-ADTCN} & The whole system in this thesis: federated ADTCN detectors + differential privacy + Krum + Shapley + DB-BOA + reinforcement-learning leader election, on a Hyperledger Fabric blockchain. Six parts, six promises. \\
+\textbf{ADTCN} & Our fraud detector. It reads a window of 10 consecutive transactions and looks for patterns across them. Measured honestly as a component: 5th of 7 on ULB, 7th of 7 on BankSim's customer-linked windows. It is not a title claim and does not have to win. \\
+\textbf{FedAvg} \newline (Federated Averaging) & \textbf{The standard way to combine what the banks send back, and the baseline everything is compared against.} Take all the banks' weights and average them number by number; send the average back to everyone; repeat. Simple and effective --- but an average has no defence against a participant who lies, because averaging includes everybody by construction. That weakness is why Krum exists. See the box in Section~3. \\
+\textbf{Krum} & The alternative to averaging. Instead of blending all the banks together, it picks the \emph{single most typical} submission and uses only that, so a sabotaged one is never included. This is a \emph{security} mechanism, not a fairness one. \\
+\textbf{Shapley value} & A way of splitting credit fairly among collaborators, borrowed from game theory: how much worse would the result be if this bank had not taken part? Used here to decide token rewards. This is a \emph{fairness} mechanism, not a security one. \\
+\textbf{DB-BOA} & Dynamic Butterfly--Billiards Optimisation Algorithm. The automated search, taken from the base paper, that picks the detector's settings. The framework is named after it; Section~\ref{sec:obj13} is the audit of it. \\
+\textbf{Surrogate} \newline (the ``stand-in'' model) & The small, fast model DB-BOA trains in order to \emph{score} a candidate setting. It is not the model that gets deployed, and most of Section~\ref{sec:obj13} turns on keeping the two apart. \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{\color{steel}Privacy and rewards}} \\
+\textbf{Differential privacy (DP)}, \textbf{\eps} & Deliberate random noise added before sharing, so nothing shared can be traced back to an individual customer. \eps{} is the dial: \textbf{smaller \eps{} = more noise = more privacy but a worse model.} \\
+\textbf{Weight channel vs output channel} & \emph{Where} that noise gets added --- to the model weights a bank shares, or to the contribution score it publishes. Choosing the second over the first is the thesis's actual contribution. \\
+\textbf{Rank inversion} & The reward ranking coming out in the wrong order once noise is added --- i.e.\ a bank gets paid as though it contributed more than it really did. \\
+\textbf{\epsst} & The heaviest noise setting at which we still \emph{caught} a rank inversion. Section~\ref{sec:obj17} explains why this number is not stable and why we stopped quoting it. \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{\color{steel}Data and experiment design}} \\
+\textbf{ULB} & Our first dataset. 284{,}807 real anonymised card transactions, 0.17\% fraud, \textbf{no customer column}. Section~\ref{sec:fivedatasets}. \\
+\textbf{BankSim} & Our second dataset. 594{,}643 simulated transactions, 1.211\% fraud, and crucially \textbf{4{,}112 identifiable customers}, so a window can be one person's own history. \\
+\textbf{Stratified vs entity-disjoint split} & Two ways of dealing transactions out to the three banks. \emph{Stratified:} shuffle everything and deal equally, keeping the fraud ratio the same --- so the same customer can land in two banks. \emph{Entity-disjoint:} deal out whole \emph{customers}, so nobody's history is split across banks. The second is far more realistic. \\
+\textbf{Window (global vs entity-linked)} & The 10 transactions the detector reads at once. \emph{Global:} whatever 10 rows came next in the file, probably 10 different people. \emph{Entity-linked:} 10 transactions by the \emph{same} customer. The difference between these two is worth more than any architecture choice we tested. \\
+\textbf{Confound control} & An extra run that deliberately changes only \emph{one} factor, so an effect can be pinned on a cause. The one in Section~\ref{sec:control} cost three hours and killed our best claim. \\
+\textbf{Pre-registration} & Writing down what you expect \emph{and} what being wrong would mean, before running --- then recording the result underneath without editing the prediction. \\
+\textbf{Common random numbers} & Scoring every candidate on the \emph{same} random sample, so the comparison between them is not corrupted by luck of the draw. The most transferable finding of the period (Section~\ref{sec:obj13}). \\
 \bottomrule
-\end{tabularx}
-\end{center}
+\end{xltabular}}
 
 \section{Where everything lives}
 
@@ -1164,18 +1770,25 @@ takes seconds.
 \texttt{objective\_noise\_audit.py} & The surrogate diagnosis. Deliberately pins the \emph{pre-repair} behaviour. \\
 \texttt{obj13\_shipped\_path\_check.py} & The check that found the memorised-rows leak. Zero training. \\
 \texttt{obj13\_surrogate\_repair.py} & The three-mode side-by-side and its held-out yardstick. \\
+\texttt{make\_report\_figures.py} & \textbf{Every figure in Sections~\ref{sec:work} and~\ref{sec:comparisons}, plus the score-index table and CSV.} Reads stored results only --- no training, no sampling, no new numbers --- and prints the provenance of each panel. Regenerate with \texttt{python -m experiments.make\_report\_figures}; outputs land in \texttt{results/figures/}. \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\begin{keybox}{Operational notes that cost time to learn}
-\textbf{Use the PowerShell runners}, not the shell scripts --- \texttt{python} is absent from Git Bash's
-path on this machine and the alternative on the path has no \texttt{torch}. \textbf{Set
-\texttt{PYTHONIOENCODING=utf-8}} when redirecting output, and open files with an explicit encoding ---
-these are two \emph{different} traps and the first does not fix the second. \textbf{Launch multi-hour
-work detached}, with a preflight that asserts the code state before spending the CPU; a preflight costing
-seconds is the reason the 16-hour run held no surprises. \textbf{Every detector number requires a pinned
-torch version and thread count} to mean anything.
+\begin{keybox}{Practical notes that cost us time to learn --- read before running anything}
+\begin{itemize}[topsep=2pt]
+\item \textbf{Use the PowerShell runners, not the shell scripts.} On this machine \texttt{python} is not
+on Git Bash's path at all, and the one that \emph{is} on the path does not have \texttt{torch}
+installed. You will get a confusing error rather than an obvious one.
+\item \textbf{Set \texttt{PYTHONIOENCODING=utf-8} when redirecting output, \emph{and} open files with an
+explicit encoding.} These are two separate traps that produce similar-looking failures, and fixing the
+first does not fix the second.
+\item \textbf{Launch anything multi-hour detached, with a pre-flight check first.} The pre-flight
+asserts the code is in the state you think it is before spending the CPU. It costs seconds, and it is
+the only reason the 16-hour run finished with no surprises in it.
+\item \textbf{Every detector number is meaningless without a pinned torch version and thread count.}
+This is not a formality --- Section~7.1 is the story of what happens when they differ.
+\end{itemize}
 \end{keybox}
 
 \vfill

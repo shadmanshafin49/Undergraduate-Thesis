@@ -16,6 +16,14 @@ datasets/creditcard.csv
 datasets/bs140513_032310.csv
 datasets/bsNET140513_032310.csv
 
+# Fraud Detection Handbook (OBJ-5 / OBJ-16) — 183 daily pickles upstream, plus
+# the CSV data/handbook_loader.py consolidates them into on first use.
+#   git clone --depth 1 \
+#     https://github.com/Fraud-Detection-Handbook/simulated-data-raw.git \
+#     datasets/handbook_raw
+datasets/handbook_raw/
+datasets/handbook_transactions.csv
+
 # Hyperledger Fabric binaries — re-download via the official install script
 fabric/fabric-samples/bin/
 

@@ -104,15 +104,89 @@ BANKSIM_CONFIG = {
     "partition"      : "stratified",
 }
 
-# Dataset registry — lets experiments and main.py take `--dataset {ulb,banksim}`
-# without importing loader modules by hand.
+# ─── Fraud Detection Handbook Configuration (OBJ-5, under OBJ-16) ────────────
+# Le Borgne, Siblini, Lebichot & Bontempi, *Reproducible Machine Learning for
+# Credit Card Fraud Detection* (ULB);  simulated-data-raw, 183 daily pickles.
+#   1,754,155 tx | 4,990 customers | 10,000 terminals | 183 days | 0.837 % fraud
+# The point of this dataset is `TERMINAL_ID` plus a one-second timestamp: BankSim
+# resolves to one day and has no terminal, so this is the only place the "does
+# any architecture exploit time?" question can be asked at fine resolution.
+# See data/handbook_loader.py for the reconnaissance behind every value here.
+HANDBOOK_PATH = os.path.join(os.path.dirname(BASE_DIR), "datasets",
+                             "handbook_transactions.csv")
+HANDBOOK_RAW_DIR = os.path.join(os.path.dirname(BASE_DIR), "datasets",
+                                "handbook_raw", "data")
+
+HANDBOOK_CONFIG = {
+    "dataset_path"   : HANDBOOK_PATH,
+    # Consolidated from here on first use if `dataset_path` is missing.
+    "raw_dir"        : HANDBOOK_RAW_DIR,
+    "label_col"      : "TX_FRAUD",
+    "group_col"      : "CUSTOMER_ID",
+    "time_col"       : "TX_TIME_SECONDS",
+
+    # Row-level feature switches (see encode_handbook).  There is no category or
+    # merchant analogue to switch here: 10,000 terminals and 4,990 customers
+    # cannot be one-hot encoded, and doing so would be an entity-derived feature
+    # anyway — so the entity signal is reachable only through the windowing arm.
+    "use_hour"       : True,    # 24-column hour-of-day one-hot
+    "use_dow"        : True,    #  7-column day-of-week one-hot
+
+    # Split.  "temporal" is the honest default: train on the past, test on the
+    # future, no look-ahead.  Days run 0-182; the 70 % and 80 % row-mass
+    # quantiles fall at day 128 and day 146 (measured, not assumed).
+    "split"          : "temporal",
+    "split_day"      : 146,   # test = day >= 146   (354,643 rows, 0.896 % fraud)
+    "val_day"        : 128,   # val  = 128 <= day < 146  (172,522 rows, 0.877 %)
+    "test_size"      : 0.20,  # used only by split="stratified"
+    "val_size"       : 0.10,
+    "random_state"   : 42,
+
+    # See the DATA_CONFIG note on the OBJ-13 memorised-rows leak.  36,000 rows at
+    # this dataset's 0.814 % train fraud rate holds ~293 unique fraud against the
+    # objective's floor of 30.  The inherited value is load-bearing here too, not
+    # merely copied: at the old 3,000 the pool would hold ~24, *below* the floor.
+    "eval_subset"    : 36_000,
+
+    # Windowing arm: "customer", "terminal" (entity-linked) or "global"
+    # (bank-wide stream).  Reconnaissance fraud-adjacency lift over base rate:
+    # global 1.01x, customer 13.35x, terminal 71.65x — terminal is strongest
+    # because scenario 2 compromises a terminal for 28 days and is 62 % of fraud.
+    "ordering"       : "customer",
+    # Tie-break seed for rows sharing a timestamp.  6.788 % of rows share one to
+    # the second.  Unlike BankSim, raw file order carries **no** fraud adjacency
+    # here (125 adjacent pairs, lift 1.02x, vs 124 after the shuffle) — the trap
+    # was checked and does not fire, but the shuffle stays so that is a measured
+    # property rather than an assumption.
+    "order_seed"     : 0,
+
+    # Federated partitioning: "stratified" (ULB-equivalent volume split),
+    # "customer" or "terminal" (entity-disjoint — no entity at two banks).
+    "partition"      : "stratified",
+}
+
+# Dataset registry — lets experiments and main.py take
+# `--dataset {ulb,banksim,handbook}` without importing loader modules by hand.
 DATASETS = {
-    "ulb"     : {"loader": "data.data_loader:FinancialDataLoader",
-                 "config": "DATA_CONFIG",
-                 "label" : "ULB Credit Card (284,807 tx, 0.17 % fraud, no customer IDs)"},
-    "banksim" : {"loader": "data.banksim_loader:BankSimDataLoader",
-                 "config": "BANKSIM_CONFIG",
-                 "label" : "BankSim (594,643 tx, 1.21 % fraud, 4,112 customer IDs)"},
+    "ulb"      : {"loader": "data.data_loader:FinancialDataLoader",
+                  "config": "DATA_CONFIG",
+                  "label" : "ULB Credit Card (284,807 tx, 0.17 % fraud, no customer IDs)"},
+    "banksim"  : {"loader": "data.banksim_loader:BankSimDataLoader",
+                  "config": "BANKSIM_CONFIG",
+                  "label" : "BankSim (594,643 tx, 1.21 % fraud, 4,112 customer IDs)"},
+    "handbook" : {"loader": "data.handbook_loader:HandbookDataLoader",
+                  "config": "HANDBOOK_CONFIG",
+                  "label" : "Fraud Detection Handbook (1,754,155 tx, 0.84 % fraud, "
+                            "4,990 customer IDs, 10,000 terminal IDs, 1 s resolution)"},
+}
+
+#: Which entity-disjoint federated partitions each dataset can support.  ULB has
+#: no entity IDs at all — that is a property of the data, not a missing feature,
+#: so `_dataset.resolve` fails loudly rather than falling back to stratified.
+ENTITY_PARTITIONS = {
+    "ulb"      : (),
+    "banksim"  : ("customer",),
+    "handbook" : ("customer", "terminal"),
 }
 
 

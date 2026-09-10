@@ -7,8 +7,9 @@ CLASSIFICATION ...... INTERNAL / TEAM T2430460
 OPERATOR ............ Shadman Sakib  (+ Amiya, Mahima, Nafi, Muntasir)
 AREA OF OPS ......... DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main
 PHASE ............... THESIS ACCEPTED (2026-06-13) -> PAPER EXTENSION ACTIVE
-DEADLINE ............ 2026-09-19  ·  progress checkpoint 2026-09-05 (TODAY)  ·  T-14 days at this sitrep
-LAST SITREP ......... 2026-09-05  (OBJ-13 SIDE-BY-SIDE LANDED — 0 of 9 searched configs beat the hand-set default · CRN averaging is what converges the search, determinism is NOT)
+DEADLINE ............ 2026-09-19  ·  T-11 days at this sitrep  ·  OBJ-16 go/no-go 2026-09-12 (T-4)
+LAST SITREP ......... 2026-09-08  (OBJ-16 LOADER LANDED — Handbook wired + 42 checks pass, zero results yet · file-order trap does NOT fire (1.02x) · NEW: TERMINAL_ID linkage 71.65x, the strongest in the project · cost measured at ~11 h, the ~6 h budget was low)
+                      2026-09-05  (OBJ-13 SIDE-BY-SIDE LANDED — 0 of 9 searched configs beat the hand-set default · CRN averaging is what converges the search, determinism is NOT)
                       2026-09-04  (OBJ-13 — leak FIXED + verified 0/11 · side-by-side launched at production budget, operator-approved)
                       2026-09-04  (OBJ-13 — ULB surrogate VALIDATES ON MEMORISED ROWS (9/9) · knee scored, prereg 6 WRONG both halves)
                       2026-09-04  (OBJ-13 patch APPLIED — legacy verified bit-for-bit · 3 silent-switch defects caught · runs in flight)
@@ -281,7 +282,7 @@ repeated, repeat it at pop=20×30.
 | # | Task | Blocked? | Cost | First command |
 |---|---|---|---|---|
 | **1** | **[OBJ-13]** finish the re-runs the repair forces: regenerate `db_boa_results.json` + `baselines.json` on the fixed pool, then `detector_multiseed` with the repaired arms | no — **CPU is free** | ~3–5 h | `python main.py --dataset ulb` (see the ⚠ below first) |
-| **2** | **[OBJ-16]** third dataset (Fraud Detection Handbook), ⛔ go/no-go **2026-09-12** | needs item 1 first, or its DB-BOA arm is paid for twice | loader + ~6 h CPU | — |
+| **2** | **[OBJ-16]** third dataset (Fraud Detection Handbook), ⛔ go/no-go **2026-09-12**. ✅ **loader LANDED + verified 2026-09-08** (42 checks); what remains is the rule-4 pre-registration and the runs | needs item 1 first, or its DB-BOA arm is paid for twice | ~~loader +~~ **~11 h CPU, measured — the ~6 h was low** | `python experiments/check_handbook_loader.py` |
 | **3** | **[OBJ-7]** + **[OBJ-9]** — writing, ⛔ protected block | free | writing | — |
 
 > ⚠ **Before regenerating anything ULB, read the ULB reproduction freeze in the SITREP.** Those
@@ -1802,6 +1803,15 @@ so take the cheapest one that can run all four sweeps.
 | **IBM AMLSim** (OBJ-12) | Native bank IDs — a federation we do not synthesise. Still genuinely valuable, and still the only candidate exercising **Secure + Incentivized + Scalable** under real institutional boundaries. But its *deciding* role is spent, and it is a Java generator with a config pipeline before a single transaction exists. | **DEMOTED TO SECOND.** Right dataset, wrong fortnight. Revisit post-deadline. |
 | **PaySim** (OBJ-11) | Little. No bank IDs, and origin accounts may appear once or twice, so it tests neither the federated/incentive story nor entity linkage. | **Weak — recon only.** Unchanged. |
 
+> **Housekeeping, 2026-09-08 — `datasets/bsNET140513_032310.csv` is not a fourth dataset and
+> never was.** It sits unused next to the BankSim file and looks like spare data; it is not.
+> Verified row-for-row: its `Source,Target,Weight,typeTrans,fraud` is **byte-identical** to
+> `customer,merchant,amount,category,fraud` from `bs140513_032310.csv` across all 594,643 rows.
+> It is a strict column *projection* of the file we already load, dropping `step`, `age`,
+> `gender` and the two zip columns. **It carries zero information the loaded file lacks, so
+> there is nothing to wire up and no rule-8 gate it could pass.** Left on disk (it is
+> gitignored and costs nothing); do not spend a second on it again.
+
 > **This reordering is a result following data, not convenience** — record it that way. If the
 > deadline had been the only reason, that would be rule-4 reasoning and it would not be allowed.
 > The reason AMLSim moved is that the experiment it was uniquely for **has already been run**.
@@ -1833,8 +1843,68 @@ so take the cheapest one that can run all four sweeps.
 
 ### ◈ OBJ-5 — Fraud Detection Handbook dataset
 
-`NOT STARTED` · **⭐ THIS IS THE THIRD DATASET — promoted to FIRST 2026-09-04**, sequenced under
-[OBJ-16], scheduled Sep 10–16 with a **go/no-go on 2026-09-12**.
+`LOADER LANDED 2026-09-08 — no CPU spent on results yet` · **⭐ THIS IS THE THIRD DATASET —
+promoted to FIRST 2026-09-04**, sequenced under [OBJ-16], scheduled Sep 10–16 with a **go/no-go
+on 2026-09-12**.
+
+> **▸ 2026-09-08 — the loader is in and verified. The sweeps are NOT run.**
+> Data: `git clone --depth 1 github.com/Fraud-Detection-Handbook/simulated-data-raw` →
+> `datasets/handbook_raw/` (183 daily pickles, gitignored), consolidated on first use into
+> `datasets/handbook_transactions.csv` (105 MB, also gitignored).
+> Code: `data/handbook_loader.py`, `config.HANDBOOK_CONFIG` + `DATASETS["handbook"]` +
+> `ENTITY_PARTITIONS`, and `experiments/check_handbook_loader.py` — **42 acceptance checks,
+> all passing**, no training involved. `--dataset handbook` now resolves everywhere.
+>
+> **Measured shape** (not quoted from the paper): 1,754,155 tx · 4,990 customers · 10,000
+> terminals · 183 days · 14,681 fraud (**0.837 %**) · timestamp resolution **1 second**.
+> Temporal cuts at the 70/80 % row-mass quantiles: train day 0–127, val 128–145, test 146–182.
+>
+> **① The file-order trap does NOT fire here — checked, not assumed.** BankSim's raw CSV had
+> 3,635 adjacent fraud pairs collapsing to 84 after a within-step shuffle. This dataset's raw
+> file order has **125 adjacent pairs, P(fraud | prev fraud) = 0.0085 against a 0.0084 base rate
+> — lift 1.02×, i.e. nothing**, and the seeded tie-break moves it to 124. The shuffle is kept
+> anyway (6.788 % of rows do share a timestamp to the second) so this stays a measured property.
+>
+> **② NEW, and the gate did not predict it: `TERMINAL_ID` is a far stronger entity link than
+> `CUSTOMER_ID`.** Fraud-adjacency lift over base rate, same rows, same seed —
+> global **1.01×** · customer **13.35×** · terminal **71.65×**. Cause is in the generator:
+> scenario 2 compromises a *terminal* for 28 days and is 9,077 of the 14,681 fraud rows (62 %),
+> against scenario 3's customer-card compromise (4,631) and scenario 1's pure amount rule (973,
+> no entity at all). BankSim's customer-linked lift was 30×, so **`ordering="terminal"` is the
+> strongest entity linkage anywhere in this project**. It is exposed as a *third* ordering arm
+> and a *third* partition, not folded into "customer" — which is why `_dataset.resolve`'s
+> `dataset != "banksim"` guard had to become the `ENTITY_PARTITIONS` table (it would otherwise
+> have rejected a perfectly valid `--dataset handbook --partition customer`).
+>
+> **③ Two traps this project has already paid for do not reproduce here.** The OBJ-13
+> memorised-rows leak: the 36,000-row eval pool holds **293 unique fraud** against the floor of
+> 30, so the oversample branch never fires (ULB held 5 and repeated them 6.01×). ⚠ but the
+> inherited 36,000 is **load-bearing, not merely copied** — at the old 3,000 this pool would
+> hold ~24, *below* the floor. And the 33-feature cap: width is **35**, so `apply_to_model_cfg`
+> is doing real work; without it `ADTCN.fit` would silently drop 2 columns.
+>
+> **④ `TX_FRAUD_SCENARIO` is the label under another name** (non-zero exactly when
+> `TX_FRAUD == 1`, verified) and is never read. Nor is `TRANSACTION_ID`, a row counter encoding
+> arrival order. Strongest single-feature correlation with the label is |r| = 0.168.
+>
+> **⑤ ⚠ The feature matrix is deliberately thinner than the Handbook's own baseline, and our
+> absolute MCC will be lower than their published numbers.** Their reference features are
+> `CUSTOMER_ID_NB_TX_*_WINDOW` / `TERMINAL_ID_RISK_*_WINDOW` aggregates — entity-derived, and
+> therefore forbidden by the BankSim design decision that keeps the global-vs-linked comparison
+> honest. 35 columns: log1p(amount), amount, hour-of-day one-hot, day-of-week one-hot,
+> is_weekend, is_night. **This is the design working. Do not "fix" it by adding their features
+> (rule 3), and do not compare our MCC to theirs.**
+>
+> **⑥ ⚠ COST: the "~6 h CPU" budget in the calendar is low.** Measured, one ADTCN epoch at the
+> hand-set default: BankSim 417,848 train rows / 79 feat / batch 2,785 → **42.4 s**; Handbook
+> 1,226,990 rows / 35 feat / batch 8,179 → **78.7 s**. That is **1.86×**, not the 2.94× the row
+> ratio suggests — the thinner matrix pays back part of the size. A BankSim-equivalent sweep
+> suite therefore costs **~11 h, not ~6 h**. That is a go/no-go input, not a blocker.
+>
+> **Still open before any number is quotable:** the rule-4 pre-registration for questions
+> (a)–(d) is **not written** — it is a scientific call for the operator, and rule 4 says it goes
+> down *before* the runs. And per the NEXT UP table this objective still sits behind board item
+> 1, or its DB-BOA arm is paid for twice.
 **Rule-8 gate — what could this overturn?** Two live things, both written before any CPU:
 **(1)** whether Krum's utility cost is a **BankSim artefact** — the question the confound control
 left open, and the reason this dataset now outranks AMLSim; **(2)** "no architecture genuinely
