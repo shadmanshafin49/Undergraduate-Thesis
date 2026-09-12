@@ -35,3 +35,10 @@ OBJ-16 Handbook suite, started 2026-09-12 04:03:37
     OK    temporal_grid  (16:02:18)
 
 === scalability_sweep_stratified  (2026-09-12 16:02:18) ===
+    OK    scalability_sweep_stratified  (19:38:06)
+
+=== scalability_sweep_customer  (2026-09-12 19:38:06) ===
+    OK    scalability_sweep_customer  (23:53:13)
+
+OBJ-16 Handbook suite finished 2026-09-12 23:53:13
+all steps completed

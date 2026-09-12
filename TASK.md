@@ -225,8 +225,11 @@ repeated, repeat it at pop=20×30.
 
 | What | PID | State |
 |---|---|---|
-| `run_obj16_handbook.ps1` (Handbook suite) | **28780** | steps 1–6 of 11 done; step 7 `private_incentive_sweep_customer` started 13:17:34 |
-| `kaggle_jobs.py queue` (Handbook grid) | **9048** | 6 of 7 parts fetched; only `handbook-grid-efficientnet` still running (ETA ~14:30) |
+| `run_obj16_handbook.ps1` (Handbook suite) | 28780 | ✅ **FINISHED 23:53:13 — 11/11 OK, no FAIL** |
+| `kaggle_jobs.py queue` (Handbook grid) | 9048 | ✅ **FINISHED 15:08:38 — all 7 parts fetched** |
+
+**As of 2026-09-13 00:00 nothing of this project is running.** The tables below are the historical record
+of 12 September; do not restart anything from them.
 
 **Re-arm the watchers in the new session** (the old ones died with the old chat):
 ```
@@ -280,8 +283,15 @@ and WORK_REPORT now separate the two factors. Plus: DP collapses below the floor
 
 **Report re-sent 16:07 — 57 pp**, clean build (no undefined refs; the same 17 pre-existing overfull boxes).
 
-**Still to score:** the two scalability runs (suite steps 10–11), and nothing else.
-`scalability_sweep_stratified` started 16:02:18.
+**✅ THE HANDBOOK SUITE IS COMPLETE — finished 2026-09-12 23:53:13, 11 of 11 steps OK, no FAIL,
+19 h 50 m end to end** (started 04:03:37). Both scalability runs are recorded below the Handbook
+scorecards. **Nothing is left to score. No process of this project is running.**
+
+⚠ **One correction the last step forced, worth reading before quoting scalability:** the fidelity metrics
+are meaningful only where the 8,000-row shard models learn something. They do NOT on PaySim, AMLSim or
+Handbook/`stratified` (all at 50 %); they DO on ULB, both BankSim splits and **Handbook/`customer`
+(56.9–58.3 %)**. So it is **7 conditions, 4 testable**, and the report no longer averages the three
+untestable ones into the series it once quoted as "5/10, 5/10, 3/10, 3/10, 3/10".
 
 ⚠ **Timing moved EARLIER:** `private_incentive_sweep_customer` finished 14:09:21 (52 m, not 69 m), so
 `baselines_customer` runs 14:09–~16:09 and **the grid step arrives ~16:09, not ~16:30.**
@@ -2541,6 +2551,82 @@ WRONG · (b) lone clause held vacuously / collusion clause WRONG · (c) WRONG ·
 is its best placing anywhere in this project. It is 2nd on the ordering the pre-registration treats as the
 control, it falls to 4th and 6th on the linked orderings, and its own no-attention ablation (DTCN) beats
 it on terminal. The architecture verdict is unchanged.
+
+#### ▸ RESULT — Handbook scalability sweep, `stratified`, landed 2026-09-12 19:38:06 (suite step 10 of 11)
+
+Laptop, 4 threads, 3 h 36 m. Not pre-registered — descriptive, like the other five scalability runs.
+
+**Exact-Shapley cost is structural, confirmed a sixth time.** 123.6 s for 4,095 coalitions at n = 12,
+against 113.5 / 140.3 / 120.6 s elsewhere on this laptop and 69.6 / 62.0 s on Kaggle. Exact is **skipped
+from n = 14** by design. The MC speedup is **below 1× at n = 3, 4 and 6** (0.68× / 0.94× / 0.89×) — the
+"fast" path is again *slower* than exact on small federations, as on ULB.
+
+⛔ **BUT: this condition cannot speak to approximation fidelity at all, and neither can two others already
+in the report.** The sweep's equal-shard arm trains each org on 8,000 rows, and on the Handbook that model
+sits at **chance for every federation size — balanced accuracy 50.22 to 50.63 %** across n = 3…20.
+
+| condition | equal-shard bal-acc | MC top-1 | can it test fidelity? |
+|---|---|---|---|
+| ULB | 79.1 – 87.2 | 5 of 10 | yes |
+| BankSim / `stratified` | 80.7 – 84.7 | 5 of 10 | yes |
+| BankSim / `customer` | 90.4 – 93.5 | 3 of 10 | yes |
+| PaySim / `stratified` | **50.00 – 50.00** | 3 of 10 | ⛔ no — at chance |
+| AMLSim / `stratified` | **50.00 – 50.00** | 3 of 10 | ⛔ no — at chance |
+| Handbook / `stratified` | **50.22 – 50.63** | 3 of 10 | ⛔ no — at chance |
+
+⚠ **Superseded in part by the `customer` run below:** that partition's shard models reach 56.9–58.3 %, so
+the Handbook *does* contribute a testable fidelity condition. The counts here (6 conditions, 3 testable)
+become **7 and 4**. The rest of this block stands.
+
+- **All three chance-level conditions return exactly 3 of 10**, and 3 of 10 is close to what guessing gives:
+  the expected number of top-1 agreements under a uniform random pick is Σ 1/n for n = 3…12 = **1.60**.
+- PaySim and AMLSim agree at the **same three sizes** (n = 3, 4, 10). Their Shapley vectors are **not**
+  identical (L1 0.0238 vs 0.0267 at n = 3, and ρ differs at 9 of 10 sizes), so this is a coincidence of
+  which index happens to rank first when the coalition values are noise, **not** duplicated data.
+  **Mechanism not established — do not assert one.** All six runs share `shared_init_seed = 42`.
+- **What this does NOT overturn: "the fast approximation fails from about 6 banks onward" stays
+  withdrawn.** That withdrawal rests on the conditions where the models actually work, and it holds there
+  — BankSim/`stratified` matches at **n = 11 and n = 12**, ULB at **n = 9**. There is no threshold.
+- **What it does change is the evidence base:** the string "5/10, 5/10, 3/10, 3/10, 3/10" in WORK_REPORT
+  mixes three conditions that measure fidelity with two that cannot. **Quote the three working conditions
+  for fidelity, and report the other three as untestable — do not average them together.**
+
+**The models are not weak because the federation is large — they are weak because the shard is small.**
+The dilution arm, which splits the *full* training pool instead of a fixed 8,000 rows, holds
+**60.72 → 60.37 → 59.72 → 59.74 %** across n = 3, 5, 8, 12 (409k → 102k rows per org). So at 102,249 rows
+per org a 12-bank federation still works; at 8,000 rows a 3-bank one does not. **Federation size is not
+the limiting factor here; per-org data volume is.**
+
+#### ▸ RESULT — Handbook scalability sweep, `customer`, landed 2026-09-12 23:53:13 (suite step 11 of 11 — SUITE COMPLETE)
+
+Laptop, 4 threads, 4 h 15 m. **The Handbook suite finished 23:53:13: 11 of 11 steps OK, no FAIL, 19 h 50 m
+end to end** (started 04:03:37).
+
+⚠ **This partition corrects the table above — its shard models are NOT at chance.** Equal-shard balanced
+accuracy runs **56.86 – 58.30 %** across n = 3…20, against `stratified`'s 50.22 – 50.63 %. Same 8,000 rows
+per org, same seed; only the partition differs. **So the Handbook contributes one testable fidelity
+condition after all, and the count is 7 conditions, 4 testable** — not the 6 and 3 written above.
+
+| condition | equal-shard bal-acc | MC top-1 | tests fidelity? |
+|---|---|---|---|
+| ULB | 79.1 – 87.2 | 5 of 10 | yes |
+| BankSim / `stratified` | 80.7 – 84.7 | 5 of 10 | yes |
+| BankSim / `customer` | 90.4 – 93.5 | 3 of 10 | yes |
+| **Handbook / `customer`** | **56.9 – 58.3** | **4 of 10** | **yes (weak but above chance)** |
+| PaySim / `stratified` | 50.00 | 3 of 10 | ⛔ no — at chance |
+| AMLSim / `stratified` | 50.00 | 3 of 10 | ⛔ no — at chance |
+| Handbook / `stratified` | 50.22 – 50.63 | 3 of 10 | ⛔ no — at chance |
+
+**It strengthens the withdrawal of "the fast approximation fails from about 6 banks onward."** Its matches
+land at **n = 3, 5, 8 and 12** — including **n = 12, the largest size where exact is computed at all**.
+Across the four testable conditions the agreements now reach n = 12 (Handbook/`customer`), n = 11 and 12
+(BankSim/`stratified`) and n = 9 (ULB). **There is no threshold, and the late matches are the evidence.**
+
+*Consistent with the rest:* exact costs **126.9 s** at n = 12 (4,095 coalitions) against the sweep's
+38.7 s MC, a 3.28× speedup — and MC is again **slower than exact at n = 3, 4, 5 and 7**. Dilution on the
+full pool holds **61.62 → 61.06 → 59.60 → 58.44 %** for n = 3, 5, 8, 12, slightly above `stratified`'s
+60.72 → 59.74 — the same shape, so **per-org data volume, not federation size, remains the binding
+constraint**.
 
 **Stated so they are not later reported as findings:** exact-Shapley cost is structural (same
 4,095 coalitions at n = 12); MC top-1 stays intermittent with no threshold; absolute MCC sits below

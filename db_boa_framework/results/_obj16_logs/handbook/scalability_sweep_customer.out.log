@@ -1,0 +1,40 @@
+======================================================================
+  TASK C — SCALABILITY OF CONTRIBUTION ATTRIBUTION (exact vs MC Shapley)
+  exact n=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  mc    n=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20]  (mc_samples=200, truncation=off)
+  equal-shard=8000/org  epochs=10  n_val=400
+======================================================================
+[C]  shared val set: 400 samples, 200 fraud (50.0%) — fraud-stratified for meaningful Shapley
+[C]  training equal-shard pool of 20 orgs (8000 samples each) …
+[C]    trained Bank01  (60533 samples, 526 fraud, σ=0.00)  bal-acc=60.82%
+[C]    trained Bank03  (61835 samples, 486 fraud, σ=1.00)  bal-acc=60.05%
+[C]    trained Bank06  (62685 samples, 431 fraud, σ=0.50)  bal-acc=58.34%
+[C]    trained Bank09  (63406 samples, 507 fraud, σ=0.00)  bal-acc=61.67%
+[C]    trained Bank12  (61872 samples, 514 fraud, σ=1.50)  bal-acc=58.43%
+[C]    trained Bank15  (55548 samples, 538 fraud, σ=1.00)  bal-acc=59.98%
+[C]    trained Bank18  (60650 samples, 507 fraud, σ=0.50)  bal-acc=59.81%
+[C]  n= 3  exact=   0.206s (    7 cval)  mc=  0.338s (   7 cval)  speedup=   0.6x  L1=0.029  ρ=+1.00  top1=OK
+[C]  n= 4  exact=   0.443s (   15 cval)  mc=  0.525s (  15 cval)  speedup=   0.8x  L1=0.147  ρ=+0.00  top1=x
+[C]  n= 5  exact=   0.996s (   31 cval)  mc=  1.021s (  31 cval)  speedup=   1.0x  L1=0.214  ρ=+0.30  top1=OK
+[C]  n= 6  exact=   2.618s (   63 cval)  mc=  1.869s (  63 cval)  speedup=   1.4x  L1=0.216  ρ=-0.54  top1=x
+[C]  n= 7  exact=   4.332s (  127 cval)  mc=  4.771s ( 127 cval)  speedup=   0.9x  L1=0.221  ρ=+0.36  top1=x
+[C]  n= 8  exact=   7.846s (  255 cval)  mc=  7.701s ( 249 cval)  speedup=   1.0x  L1=0.184  ρ=+0.81  top1=OK
+[C]  n= 9  exact=  16.027s (  511 cval)  mc= 14.092s ( 451 cval)  speedup=   1.1x  L1=0.245  ρ=+0.80  top1=x
+[C]  n=10  exact=  30.843s ( 1023 cval)  mc= 21.463s ( 697 cval)  speedup=   1.4x  L1=0.211  ρ=+0.43  top1=x
+[C]  n=11  exact=  63.670s ( 2047 cval)  mc= 33.104s ( 965 cval)  speedup=   1.9x  L1=0.119  ρ=+0.57  top1=x
+[C]  n=12  exact= 126.926s ( 4095 cval)  mc= 38.697s (1265 cval)  speedup=   3.3x  L1=0.256  ρ=+0.20  top1=OK
+[C]  n=14  exact=SKIPPED (2^n=16383 coalitions)        mc= 56.528s (1820 cval)
+[C]  n=16  exact=SKIPPED (2^n=65535 coalitions)        mc= 84.292s (2321 cval)
+[C]  n=18  exact=SKIPPED (2^n=262143 coalitions)        mc=103.013s (2778 cval)
+[C]  n=20  exact=SKIPPED (2^n=1048575 coalitions)        mc=124.230s (3247 cval)
+[C]  dilution regime — splitting full train pool across n=[3, 5, 8, 12] …
+[C]  dilution n= 3  ~408996 samples/org  global bal-acc=61.62%
+[C]  dilution n= 5  ~245398 samples/org  global bal-acc=61.06%
+[C]  dilution n= 8  ~153373 samples/org  global bal-acc=59.60%
+[C]  dilution n=12  ~102249 samples/org  global bal-acc=58.44%
+
+[C]  done in 15288.3s
+[C]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\scalability_sweep_handbook_customer.json
+[C]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\scalability_shapley_runtime_handbook_customer.png
+[C]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\scalability_fidelity_accuracy_handbook_customer.png
+[C]  wrote draft → D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\final_report_data\TASKC_scalability_results_handbook_customer.md

@@ -29,3 +29,12 @@
 [C]  n=20  exact=SKIPPED (2^n=1048575 coalitions)        mc= 94.671s (3247 cval)
 [C]  dilution regime — splitting full train pool across n=[3, 5, 8, 12] …
 [C]  dilution n= 3  ~408996 samples/org  global bal-acc=60.72%
+[C]  dilution n= 5  ~245398 samples/org  global bal-acc=60.37%
+[C]  dilution n= 8  ~153373 samples/org  global bal-acc=59.72%
+[C]  dilution n=12  ~102249 samples/org  global bal-acc=59.74%
+
+[C]  done in 12936.0s
+[C]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\scalability_sweep_handbook_stratified.json
+[C]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\scalability_shapley_runtime_handbook_stratified.png
+[C]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\scalability_fidelity_accuracy_handbook_stratified.png
+[C]  wrote draft → D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\final_report_data\TASKC_scalability_results_handbook_stratified.md

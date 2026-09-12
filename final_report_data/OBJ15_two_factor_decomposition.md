@@ -20,8 +20,8 @@ Share of sweep training windows that are single-entity (`results/partition_windo
 - **ULB / stratified** -- 4/4 runnable sweeps on disk; ablation FedAvg MCC +0.4247
 - **BankSim / stratified** -- 4/4 runnable sweeps on disk; ablation FedAvg MCC +0.7570
 - **BankSim / entity-disjoint** -- 4/4 runnable sweeps on disk; ablation FedAvg MCC +0.8268
-- **Handbook / stratified (FedAvg at floor)** -- 3/4 runnable sweeps on disk (missing: scalability_sweep); ablation FedAvg MCC +0.0439
-- **Handbook / entity-disjoint** -- 3/4 runnable sweeps on disk (missing: scalability_sweep); ablation FedAvg MCC +0.1500
+- **Handbook / stratified (FedAvg at floor)** -- 4/4 runnable sweeps on disk; ablation FedAvg MCC +0.0439
+- **Handbook / entity-disjoint** -- 4/4 runnable sweeps on disk; ablation FedAvg MCC +0.1500
 - **PaySim / stratified** -- 4/4 runnable sweeps on disk; ablation FedAvg MCC +0.4283
 - **AMLSim / stratified (FedAvg at floor)** -- 4/4 runnable sweeps on disk; ablation FedAvg MCC -0.0110
 - **AMLSim / native banks** -- 2/2 runnable sweeps on disk; `byzantine_robustness_sweep` cannot run here (builds 5- and 7-org federations; 3 native banks); `scalability_sweep` cannot run here (builds up to 20 orgs; 3 native banks); ablation FedAvg MCC +0.1576
@@ -29,8 +29,6 @@ Share of sweep training windows that are single-entity (`results/partition_windo
 > **[Kaggle]** marks a column run on Kaggle (Linux, Python 3.12, the laptop's library pins, 4 threads): PaySim / stratified, AMLSim / stratified (FedAvg at floor), AMLSim / native banks. A comparison across a [Kaggle] and an unmarked column is also an environment comparison.
 
 > **(FedAvg at floor) / [floor]** marks a condition whose federated ablation leaves FedAvg below MCC 0.05 -- the floor the AMLSim pre-registration fixed as (f). Its models carry nothing to attack, reward or protect, so its rows are shown and never scored: the properties are **untestable** there, neither held nor failed.
-
-> **Incomplete.** A condition with no run of a sweep has no column in that sweep's tables, and an effect column appears only when both its ends are on disk. Re-run this script when the outstanding sweeps land; it costs seconds and reads only JSON.
 
 ---
 
@@ -244,22 +242,22 @@ Shared eps grid, all conditions on disk: `[1, 5, 10, 30, 50, 100, 300, 1000, 300
 
 ## Task C -- scalability of contribution attribution (**Scalable**)
 
-`scalability_sweep` -- conditions on disk: ULB / stratified, BankSim / stratified, BankSim / entity-disjoint, PaySim / stratified, AMLSim / stratified (FedAvg at floor)
+`scalability_sweep` -- conditions on disk: ULB / stratified, BankSim / stratified, BankSim / entity-disjoint, Handbook / stratified (FedAvg at floor), Handbook / entity-disjoint, PaySim / stratified, AMLSim / stratified (FedAvg at floor)
 
 **Exact-Shapley wall-clock at n=12 (seconds) over the same 4,095 coalitions. O(2^n) is a property of the coalition lattice, not of the data -- this row is expected to be flat and is reported so it is not mistaken for a finding.**
 
-| Quantity (metric named) | ULB/strat | BankSim/strat | BankSim/entity | PaySim/strat [Kaggle] | AMLSim/strat [Kaggle] [floor] | dataset effect ULB->BankSim (strat) | BankSim strat->entity (partition+windows) |
-|---|---|---|---|---|---|---|---|
-| exact Shapley @ n=12 (s) | 113.5 | 140.3 | 120.6 | 69.6 | 62.0 | 26.8 | -19.7 |
-| MC Shapley @ n=12 (s) | 34.7 | 34.0 | 37.2 | 21.5 | 19.1 | -0.7 | 3.2 |
-| MC speed-up @ n=12 (x) | 3.27 | 4.13 | 3.24 | 3.24 | 3.24 | 0.86 | -0.89 |
+| Quantity (metric named) | ULB/strat | BankSim/strat | BankSim/entity | Handbook/strat [floor] | Handbook/entity | PaySim/strat [Kaggle] | AMLSim/strat [Kaggle] [floor] | dataset effect ULB->BankSim (strat) | BankSim strat->entity (partition+windows) | Handbook strat->entity (partition+windows) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| exact Shapley @ n=12 (s) | 113.5 | 140.3 | 120.6 | 123.6 | 126.9 | 69.6 | 62.0 | 26.8 | -19.7 | 3.3 |
+| MC Shapley @ n=12 (s) | 34.7 | 34.0 | 37.2 | 37.4 | 38.7 | 21.5 | 19.1 | -0.7 | 3.2 | 1.3 |
+| MC speed-up @ n=12 (x) | 3.27 | 4.13 | 3.24 | 3.30 | 3.28 | 3.24 | 3.24 | 0.86 | -0.89 | -0.02 |
 
 **MC fidelity. Rule 11 applies hard here: rho and L1 measure whether the token SPLIT is preserved, top-1 asks only who gets the largest single payout, and on OBJ-15's two conditions the two metrics ranked the datasets oppositely. Quote the metric with the number.**
 
-| Quantity (metric named) | ULB/strat | BankSim/strat | BankSim/entity | PaySim/strat [Kaggle] | AMLSim/strat [Kaggle] [floor] | dataset effect ULB->BankSim (strat) | BankSim strat->entity (partition+windows) |
-|---|---|---|---|---|---|---|---|
-| rho @ n=12 (rank fidelity) | -0.014 | +0.769 | +0.448 | +0.413 | +0.077 | +0.783 | -0.322 |
-| L1 error @ n=12 (split fidelity) | 0.2572 | 0.2553 | 0.2262 | 0.2467 | 0.2400 | -0.0020 | -0.0291 |
+| Quantity (metric named) | ULB/strat | BankSim/strat | BankSim/entity | Handbook/strat [floor] | Handbook/entity | PaySim/strat [Kaggle] | AMLSim/strat [Kaggle] [floor] | dataset effect ULB->BankSim (strat) | BankSim strat->entity (partition+windows) | Handbook strat->entity (partition+windows) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| rho @ n=12 (rank fidelity) | -0.014 | +0.769 | +0.448 | +0.469 | +0.196 | +0.413 | +0.077 | +0.783 | -0.322 | -0.273 |
+| L1 error @ n=12 (split fidelity) | 0.2572 | 0.2553 | 0.2262 | 0.2569 | 0.2560 | 0.2467 | 0.2400 | -0.0020 | -0.0291 | -0.0009 |
 
 **Top-1 agreement per n, over the ns where exact Shapley is computable.** OBJ-15 withdrew "fails from n=6": the failure is intermittent, not a threshold.
 
@@ -268,6 +266,8 @@ Shared eps grid, all conditions on disk: `[1, 5, 10, 30, 50, 100, 300, 1000, 300
 | ULB / stratified | yes | yes | yes | no | yes | no | yes | no | no | no | 5/10 |
 | BankSim / stratified | yes | yes | no | no | yes | no | no | no | yes | yes | 5/10 |
 | BankSim / entity-disjoint | no | no | yes | no | yes | yes | no | no | no | no | 3/10 |
+| Handbook / stratified (FedAvg at floor) | yes | no | yes | no | no | yes | no | no | no | no | 3/10 |
+| Handbook / entity-disjoint | yes | no | yes | no | no | yes | no | no | no | yes | 4/10 |
 | PaySim / stratified | yes | yes | no | no | no | no | no | yes | no | no | 3/10 |
 | AMLSim / stratified (FedAvg at floor) | yes | yes | no | no | no | no | no | yes | no | no | 3/10 |
 
