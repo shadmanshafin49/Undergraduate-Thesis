@@ -2670,6 +2670,46 @@ association across seven conditions is now measured and should be reported as su
 
 *Note ULB's margin is only +7 to +8 despite 99.95 % accuracy, so margin does not track accuracy simply.*
 
+#### ▸ STRUCTURAL LIMITATION — AMLSim cannot test Krum on either partition (recorded 2026-09-13)
+
+Raised because the operator asked for the missing `amlsim` × `bank` byzantine sweep to be run on Kaggle.
+**It cannot be run, and the reason is not a scheduling gap — it is arithmetic.** Recording it so the
+missing cell is never mistaken for an oversight, and never quietly filled with an invalid run.
+
+- `byzantine_robustness_sweep.py:66` fixes `REGIMES = [(5, 1, 1), (7, 2, 2)]`. Those two sizes are chosen
+  precisely so **Krum's n ≥ 2f+3 guarantee holds** (5 ≥ 2·1+3, 7 ≥ 2·2+3); the file's own comment calls
+  that "the whole point of this sweep", and each record stores `theorem_ok`.
+- AMLSim's `bank` partition is **native** — `amlsim_loader.split_for_orgs`: "org k holds the transactions
+  sent from bank k". The generated data has exactly **three** banks (`accounts.csv`: bank_a 6,022 /
+  bank_b 3,613 / bank_c 2,408), which is why the dataset is named `10K_3banks`.
+- **Three native banks cannot form a 5- or 7-org federation.** At n = 3 with even a single attacker,
+  `theorem_ok` is False (3 < 5): Krum would be measured outside the regime it exists to test.
+- `kaggle_jobs.py` already encodes this — `NATIVE_ORG_CAP = {("amlsim","bank"): 3}` and
+  `NEEDS_MORE_ORGS = ("byzantine_robustness_sweep", "scalability_sweep")` skip the cell deliberately,
+  with the comment that the pre-registration says so "rather than letting a job crash or silently vanish".
+
+⛔ **The consequence is a finding, not a gap: AMLSim cannot support a valid Krum test at all.**
+- Its `stratified` partition *can* build 5 and 7 orgs, and did — but that condition is **inert**
+  (`ref_fedavg` 50.00, `ref_krum` 49.70, all four attacks 49.92–50.00), and the label-flipped model is
+  **not separated** there either (margin −19.96 / −60.28; see the cross-condition finding above).
+- Its `bank` partition is the one whose models work (FedAvg **+0.1576**), and it is **too small to run
+  the sweep**.
+- **So the two requirements — a working model and ≥ 5 orgs — are met by different AMLSim partitions and
+  never by the same one.** Every "Krum caught the attacker 8/8 on AMLSim" statement rests on the inert
+  partition. It should be reported as **untestable on this dataset**, alongside the two conditions already
+  marked untestable for Shapley fidelity.
+
+**What could be run instead, and what each would and would not show** (none of these is the missing cell;
+each needs its own pre-registration before it runs):
+1. **n = 3, f = 1 on the native banks, `theorem_ok = False`.** Out of regime, so it cannot test the
+   security property — but it *can* measure the **separation margin**, which is a property of the update
+   geometry rather than of Krum's guarantee. It would answer whether AMLSim's non-separation follows the
+   inert models or the dataset. The cheapest informative option.
+2. **A bank-derived 6-org split** (each bank halved) to reach n = 5 or 7. This is **not** the native bank
+   partition and must not be reported as one; it would be a new partition needing its own justification.
+3. **Regenerate AMLSim with ≥ 5 banks.** Cleanest scientifically, but it is a new dataset — every AMLSim
+   number already scored would then come from a different generation and could not be pooled with it.
+
 **Stated so they are not later reported as findings:** exact-Shapley cost is structural (same
 4,095 coalitions at n = 12); MC top-1 stays intermittent with no threshold; absolute MCC sits below
 the Handbook's published baselines **by design** (thinner features) and is never compared to them.
