@@ -1,0 +1,44 @@
+[{"stream_name":"stdout","time":487.993951276,"data":"{\n"}
+,{"stream_name":"stdout","time":487.995608468,"data":"  \"job\": \"amlsim-grid-densenet\",\n"}
+,{"stream_name":"stdout","time":487.995623261,"data":"  \"cmd\": [\n"}
+,{"stream_name":"stdout","time":487.995627478,"data":"    \"experiments/entity_temporal_grid.py\",\n"}
+,{"stream_name":"stdout","time":487.995631371,"data":"    \"--dataset\",\n"}
+,{"stream_name":"stdout","time":487.995635118,"data":"    \"amlsim\",\n"}
+,{"stream_name":"stdout","time":487.995638778,"data":"    \"--archs\",\n"}
+,{"stream_name":"stdout","time":487.995642704,"data":"    \"densenet\",\n"}
+,{"stream_name":"stdout","time":487.99564669,"data":"    \"--out\",\n"}
+,{"stream_name":"stdout","time":487.995650456,"data":"    \"amlsim_temporal_grid_densenet.json\"\n"}
+,{"stream_name":"stdout","time":487.995654471,"data":"  ],\n"}
+,{"stream_name":"stdout","time":487.995658024,"data":"  \"started\": \"2026-09-11 17:01:52\",\n"}
+,{"stream_name":"stdout","time":487.995661929,"data":"  \"bundle_sha256\": \"1d3029e4a01f77e2b8dd278425642495d3b04d834ea46bac796157da70d586cd\",\n"}
+,{"stream_name":"stdout","time":487.995665991,"data":"  \"pip\": {\n"}
+,{"stream_name":"stdout","time":487.995669655,"data":"    \"torch_rc\": 0,\n"}
+,{"stream_name":"stdout","time":487.995673527,"data":"    \"others_rc\": 0,\n"}
+,{"stream_name":"stdout","time":487.995677474,"data":"    \"stderr_tail\": \"\"\n"}
+,{"stream_name":"stdout","time":487.995680035,"data":"  },\n"}
+,{"stream_name":"stdout","time":487.995682462,"data":"  \"returncode\": 0,\n"}
+,{"stream_name":"stdout","time":487.995684934,"data":"  \"job_seconds\": 380.8,\n"}
+,{"stream_name":"stdout","time":487.995687299,"data":"  \"job_torch_threads\": 4,\n"}
+,{"stream_name":"stdout","time":487.995690354,"data":"  \"imported_versions\": \"{\\\"python\\\": \\\"3.12.13\\\", \\\"torch\\\": \\\"2.12.0+cpu\\\", \\\"threads\\\": 2, \\\"numpy\\\": \\\"2.3.2\\\", \\\"scikit-learn\\\": \\\"1.8.0\\\", \\\"pandas\\\": \\\"3.0.2\\\", \\\"scipy\\\": \\\"1.17.1\\\", \\\"matplotlib\\\": \\\"3.10.8\\\"}\",\n"}
+,{"stream_name":"stdout","time":487.99569655,"data":"  \"laptop_versions\": {\n"}
+,{"stream_name":"stdout","time":487.99569916,"data":"    \"python\": \"3.13.7\",\n"}
+,{"stream_name":"stdout","time":487.995701691,"data":"    \"torch\": \"2.12.0\",\n"}
+,{"stream_name":"stdout","time":487.995704134,"data":"    \"numpy\": \"2.3.2\",\n"}
+,{"stream_name":"stdout","time":487.995706602,"data":"    \"scikit-learn\": \"1.8.0\",\n"}
+,{"stream_name":"stdout","time":487.995709491,"data":"    \"pandas\": \"3.0.2\",\n"}
+,{"stream_name":"stdout","time":487.99571188,"data":"    \"scipy\": \"1.17.1\",\n"}
+,{"stream_name":"stdout","time":487.995714245,"data":"    \"matplotlib\": \"3.10.8\"\n"}
+,{"stream_name":"stdout","time":487.995716681,"data":"  },\n"}
+,{"stream_name":"stdout","time":487.995719206,"data":"  \"bundle_commit\": \"6d8e41e8b19213128b54ad653defec1129f29aaf\",\n"}
+,{"stream_name":"stdout","time":487.995721892,"data":"  \"cpu_model\": \"Intel(R) Xeon(R) CPU @ 2.20GHz\",\n"}
+,{"stream_name":"stdout","time":487.995724399,"data":"  \"platform\": \"Linux-6.12.90+-x86_64-with-glibc2.35\",\n"}
+,{"stream_name":"stdout","time":487.995727375,"data":"  \"finished\": \"2026-09-11 17:09:59\",\n"}
+,{"stream_name":"stdout","time":487.995729835,"data":"  \"total_seconds\": 486.9\n"}
+,{"stream_name":"stdout","time":487.995732242,"data":"}\n"}
+,{"stream_name":"stderr","time":490.62390304,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":490.623958764,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":490.963465476,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":490.963500319,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":491.759882128,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":493.419105878,"data":"[NbConvertApp] Writing 303431 bytes to __results__.html\n"}
+]

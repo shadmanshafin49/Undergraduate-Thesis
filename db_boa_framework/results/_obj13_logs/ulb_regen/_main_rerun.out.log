@@ -1,0 +1,10 @@
+armed       : 2026-09-11 23:02:14
+waiting for pid 25208 (ULB runner) to exit ...
+CPU free    : 2026-09-12 01:49:18
+snapshot    : results\_obj13_logs\ulb_regen\db_boa_results_phase1to7_2250.json
+
+=== main_ulb_rerun  (2026-09-12 01:49:19) ===
+    OK    main_ulb_rerun  (04:03:18)
+    phase 1-7 fields: 16 | identical: 15 | differing: ['fed_rounds']
+    attack_simulation present in re-run: True
+    attack: {'n_rounds': 15, 'n_disputed': 15, 'final_tokens': 70, 'final_reputation': 0.5, 'db_boa_weight_under_attack': 0.0}

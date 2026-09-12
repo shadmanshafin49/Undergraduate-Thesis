@@ -1,0 +1,90 @@
+{
+  "task": "federated ablation (FedAvg / +Krum / +DP / proposed) on the amlsim test set",
+  "dataset": "IBM AMLSim 10K, 3 native banks (198,015 tx, 0.35 % laundering \u2014 NOT fraud)",
+  "partition": "bank",
+  "ordering": "sender",
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "detector_width_source": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+  "surrogate_eval_mode": null,
+  "surrogate_k": null,
+  "epoch_count": 30,
+  "dp_epsilon": 1.0,
+  "dp_delta": 1e-05,
+  "optimal_params": {
+    "hidden_neurons": 32,
+    "epoch_count": 30,
+    "steps_per_epoch": 150
+  },
+  "results": {
+    "FedAvg": {
+      "Accuracy": 94.29298528522452,
+      "Precision": 3.5299182092120733,
+      "Sensitivity": 77.35849056596476,
+      "Specificity": 94.3383356070939,
+      "NPV": 99.93576876756296,
+      "FPR": 5.661664392905852,
+      "FNR": 22.641509433940904,
+      "FDR": 96.47008179078362,
+      "F1_Score": 6.751749691230681,
+      "MCC": 0.15763208960879654,
+      "TP": 82.0,
+      "TN": 37341.0,
+      "FP": 2241.0,
+      "FN": 24.0
+    },
+    "FedAvg+Krum": {
+      "Accuracy": 92.56198347107414,
+      "Precision": 2.9431216931215958,
+      "Sensitivity": 83.96226415086419,
+      "Specificity": 92.58501338992447,
+      "NPV": 99.95363299149001,
+      "FPR": 7.4149866100752675,
+      "FNR": 16.037735849041475,
+      "FDR": 97.05687830687509,
+      "F1_Score": 5.686900958466272,
+      "MCC": 0.14890892680118387,
+      "TP": 89.0,
+      "TN": 36647.0,
+      "FP": 2935.0,
+      "FN": 17.0
+    },
+    "FedAvg+DP": {
+      "Accuracy": 61.172142713162515,
+      "Precision": 0.3116883116883097,
+      "Sensitivity": 45.28301886788181,
+      "Specificity": 61.21469354757197,
+      "NPV": 99.76119894598115,
+      "FPR": 38.78530645242777,
+      "FNR": 54.716981132023854,
+      "FDR": 99.68831168831105,
+      "F1_Score": 0.6191151812201688,
+      "MCC": 0.0068818634038536,
+      "TP": 48.0,
+      "TN": 24230.0,
+      "FP": 15352.0,
+      "FN": 58.0
+    },
+    "DB-BOA-ADTCN": {
+      "Accuracy": 99.53890344688546,
+      "Precision": 0.0,
+      "Sensitivity": 0.0,
+      "Specificity": 99.80546713152417,
+      "NPV": 99.73239756633232,
+      "FPR": 0.1945328684755692,
+      "FNR": 99.99999999990565,
+      "FDR": 99.99999999987013,
+      "F1_Score": 0.0,
+      "MCC": -0.0022816105941278787,
+      "TP": 0.0,
+      "TN": 39505.0,
+      "FP": 77.0,
+      "FN": 106.0
+    }
+  }
+}

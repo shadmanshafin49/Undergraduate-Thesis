@@ -3,14 +3,43 @@
   "sources": {
     "ULB / stratified": "baselines.json",
     "BankSim / stratified": "baselines_banksim_stratified.json",
-    "BankSim / entity-disjoint": "baselines_banksim_customer.json"
+    "BankSim / entity-disjoint": "baselines_banksim_customer.json",
+    "Handbook / stratified": "baselines_handbook_stratified.json",
+    "Handbook / entity-disjoint": "baselines_handbook_customer.json",
+    "PaySim / stratified": "baselines_paysim_stratified.json",
+    "PaySim all rows / stratified": "baselines_paysim_all_stratified.json",
+    "AMLSim / stratified": "baselines_amlsim_stratified.json",
+    "AMLSim / native banks": "baselines_amlsim_bank.json"
   },
+  "environment": {
+    "ULB / stratified": "laptop",
+    "BankSim / stratified": "laptop",
+    "BankSim / entity-disjoint": "laptop",
+    "Handbook / stratified": "laptop",
+    "Handbook / entity-disjoint": "laptop",
+    "PaySim / stratified": "Kaggle",
+    "PaySim all rows / stratified": "Kaggle",
+    "AMLSim / stratified": "Kaggle",
+    "AMLSim / native banks": "Kaggle"
+  },
+  "detector_width_source": {
+    "ULB / stratified": "DB-BOA search",
+    "BankSim / stratified": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+    "BankSim / entity-disjoint": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+    "Handbook / stratified": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+    "Handbook / entity-disjoint": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+    "PaySim / stratified": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+    "PaySim all rows / stratified": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+    "AMLSim / stratified": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+    "AMLSim / native banks": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)"
+  },
+  "floor_mcc": 0.05,
   "mcc": {
     "ULB / stratified": {
-      "FedAvg": 0.5693524784759046,
-      "FedAvg+Krum": 0.7762164491942695,
-      "FedAvg+DP": 0.0,
-      "DB-BOA-ADTCN": 0.0007972443262166401
+      "FedAvg": 0.4246649863684571,
+      "FedAvg+Krum": 0.7507993352461886,
+      "FedAvg+DP": -0.0012436384202477188,
+      "DB-BOA-ADTCN": 0.004846927912253618
     },
     "BankSim / stratified": {
       "FedAvg": 0.7569921424833845,
@@ -23,41 +52,209 @@
       "FedAvg+Krum": 0.7932989193340523,
       "FedAvg+DP": -0.00015033280460371605,
       "DB-BOA-ADTCN": 0.009886223317009947
+    },
+    "Handbook / stratified": {
+      "FedAvg": 0.04392773872031548,
+      "FedAvg+Krum": 0.05198128059639582,
+      "FedAvg+DP": 0.008991541237434132,
+      "DB-BOA-ADTCN": 0.012610627418559974
+    },
+    "Handbook / entity-disjoint": {
+      "FedAvg": 0.14999964657248022,
+      "FedAvg+Krum": 0.10889933364987549,
+      "FedAvg+DP": -0.004754558556686987,
+      "DB-BOA-ADTCN": 0.0021779185875368625
+    },
+    "PaySim / stratified": {
+      "FedAvg": 0.4282976998345315,
+      "FedAvg+Krum": 0.413909389988302,
+      "FedAvg+DP": 0.011838324826422946,
+      "DB-BOA-ADTCN": -0.004136727184068161
+    },
+    "PaySim all rows / stratified": {
+      "FedAvg": 0.41854469711127107,
+      "FedAvg+Krum": 0.3933360194835774,
+      "FedAvg+DP": 0.001432756114700987,
+      "DB-BOA-ADTCN": 0.006664092056716802
+    },
+    "AMLSim / stratified": {
+      "FedAvg": -0.010984207864727894,
+      "FedAvg+Krum": -0.013645473879407266,
+      "FedAvg+DP": 0.0011533286274988438,
+      "DB-BOA-ADTCN": -0.004797886937980398
+    },
+    "AMLSim / native banks": {
+      "FedAvg": 0.15763208960879654,
+      "FedAvg+Krum": 0.14890892680118387,
+      "FedAvg+DP": 0.0068818634038536,
+      "DB-BOA-ADTCN": -0.0022816105941278787
     }
   },
   "dp_cost": {
     "ULB / stratified": {
-      "delta_mcc": 0.5693524784759046,
-      "delta_acc": -0.10533338014816707,
-      "dp_precision": 0.0,
-      "dp_recall": 0.0,
-      "dp_fp": 0.0,
-      "dp_tp": 0.0,
-      "collapse_direction": "all-negative (predicts no fraud at all)"
+      "fedavg_mcc": 0.4246649863684571,
+      "dp_mcc": -0.0012436384202477188,
+      "delta_mcc": 0.42590862478870484,
+      "delta_acc": 75.07636670060728,
+      "dp_precision": 0.1691302534636945,
+      "dp_recall": 74.48979591829134,
+      "dp_fp": 43089.0,
+      "dp_tp": 73.0,
+      "testable": true,
+      "collapsed": true,
+      "collapse_direction": "indiscriminate (mostly false positives)"
     },
     "BankSim / stratified": {
+      "fedavg_mcc": 0.7569921424833845,
+      "dp_mcc": 0.018006020990079426,
       "delta_mcc": 0.7389861214933051,
       "delta_acc": 20.86475081371954,
       "dp_precision": 1.4403051889913916,
       "dp_recall": 28.030303030300907,
       "dp_fp": 25319.0,
       "dp_tp": 370.0,
+      "testable": true,
+      "collapsed": true,
       "collapse_direction": "indiscriminate (mostly false positives)"
     },
     "BankSim / entity-disjoint": {
+      "fedavg_mcc": 0.8267972131791435,
+      "dp_mcc": -0.00015033280460371605,
       "delta_mcc": 0.8269475459837472,
       "delta_acc": 97.54902762557442,
       "dp_precision": 1.07935354402887,
       "dp_recall": 99.01515151514401,
       "dp_fp": 119784.0,
       "dp_tp": 1307.0,
+      "testable": true,
+      "collapsed": true,
       "collapse_direction": "all-positive (flags nearly everything)"
+    },
+    "Handbook / stratified": {
+      "fedavg_mcc": 0.04392773872031548,
+      "dp_mcc": 0.008991541237434132,
+      "delta_mcc": 0.03493619748288135,
+      "delta_acc": 40.34620731270601,
+      "dp_precision": 0.9571742942612519,
+      "dp_recall": 70.09757632986874,
+      "dp_fp": 230437.0,
+      "dp_tp": 2227.0,
+      "testable": false,
+      "collapsed": true,
+      "collapse_direction": "indiscriminate (mostly false positives)"
+    },
+    "Handbook / entity-disjoint": {
+      "fedavg_mcc": 0.14999964657248022,
+      "dp_mcc": -0.004754558556686987,
+      "delta_mcc": 0.1547542051291672,
+      "delta_acc": -0.640362279813786,
+      "dp_precision": 0.5901287553647989,
+      "dp_recall": 1.3849543594585652,
+      "dp_fp": 7412.0,
+      "dp_tp": 44.0,
+      "testable": true,
+      "collapsed": true,
+      "collapse_direction": "indiscriminate (mostly false positives)"
+    },
+    "PaySim / stratified": {
+      "fedavg_mcc": 0.4282976998345315,
+      "dp_mcc": 0.011838324826422946,
+      "delta_mcc": 0.41645937500810853,
+      "delta_acc": -1.1577444282674492,
+      "dp_precision": 2.0820760410379577,
+      "dp_recall": 1.6159250585479714,
+      "dp_fp": 3245.0,
+      "dp_tp": 69.0,
+      "testable": true,
+      "collapsed": true,
+      "collapse_direction": "indiscriminate (mostly false positives)"
+    },
+    "PaySim all rows / stratified": {
+      "fedavg_mcc": 0.41854469711127107,
+      "dp_mcc": 0.001432756114700987,
+      "delta_mcc": 0.41711194099657006,
+      "delta_acc": 70.66920797860021,
+      "dp_precision": 0.32509244816494687,
+      "dp_recall": 73.0679156908648,
+      "dp_fp": 956607.0,
+      "dp_tp": 3120.0,
+      "testable": true,
+      "collapsed": true,
+      "collapse_direction": "indiscriminate (mostly false positives)"
+    },
+    "AMLSim / stratified": {
+      "fedavg_mcc": -0.010984207864727894,
+      "dp_mcc": 0.0011533286274988438,
+      "delta_mcc": -0.012137536492226738,
+      "delta_acc": 82.2062084257204,
+      "dp_precision": 0.26938562697332136,
+      "dp_recall": 87.735849056521,
+      "dp_fp": 34430.0,
+      "dp_tp": 93.0,
+      "testable": false,
+      "collapsed": true,
+      "collapse_direction": "all-positive (flags nearly everything)"
+    },
+    "AMLSim / native banks": {
+      "fedavg_mcc": 0.15763208960879654,
+      "dp_mcc": 0.0068818634038536,
+      "delta_mcc": 0.15075022620494294,
+      "delta_acc": 33.120842572062,
+      "dp_precision": 0.3116883116883097,
+      "dp_recall": 45.28301886788181,
+      "dp_fp": 15352.0,
+      "dp_tp": 48.0,
+      "testable": true,
+      "collapsed": true,
+      "collapse_direction": "indiscriminate (mostly false positives)"
     }
   },
   "krum_delta": {
-    "ULB / stratified": 0.20686397071836482,
+    "ULB / stratified": 0.32613434887773146,
     "BankSim / stratified": -0.037117889710922114,
-    "BankSim / entity-disjoint": -0.033498293845091176
+    "BankSim / entity-disjoint": -0.033498293845091176,
+    "Handbook / stratified": 0.008053541876080338,
+    "Handbook / entity-disjoint": -0.04110031292260473,
+    "PaySim / stratified": -0.014388309846229463,
+    "PaySim all rows / stratified": -0.025208677627693687,
+    "AMLSim / stratified": -0.0026612660146793712,
+    "AMLSim / native banks": -0.008723162807612678
   },
-  "confound": "BankSim stratified vs entity-disjoint differ in BOTH the partition scheme AND the windowing (only the entity-disjoint split leaves org rows customer-contiguous, so only it can use entity-linked windows). The delta cannot be attributed to partitioning alone."
+  "strat_to_entity_delta_mcc": {
+    "BankSim": {
+      "FedAvg": 0.06980507069575892,
+      "FedAvg+Krum": 0.07342466656158986,
+      "FedAvg+DP": -0.018156353794683142,
+      "DB-BOA-ADTCN": -0.0158907629613544
+    },
+    "Handbook": {
+      "FedAvg": 0.10607190785216473,
+      "FedAvg+Krum": 0.05691805305347967,
+      "FedAvg+DP": -0.013746099794121119,
+      "DB-BOA-ADTCN": -0.010432708831023112
+    },
+    "AMLSim": {
+      "FedAvg": 0.16861629747352444,
+      "FedAvg+Krum": 0.16255440068059113,
+      "FedAvg+DP": 0.005728534776354756,
+      "DB-BOA-ADTCN": 0.002516276343852519
+    }
+  },
+  "row_scope": {
+    "fedavg_acc_delta_pp": 1.3458474468574906,
+    "fedavg_mcc_delta": -0.009753002723260407,
+    "mcc_order_typed": [
+      "FedAvg",
+      "FedAvg+Krum",
+      "FedAvg+DP"
+    ],
+    "mcc_order_all_rows": [
+      "FedAvg",
+      "FedAvg+Krum",
+      "FedAvg+DP"
+    ],
+    "dp_mcc_typed": 0.011838324826422946,
+    "dp_mcc_all_rows": 0.001432756114700987
+  },
+  "confound": "Within a dataset the stratified and entity splits differ in BOTH the partition scheme AND the windowing: run_baselines.py passes entity groups under an entity split, so its orgs train and test on entity-linked windows, which a stratified split cannot supply. The delta cannot be attributed to partitioning alone."
 }

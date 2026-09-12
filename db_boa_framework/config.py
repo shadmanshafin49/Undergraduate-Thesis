@@ -165,8 +165,84 @@ HANDBOOK_CONFIG = {
     "partition"      : "stratified",
 }
 
-# Dataset registry — lets experiments and main.py take
-# `--dataset {ulb,banksim,handbook}` without importing loader modules by hand.
+# ─── PaySim Configuration (OBJ-11; rule 8 suspended 2026-09-11) ───────────────
+# Lopez-Rojas, Elmir & Axelsson (2016); Kaggle `ealaxi/paysim1`.
+#   6,362,620 tx | 743 hourly steps | 8,213 fraud (0.129 %), all in TRANSFER + CASH_OUT
+# Every value here was measured before any model trained (experiments/paysim_recon.py,
+# experiments/check_paysim_loader.py) — design decisions in data/paysim_loader.py.
+PAYSIM_PATH = os.path.join(os.path.dirname(BASE_DIR), "datasets", "paysim",
+                           "PS_20174392719_1491204439457_log.csv")
+
+PAYSIM_CONFIG = {
+    "dataset_path"   : PAYSIM_PATH,
+    "label_col"      : "isFraud",
+    "time_col"       : "step",
+    # Scope: the two types that contain fraud — 2,770,409 rows, all 8,213 fraud.
+    "types"          : ("TRANSFER", "CASH_OUT"),
+    # Split: temporal, 70 % / 80 % row-mass quantiles of the in-scope rows (measured):
+    #   train step < 323 (1,938,484 rows, 0.187 % fraud) · val 323-353 (260,469, 0.119 %)
+    #   test step >= 354 (571,456, 0.747 %) — the sparse late tail lands in test.
+    "split"          : "temporal",
+    "val_step"       : 323,
+    "split_step"     : 354,
+    "test_size"      : 0.20,  # used only by split="stratified"
+    "val_size"       : 0.10,
+    "random_state"   : 42,
+    # 36,000 rows at 0.187 % train fraud hold ~67 unique fraud (objective floor 30).
+    "eval_subset"    : 36_000,
+    # Windowing arm: "receiver" (nameDest) or "global".  Sender-linking is impossible
+    # (99.87 % of in-scope senders appear once).  Measured lift: receiver 1.30x; global
+    # 151.6x — a time-clustering artefact, so global is NOT a no-signal control here.
+    "ordering"       : "receiver",
+    "order_seed"     : 0,
+    # No bank IDs and no sender history: stratified is the only partition.
+    "partition"      : "stratified",
+}
+
+# Pre-registered sensitivity arm: every transaction type, SAME split steps, so the
+# row scope is the only factor that moves.  Loaded by PaySimAllDataLoader.
+PAYSIM_ALL_CONFIG = dict(PAYSIM_CONFIG, types=None)
+
+# ─── IBM AMLSim Configuration (OBJ-12; rule 8 suspended 2026-09-11) ────────────
+# Generated, not downloaded: data/generate_amlsim.py runs IBM/AMLSim @ 7338a4bc on
+# the configuration data/make_amlsim_config.py derives (shipped 10K set, three
+# native banks interleaved at 50/30/20).  SHA-256 of every file: 10K_3banks/GENERATION.json.
+#   198,015 tx | 12,043 accounts | 720 daily steps | 685 laundering (is_sar, 0.346 %)
+# THE LABEL IS LAUNDERING, NOT FRAUD.  Every value below was measured before any
+# model trained (experiments/amlsim_recon.py, experiments/check_amlsim_loader.py).
+AMLSIM_DIR = os.path.join(os.path.dirname(BASE_DIR), "datasets", "amlsim", "10K_3banks")
+
+AMLSIM_CONFIG = {
+    "transactions_path": os.path.join(AMLSIM_DIR, "transactions.csv"),
+    "accounts_path"    : os.path.join(AMLSIM_DIR, "accounts.csv"),
+    "base_date"        : "2017-01-01",   # conf.json general.base_date = day 0
+    "label_col"        : "is_sar",
+    "time_col"         : "day",
+    # Split: temporal, 70 % / 80 % row-mass day quantiles (measured):
+    #   train day < 438 (138,514 tx, 542 laundering) · val 438-521 (19,813, 37)
+    #   test day >= 522 (39,688, 106).
+    "split"            : "temporal",
+    "val_day"          : 438,
+    "split_day"        : 522,
+    "test_size"        : 0.20,  # used only by split="stratified"
+    "val_size"         : 0.10,
+    "random_state"     : 42,
+    # 36,000 rows at 0.39 % train laundering hold ~141 unique positives (floor 30).
+    "eval_subset"      : 36_000,
+    # Windowing arm: "sender" (orig_acct), "receiver" (bene_acct) or "global".
+    # Measured lift: sender 25.98x, receiver 41.54x, global 2.95x — a genuine
+    # no-signal control once ties inside a day are shuffled (raw file order: 27.85x).
+    "ordering"         : "sender",
+    "order_seed"       : 0,
+    # "stratified", or "bank" — native: org k holds what bank k's accounts send
+    # (measured 99,192 / 59,359 / 39,464 tx = 50.1 / 30.0 / 19.9 %).
+    "partition"        : "stratified",
+}
+
+# Dataset registry — lets experiments and main.py take `--dataset <name>` without
+# importing loader modules by hand.  NB: `get_loader` instantiates the class with
+# no arguments, so each loader applies its own config; the "config" key documents
+# which one.
 DATASETS = {
     "ulb"      : {"loader": "data.data_loader:FinancialDataLoader",
                   "config": "DATA_CONFIG",
@@ -178,15 +254,31 @@ DATASETS = {
                   "config": "HANDBOOK_CONFIG",
                   "label" : "Fraud Detection Handbook (1,754,155 tx, 0.84 % fraud, "
                             "4,990 customer IDs, 10,000 terminal IDs, 1 s resolution)"},
+    "paysim"   : {"loader": "data.paysim_loader:PaySimDataLoader",
+                  "config": "PAYSIM_CONFIG",
+                  "label" : "PaySim TRANSFER+CASH_OUT (2,770,409 tx, 0.30 % fraud, "
+                            "no bank IDs, senders do not repeat)"},
+    "paysim_all": {"loader": "data.paysim_loader:PaySimAllDataLoader",
+                  "config": "PAYSIM_ALL_CONFIG",
+                  "label" : "PaySim, all types (6,362,620 tx, 0.13 % fraud) — "
+                            "sensitivity arm for the row scope"},
+    "amlsim"   : {"loader": "data.amlsim_loader:AMLSimDataLoader",
+                  "config": "AMLSIM_CONFIG",
+                  "label" : "IBM AMLSim 10K, 3 native banks (198,015 tx, 0.35 % "
+                            "laundering — NOT fraud)"},
 }
 
 #: Which entity-disjoint federated partitions each dataset can support.  ULB has
 #: no entity IDs at all — that is a property of the data, not a missing feature,
 #: so `_dataset.resolve` fails loudly rather than falling back to stratified.
+#: AMLSim's `bank` is native: the simulator assigns every account to one bank.
 ENTITY_PARTITIONS = {
     "ulb"      : (),
     "banksim"  : ("customer",),
     "handbook" : ("customer", "terminal"),
+    "paysim"   : (),
+    "paysim_all": (),
+    "amlsim"   : ("bank",),
 }
 
 

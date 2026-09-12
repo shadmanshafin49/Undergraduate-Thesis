@@ -1,0 +1,139 @@
+{
+  "task": "share of sweep TRAINING windows that are single-entity, per partition (no training; see module docstring)",
+  "seq_len": 10,
+  "conditions": {
+    "banksim/stratified": {
+      "entity": "customer",
+      "loader_ordering": "customer",
+      "single_entity_window_share": 7.179644272558442e-06,
+      "per_org": {
+        "BankA": {
+          "rows": 208924,
+          "single_entity_window_share": 4.786429515038962e-06,
+          "adjacency_lift": 0.719435261707989
+        },
+        "BankB": {
+          "rows": 125354,
+          "single_entity_window_share": 7.977407980598944e-06,
+          "adjacency_lift": 0.6994487169676563
+        },
+        "BankC": {
+          "rows": 83570,
+          "single_entity_window_share": 1.1966016513102789e-05,
+          "adjacency_lift": 0.9001507970702284
+        }
+      }
+    },
+    "banksim/customer": {
+      "entity": "customer",
+      "loader_ordering": "customer",
+      "single_entity_window_share": 0.9122216691237005,
+      "per_org": {
+        "BankA": {
+          "rows": 209066,
+          "single_entity_window_share": 0.91242000133929,
+          "adjacency_lift": 30.26277766493203
+        },
+        "BankB": {
+          "rows": 125368,
+          "single_entity_window_share": 0.912170569842384,
+          "adjacency_lift": 28.480735384144477
+        },
+        "BankC": {
+          "rows": 83414,
+          "single_entity_window_share": 0.9118013762677728,
+          "adjacency_lift": 33.596772273455976
+        }
+      }
+    },
+    "handbook/stratified": {
+      "entity": "customer",
+      "loader_ordering": "customer",
+      "single_entity_window_share": 2.4450077017742607e-06,
+      "per_org": {
+        "BankA": {
+          "rows": 613495,
+          "single_entity_window_share": 1.6300051345161737e-06,
+          "adjacency_lift": 0.9585853230222289
+        },
+        "BankB": {
+          "rows": 368097,
+          "single_entity_window_share": 2.716675224193623e-06,
+          "adjacency_lift": 0.9015949549816751
+        },
+        "BankC": {
+          "rows": 245398,
+          "single_entity_window_share": 4.075012836290434e-06,
+          "adjacency_lift": 0.7991409828246666
+        }
+      }
+    },
+    "handbook/customer": {
+      "entity": "customer",
+      "loader_ordering": "customer",
+      "single_entity_window_share": 0.9637323857570151,
+      "per_org": {
+        "BankA": {
+          "rows": 616062,
+          "single_entity_window_share": 0.9639257087760648,
+          "adjacency_lift": 14.835668874971963
+        },
+        "BankB": {
+          "rows": 363272,
+          "single_entity_window_share": 0.9632506771785329,
+          "adjacency_lift": 12.747340883570656
+        },
+        "BankC": {
+          "rows": 247656,
+          "single_entity_window_share": 0.9639580708725005,
+          "adjacency_lift": 13.832877492771404
+        }
+      }
+    },
+    "amlsim/stratified": {
+      "entity": "sender",
+      "loader_ordering": "sender",
+      "single_entity_window_share": 2.165846051662648e-05,
+      "per_org": {
+        "BankA": {
+          "rows": 69257,
+          "single_entity_window_share": 1.4438973677750985e-05,
+          "adjacency_lift": 0.0
+        },
+        "BankB": {
+          "rows": 41554,
+          "single_entity_window_share": 2.4065071954565144e-05,
+          "adjacency_lift": 1.5640031615792842
+        },
+        "BankC": {
+          "rows": 27703,
+          "single_entity_window_share": 3.60971735913078e-05,
+          "adjacency_lift": 2.37508573388203
+        }
+      }
+    },
+    "amlsim/bank": {
+      "entity": "sender",
+      "loader_ordering": "sender",
+      "single_entity_window_share": 0.8875564924845142,
+      "per_org": {
+        "BankA": {
+          "rows": 69184,
+          "single_entity_window_share": 0.8883701433857539,
+          "adjacency_lift": 162.24432809773123
+        },
+        "BankB": {
+          "rows": 41660,
+          "single_entity_window_share": 0.8875420067210754,
+          "adjacency_lift": 141.64286685706514
+        },
+        "BankC": {
+          "rows": 27670,
+          "single_entity_window_share": 0.8855439103722443,
+          "adjacency_lift": 95.72875007934996
+        }
+      }
+    }
+  },
+  "wall_clock_seconds": 103.9
+}

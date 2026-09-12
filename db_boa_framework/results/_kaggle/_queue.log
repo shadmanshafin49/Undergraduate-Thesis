@@ -1,0 +1,83 @@
+[2026-09-11 18:18:30] queue started: 1 job(s), max 1 at once
+[2026-09-11 18:18:41] paysim-smoke: pushed
+[2026-09-11 18:23:33] paysim-smoke: fetched
+[2026-09-11 18:23:33] queue finished: paysim-smoke=fetched
+[2026-09-11 18:28:58] queue started: 28 job(s), max 5 at once
+[2026-09-11 18:29:05] paysim-byzantine-robustness-stratified: pushed
+[2026-09-11 18:29:14] paysim-economic-byzantine-stratified: pushed
+[2026-09-11 18:29:23] paysim-private-incentive-stratified: pushed
+[2026-09-11 18:29:33] paysim-baselines-stratified: pushed
+[2026-09-11 18:29:42] paysim-all-baselines-stratified: pushed
+[2026-09-11 19:26:41] paysim-private-incentive-stratified: fetched
+[2026-09-11 19:27:14] amlsim-baselines-stratified: pushed
+[2026-09-11 19:39:01] amlsim-baselines-stratified: fetched
+[2026-09-11 19:39:15] amlsim-baselines-bank: pushed
+[2026-09-11 19:44:52] paysim-economic-byzantine-stratified: fetched
+[2026-09-11 19:45:34] amlsim-economic-byzantine-bank: pushed
+[2026-09-11 19:51:27] amlsim-baselines-bank: fetched
+[2026-09-11 19:52:03] amlsim-economic-byzantine-bank: fetched
+[2026-09-11 19:52:14] amlsim-private-incentive-bank: pushed
+[2026-09-11 19:52:29] amlsim-byzantine-robustness-stratified: pushed
+[2026-09-11 20:04:12] amlsim-private-incentive-bank: fetched
+[2026-09-11 20:04:41] amlsim-byzantine-robustness-stratified: fetched
+[2026-09-11 20:04:55] amlsim-economic-byzantine-stratified: pushed
+[2026-09-11 20:05:05] amlsim-private-incentive-stratified: pushed
+[2026-09-11 20:16:46] amlsim-economic-byzantine-stratified: fetched
+[2026-09-11 20:17:18] amlsim-private-incentive-stratified: fetched
+[2026-09-11 20:17:32] paysim-grid-cnn: pushed
+[2026-09-11 20:17:42] paysim-grid-lstm: pushed
+[2026-09-11 20:23:10] paysim-byzantine-robustness-stratified: fetched
+[2026-09-11 20:23:37] paysim-baselines-stratified: fetched
+[2026-09-11 20:24:21] paysim-grid-dtcn: pushed
+[2026-09-11 20:24:35] paysim-grid-dilated-attn: pushed
+[2026-09-11 20:57:37] paysim-grid-cnn: fetched
+[2026-09-11 20:57:58] paysim-grid-resnet: pushed
+[2026-09-11 21:51:53] paysim-grid-lstm: fetched
+[2026-09-11 21:52:20] paysim-grid-resnet: fetched
+[2026-09-11 21:52:27] paysim-grid-densenet: pushed
+[2026-09-11 21:52:34] paysim-grid-efficientnet: pushed
+[2026-09-11 22:03:31] paysim-grid-dilated-attn: fetched
+[2026-09-11 22:03:49] amlsim-grid-cnn: pushed
+[2026-09-11 22:09:26] amlsim-grid-cnn: fetched
+[2026-09-11 22:09:32] amlsim-grid-lstm: pushed
+[2026-09-11 22:20:52] amlsim-grid-lstm: fetched
+[2026-09-11 22:20:58] amlsim-grid-dtcn: pushed
+[2026-09-11 22:32:18] paysim-all-baselines-stratified: kernel ended in ERROR
+[2026-09-11 22:32:47] amlsim-grid-dilated-attn: pushed
+[2026-09-11 22:35:27] queue started: 28 job(s), max 5 at once
+[2026-09-11 22:41:39] amlsim-grid-dtcn: fetched
+[2026-09-11 22:47:06] paysim-grid-dtcn: fetched
+[2026-09-11 22:47:33] amlsim-grid-resnet: pushed
+[2026-09-11 23:01:13] paysim-grid-densenet: fetched
+[2026-09-11 23:01:42] amlsim-grid-resnet: fetched
+[2026-09-11 23:01:50] amlsim-grid-densenet: pushed
+[2026-09-11 23:01:57] amlsim-grid-efficientnet: pushed
+[2026-09-11 23:12:56] amlsim-grid-densenet: fetched
+[2026-09-11 23:13:09] paysim-scalability-stratified: pushed
+[2026-09-11 23:29:30] paysim-all-baselines-stratified: fetched
+[2026-09-11 23:30:06] amlsim-grid-efficientnet: fetched
+[2026-09-11 23:30:20] amlsim-scalability-stratified: pushed
+[2026-09-11 23:35:57] amlsim-scalability-stratified: FAILED failed
+[2026-09-11 23:53:31] [track] tracking amlsim-scalability-stratified
+[2026-09-12 00:19:34] [track] amlsim-scalability-stratified: fetched
+[2026-09-12 00:19:34] [track] tracking finished
+[2026-09-12 01:37:53] paysim-grid-efficientnet: fetched
+[2026-09-12 02:51:57] paysim-scalability-stratified: fetched
+[2026-09-12 03:12:34] amlsim-grid-dilated-attn: fetched
+[2026-09-12 03:12:34] queue finished: paysim-byzantine-robustness-stratified=fetched, paysim-economic-byzantine-stratified=fetched, paysim-private-incentive-stratified=fetched, paysim-baselines-stratified=fetched, paysim-all-baselines-stratified=fetched, amlsim-baselines-stratified=fetched, amlsim-baselines-bank=fetched, amlsim-economic-byzantine-bank=fetched, amlsim-private-incentive-bank=fetched, amlsim-byzantine-robustness-stratified=fetched, amlsim-economic-byzantine-stratified=fetched, amlsim-private-incentive-stratified=fetched, paysim-grid-cnn=fetched, paysim-grid-lstm=fetched, paysim-grid-dtcn=fetched, paysim-grid-dilated-attn=fetched, paysim-grid-resnet=fetched, paysim-grid-densenet=fetched, paysim-grid-efficientnet=fetched, amlsim-grid-cnn=fetched, amlsim-grid-lstm=fetched, amlsim-grid-dtcn=fetched, amlsim-grid-dilated-attn=fetched, amlsim-grid-resnet=fetched, amlsim-grid-densenet=fetched, amlsim-grid-efficientnet=fetched, paysim-scalability-stratified=fetched, amlsim-scalability-stratified=failed
+[2026-09-12 10:55:06] queue started: 7 job(s), max 5 at once
+[2026-09-12 10:55:12] handbook-grid-efficientnet: pushed
+[2026-09-12 10:55:19] handbook-grid-dtcn: pushed
+[2026-09-12 10:55:25] handbook-grid-dilated-attn: pushed
+[2026-09-12 10:55:32] handbook-grid-lstm: pushed
+[2026-09-12 10:55:38] handbook-grid-densenet: pushed
+[2026-09-12 12:00:56] handbook-grid-densenet: fetched
+[2026-09-12 12:01:03] handbook-grid-resnet: pushed
+[2026-09-12 12:17:18] handbook-grid-dilated-attn: fetched
+[2026-09-12 12:17:37] handbook-grid-cnn: pushed
+[2026-09-12 12:28:24] handbook-grid-lstm: fetched
+[2026-09-12 12:55:12] handbook-grid-dtcn: fetched
+[2026-09-12 13:00:49] handbook-grid-cnn: fetched
+[2026-09-12 13:26:54] handbook-grid-resnet: fetched
+[2026-09-12 15:08:38] handbook-grid-efficientnet: fetched
+[2026-09-12 15:08:38] queue finished: handbook-grid-efficientnet=fetched, handbook-grid-dtcn=fetched, handbook-grid-dilated-attn=fetched, handbook-grid-lstm=fetched, handbook-grid-densenet=fetched, handbook-grid-resnet=fetched, handbook-grid-cnn=fetched

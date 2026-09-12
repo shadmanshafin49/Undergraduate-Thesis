@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\main.py", line 642, in <module>
+    main()
+    ~~~~^^
+  File "D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\main.py", line 557, in main
+    name: m.evaluate(X_test, y_test, verbose=False,
+          ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     groups=test_groups)
+                     ^^^^^^^^^^^^^^^^^^^
+  File "D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\models\adtcn.py", line 771, in evaluate
+    y_pred  = self.predict(X_test, groups=groups)
+TypeError: main.<locals>.<lambda>() got an unexpected keyword argument 'groups'

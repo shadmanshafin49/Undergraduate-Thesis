@@ -1,0 +1,3 @@
+[RUN] dbboa_repaired_deterministic seed=46 threads=2 filters=137 spe=111 epochs=30
+[RUN] dbboa_repaired_deterministic seed=46  MCC=0.7589  Acc=99.9070%  TP=82 FP=37 FN=16  (75.6 min)
+[SAVE] D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\_multiseed_runs\dbboa_repaired_deterministic_seed46_t2.json

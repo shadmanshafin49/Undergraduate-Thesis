@@ -1,0 +1,20 @@
+[kaggle_job] torch threads = 4
+======================================================================
+  TASK B — ECONOMIC BYZANTINE TOLERANCE (incentive-as-defense)
+  strategies=['always-fraud', 'label-flip', 'free-rider']  rounds=12  epochs=12
+======================================================================
+[B]  trained honest BankA  bal-acc=56.44%
+[B]  trained honest BankB  bal-acc=63.23%
+[B]  trained honest BankC  bal-acc=73.79%
+[B]  always-fraud atk=1  iso=(BankC:r3)  w={'BankA': 0.5, 'BankB': 0.5, 'BankC': 0.0}  bal_with=50.85%  bal_without=68.82%  gap=-17.96%
+[B]  always-fraud atk=2  iso=(BankB:r3; BankC:r3)  w={'BankA': 1.0, 'BankB': 0.0, 'BankC': 0.0}  bal_with=56.44%  bal_without=50.00%  gap=+6.44%
+[B]  label-flip   atk=1  iso=(BankC:r4)  w={'BankA': 0.5, 'BankB': 0.5, 'BankC': 0.01}  bal_with=50.85%  bal_without=54.81%  gap=-3.95%
+[B]  label-flip   atk=2  iso=(BankB:r3; BankC:r3)  w={'BankA': 1.0, 'BankB': 0.0, 'BankC': 0.0}  bal_with=56.44%  bal_without=27.84%  gap=+28.59%
+[B]  free-rider   atk=1  iso=(BankC:never)  w={'BankA': 0.33, 'BankB': 0.33, 'BankC': 0.34}  bal_with=50.85%  bal_without=50.85%  gap=+0.00%
+[B]  free-rider   atk=2  iso=(BankB:never; BankC:never)  w={'BankA': 0.33, 'BankB': 0.34, 'BankC': 0.34}  bal_with=50.00%  bal_without=50.00%  gap=+0.00%
+
+[B]  done in 173.1s
+[B]  saved /tmp/repo/db_boa_framework/results/economic_byzantine_sweep_amlsim_bank.json
+[B]  saved /tmp/repo/db_boa_framework/results/economic_isolation_trajectory_amlsim_bank.png
+[B]  saved /tmp/repo/db_boa_framework/results/economic_accuracy_protection_amlsim_bank.png
+[B]  wrote draft → /tmp/repo/final_report_data/TASKB_economic_byzantine_results_amlsim_bank.md

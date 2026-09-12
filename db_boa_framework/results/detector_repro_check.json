@@ -1,0 +1,66 @@
+{
+  "task": "Does the ULB reproduction failure (OBJ-17) reach the detector track? Re-run stored 2026-08-31 detector_multiseed records in today's environment and compare.",
+  "generated": "2026-09-11T20:45:08",
+  "rows": [
+    {
+      "config": "hand_set_default",
+      "seed": 42,
+      "threads": 2,
+      "stored_record": "results/_multiseed_runs/hand_set_default_seed42_t2.json",
+      "stored_finished": "2026-08-31T12:03:44",
+      "stored_torch": "2.12.0+cpu",
+      "now_torch": "2.12.0+cpu",
+      "weight_hash_stored": "e42481fbb1f908e1",
+      "weight_hash_now": "e42481fbb1f908e1",
+      "weights_bitwise_identical": true,
+      "MCC_stored": 0.6461163158161654,
+      "MCC_now": 0.6461163158161654,
+      "MCC_delta": 0.0,
+      "confusion_identical": true,
+      "confusion_stored": {
+        "TP": 83,
+        "FP": 85,
+        "FN": 15,
+        "TN": 56779
+      },
+      "confusion_now": {
+        "TP": 83,
+        "FP": 85,
+        "FN": 15,
+        "TN": 56779
+      },
+      "secs_now": 5909.9
+    },
+    {
+      "config": "dbboa_tuned",
+      "seed": 42,
+      "threads": 2,
+      "stored_record": "results/_multiseed_runs/dbboa_tuned_seed42_t2.json",
+      "stored_finished": "2026-08-31T10:53:00",
+      "stored_torch": "2.12.0+cpu",
+      "now_torch": "2.12.0+cpu",
+      "weight_hash_stored": "799674f67ba957e0",
+      "weight_hash_now": "799674f67ba957e0",
+      "weights_bitwise_identical": true,
+      "MCC_stored": 0.7464571168992943,
+      "MCC_now": 0.7464571168992943,
+      "MCC_delta": 0.0,
+      "confusion_identical": true,
+      "confusion_stored": {
+        "TP": 81,
+        "FP": 39,
+        "FN": 17,
+        "TN": 56825
+      },
+      "confusion_now": {
+        "TP": 81,
+        "FP": 39,
+        "FN": 17,
+        "TN": 56825
+      },
+      "secs_now": 6055.7
+    }
+  ],
+  "all_bitwise_identical": true,
+  "verdict": "REPRODUCED \u2014 the stored detector runs are valid in today's environment, so new arms may be paired against them"
+}

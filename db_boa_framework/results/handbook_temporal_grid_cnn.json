@@ -1,0 +1,204 @@
+{
+  "objective": "OBJ-16 (d) \u2014 Fraud Detection Handbook entity-linked temporal grid",
+  "dataset": "Fraud Detection Handbook (1,754,155 tx, 0.84 % fraud, 4,990 customer IDs, 10,000 terminal IDs, 1 s resolution)",
+  "protocol": {
+    "split": "temporal past->future; train day<128, test day>=146",
+    "seq_len": 10,
+    "epochs": 10,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "n_features": 35,
+    "orderings": [
+      "global",
+      "customer",
+      "terminal"
+    ],
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "within_second_tie_break": "seeded shuffle (never raw file order)",
+    "entity_derived_row_features": false,
+    "quick": false
+  },
+  "archs": [
+    "cnn"
+  ],
+  "complete": true,
+  "written": "2026-09-12 06:56:10",
+  "wall_clock_seconds_so_far": 2157.7278881073,
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "conditional_fraud_probability": {
+    "global": 0.008446291124582794,
+    "customer": 0.11210547889055882,
+    "terminal": 0.6033821717102561,
+    "base_rate": 0.008369271814634397
+  },
+  "reference_per_transaction_no_window": {
+    "MCC": 0.09624566780510234,
+    "MCC_std": 0.004003849848118609,
+    "Precision": 4.387613204191976,
+    "Precision_std": 0.2908106041218269,
+    "Sensitivity": 31.00409191060652,
+    "Sensitivity_std": 0.4327266945189517,
+    "Accuracy": 93.30622626133884,
+    "Accuracy_std": 0.5187450988573806,
+    "Specificity": 93.8693927719893,
+    "Specificity_std": 0.5272508266245403,
+    "FPR": 6.130607228010674,
+    "FPR_std": 0.5272508266245347,
+    "TP": 985.0,
+    "FP": 21547.0,
+    "FN": 2192.0,
+    "TN": 329919.0,
+    "train_seconds": 78.52954896291097,
+    "n_params": 9730,
+    "seeds": 3,
+    "MCC_runs": [
+      0.09841874979957234,
+      0.09869311882685411,
+      0.09162513478888058
+    ]
+  },
+  "cells": {
+    "cnn|global": {
+      "MCC": 0.08492786001743113,
+      "MCC_std": 0.013892413019599502,
+      "Precision": 3.639791476631404,
+      "Precision_std": 0.824920476301127,
+      "Sensitivity": 32.693316546006734,
+      "Sensitivity_std": 1.8082633832667006,
+      "Accuracy": 91.23522340306539,
+      "Accuracy_std": 2.67257020641115,
+      "Specificity": 91.76440016009133,
+      "Specificity_std": 2.7130451483227507,
+      "FPR": 8.235599839908646,
+      "FPR_std": 2.713045148322754,
+      "TP": 1038.6666666666667,
+      "FP": 28945.333333333332,
+      "FN": 2138.3333333333335,
+      "TN": 322520.6666666667,
+      "train_seconds": 207.6526760260264,
+      "n_params": 9730,
+      "seeds": 3,
+      "MCC_runs": [
+        0.09431458518248743,
+        0.09150020569110737,
+        0.06896878917869859
+      ]
+    },
+    "cnn|customer": {
+      "MCC": 0.06305645908462047,
+      "MCC_std": 0.005271874909679163,
+      "Precision": 2.118753417584037,
+      "Precision_std": 0.1764365859288106,
+      "Sensitivity": 45.38873150771025,
+      "Sensitivity_std": 1.1177388041903773,
+      "Accuracy": 80.60998431286295,
+      "Accuracy_std": 2.1006693869910262,
+      "Specificity": 80.92835912055976,
+      "Specificity_std": 2.128688490922695,
+      "FPR": 19.071640879440203,
+      "FPR_std": 2.1286884909226935,
+      "TP": 1442.0,
+      "FP": 67030.33333333333,
+      "FN": 1735.0,
+      "TN": 284435.6666666667,
+      "train_seconds": 229.27015495300293,
+      "n_params": 9730,
+      "seeds": 3,
+      "MCC_runs": [
+        0.0670572291992283,
+        0.06502949118775295,
+        0.057082656866880174
+      ]
+    },
+    "cnn|terminal": {
+      "MCC": 0.05828518759711055,
+      "MCC_std": 0.009020991369408008,
+      "Precision": 2.3359990920567437,
+      "Precision_std": 0.32101493041371837,
+      "Sensitivity": 33.490714510543484,
+      "Sensitivity_std": 2.654288494200025,
+      "Accuracy": 86.67270090391366,
+      "Accuracy_std": 2.2816538695831583,
+      "Specificity": 87.15342783275383,
+      "Specificity_std": 2.3146339972900396,
+      "FPR": 12.846572167246142,
+      "FPR_std": 2.314633997290035,
+      "TP": 1064.0,
+      "FP": 45151.333333333336,
+      "FN": 2113.0,
+      "TN": 306314.6666666667,
+      "train_seconds": 195.96162041028342,
+      "n_params": 9730,
+      "seeds": 3,
+      "MCC_runs": [
+        0.06726889440893295,
+        0.04922736833211262,
+        0.05835930005028608
+      ]
+    }
+  },
+  "verdict": {
+    "gains_mcc": {
+      "customer": {
+        "cnn": -0.02187140093281066
+      },
+      "terminal": {
+        "cnn": -0.026642672420320583
+      }
+    },
+    "n_architectures": 1,
+    "n_positive_gains": {
+      "customer": 0,
+      "terminal": 0
+    },
+    "gain_range": {
+      "customer": [
+        -0.02187140093281066,
+        -0.02187140093281066
+      ],
+      "terminal": [
+        -0.026642672420320583,
+        -0.026642672420320583
+      ]
+    },
+    "terminal_gain_exceeds_customer_gain": [],
+    "ranking": {
+      "global": [
+        [
+          "cnn",
+          0.08492786001743113
+        ]
+      ],
+      "customer": [
+        [
+          "cnn",
+          0.06305645908462047
+        ]
+      ],
+      "terminal": [
+        [
+          "cnn",
+          0.05828518759711055
+        ]
+      ]
+    },
+    "best": {
+      "global": "cnn",
+      "customer": "cnn",
+      "terminal": "cnn"
+    }
+  },
+  "wall_clock_seconds": 2157.727873802185
+}

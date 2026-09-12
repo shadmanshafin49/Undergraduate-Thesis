@@ -1,0 +1,26 @@
+[SAVE] D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\detector_multiseed.json  (20 runs)
+
+  dbboa_tuned  (F=142, spe=76, n=5 seeds)
+    MCC       0.7531 ± 0.0553   [0.6598, 0.7921]
+    Accuracy  99.8992 ± 0.0400 %
+    FP        41.6 ± 24.4
+
+  hand_set_default  (F=128, spe=150, n=5 seeds)
+    MCC       0.7056 ± 0.0756   [0.6106, 0.7959]
+    Accuracy  99.8655 ± 0.0568 %
+    FP        61.0 ± 33.2
+
+  dbboa_repaired_deterministic  (F=137, spe=111, n=5 seeds)
+    MCC       0.7525 ± 0.0087   [0.7403, 0.7589]
+    Accuracy  99.9024 ± 0.0040 %
+    FP        40.2 ± 2.3
+
+  dbboa_repaired_averaged  (F=137, spe=109, n=5 seeds)
+    MCC       0.5585 ± 0.2596   [0.1923, 0.7754]
+    Accuracy  99.1026 ± 1.4182 %
+    FP        497.4 ± 809.7
+
+  Reproduction attempts (seed 42, at each historical script's own thread count):
+         dbboa_tuned @ 4t vs db_boa_results.json    claimed 0.6772  observed 0.708  -> DID NOT REPRODUCE
+         dbboa_tuned @ 8t vs dbboa_vs_default.json  claimed 0.3133  observed 0.8004  -> DID NOT REPRODUCE
+    hand_set_default @ 8t vs dbboa_vs_default.json  claimed 0.7849  observed 0.6461  -> DID NOT REPRODUCE

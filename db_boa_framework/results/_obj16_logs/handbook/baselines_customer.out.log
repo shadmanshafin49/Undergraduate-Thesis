@@ -1,0 +1,107 @@
+Loading data … (Fraud Detection Handbook (1,754,155 tx, 0.84 % fraud, 4,990 customer IDs, 10,000 terminal IDs, 1 s resolution))
+  Detector width PINNED (DB-BOA search skipped): {'hidden_neurons': 32, 'epoch_count': 30, 'steps_per_epoch': 150}
+
+─── FedAvg ────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — FedAvg
+═══════════════════════════════════════════════════════
+  Accuracy                96.38623 %
+  Precision                8.57045 %
+  Sensitivity             31.38181 %
+  Specificity             96.97382 %
+  NPV                     99.36445 %
+  FPR                      3.02618 %
+  FNR                     68.61819 %
+  FDR                     91.42955 %
+  F1-Score                13.46388 %
+  MCC                      0.15000 
+  TP                           997
+  TN                        340830
+  FP                         10636
+  FN                          2180
+═══════════════════════════════════════════════════════
+
+─── FedAvg+Krum ────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — FedAvg+Krum
+═══════════════════════════════════════════════════════
+  Accuracy                95.41031 %
+  Precision                5.80893 %
+  Sensitivity             27.10104 %
+  Specificity             96.02778 %
+  NPV                     99.31846 %
+  FPR                      3.97222 %
+  FNR                     72.89896 %
+  FDR                     94.19107 %
+  F1-Score                 9.56720 %
+  MCC                      0.10890 
+  TP                           861
+  TN                        337505
+  FP                         13961
+  FN                          2316
+═══════════════════════════════════════════════════════
+
+─── FedAvg+DP ────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — FedAvg+DP
+═══════════════════════════════════════════════════════
+  Accuracy                97.02659 %
+  Precision                0.59013 %
+  Sensitivity              1.38495 %
+  Specificity             97.89112 %
+  NPV                     99.09760 %
+  FPR                      2.10888 %
+  FNR                     98.61505 %
+  FDR                     99.40987 %
+  F1-Score                 0.82761 %
+  MCC                     -0.00475 
+  TP                            44
+  TN                        344054
+  FP                          7412
+  FN                          3133
+═══════════════════════════════════════════════════════
+
+─── DB-BOA-ADTCN ────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — DB-BOA-ADTCN
+═══════════════════════════════════════════════════════
+  Accuracy                 0.94828 %
+  Precision                0.89630 %
+  Sensitivity            100.00000 %
+  Specificity              0.05292 %
+  NPV                    100.00000 %
+  FPR                     99.94708 %
+  FNR                      0.00000 %
+  FDR                     99.10370 %
+  F1-Score                 1.77668 %
+  MCC                      0.00218 
+  TP                          3177
+  TN                           186
+  FP                        351280
+  FN                             0
+═══════════════════════════════════════════════════════
+
+Saved ablation artifact -> D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\baselines_handbook_customer.json
+
+──────────────────────────────────────────────────────────────────────
+DP ACCURACY COST  (ε=1.0, δ=1e-5, basic Gaussian mechanism)
+  FedAvg (no DP)  Accuracy=96.38623%  MCC=0.15000
+  FedAvg+DP       Accuracy=97.02659%  MCC=-0.00475
+  DP cost:  Accuracy ▲0.64036%  MCC ▼0.15475
+----------------------------------------------------------------------
+
+
+======================================================================
+PASTE THE FOLLOWING INTO baseline_metrics() in utils/metrics.py
+======================================================================
+    algo_results = {
+        "FedAvg": {"Accuracy": 96.38623, "Precision": 8.57045, "Sensitivity": 31.38181, "Specificity": 96.97382, "NPV": 99.36445, "FPR": 3.02618, "FNR": 68.61819, "FDR": 91.42955, "F1_Score": 13.46388, "MCC": 0.15},
+        "FedAvg+Krum": {"Accuracy": 95.41031, "Precision": 5.80893, "Sensitivity": 27.10104, "Specificity": 96.02778, "NPV": 99.31846, "FPR": 3.97222, "FNR": 72.89896, "FDR": 94.19107, "F1_Score": 9.5672, "MCC": 0.1089},
+        "FedAvg+DP": {"Accuracy": 97.02659, "Precision": 0.59013, "Sensitivity": 1.38495, "Specificity": 97.89112, "NPV": 99.0976, "FPR": 2.10888, "FNR": 98.61505, "FDR": 99.40987, "F1_Score": 0.82761, "MCC": -0.00475},
+        "DB-BOA-ADTCN": {"Accuracy": 0.94828, "Precision": 0.8963, "Sensitivity": 100.0, "Specificity": 0.05292, "NPV": 100.0, "FPR": 99.94708, "FNR": 0.0, "FDR": 99.1037, "F1_Score": 1.77668, "MCC": 0.00218},
+    }
+======================================================================

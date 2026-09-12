@@ -1,0 +1,99 @@
+{
+  "objective": "entity temporal grid \u2014 PaySim TRANSFER+CASH_OUT (2,770,409 tx, 0.30 % fraud, no bank IDs, senders do not repeat)",
+  "protocol": {
+    "dataset": "paysim",
+    "orderings": [
+      "global",
+      "receiver"
+    ],
+    "split": "temporal; train val_step<323, test split_step>=354",
+    "seq_len": 10,
+    "epochs": 10,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "n_features": 39,
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "entity_derived_row_features": false,
+    "quick": false
+  },
+  "archs": [
+    "dilated_attn"
+  ],
+  "complete": true,
+  "caveat": "the global arm is NOT a no-signal control on PaySim: time order carries a 151.6x fraud-clustering artefact (data/paysim_loader.py, design decision 4)",
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "written": "2026-09-11 16:00:02",
+  "seconds_this_process": 5590.2,
+  "conditional_fraud_probability": {
+    "global": 0.4493424257184608,
+    "receiver": 0.5862142552283397,
+    "base_rate": 0.002964544224336551
+  },
+  "reference_per_transaction_no_window": null,
+  "cells": {
+    "dilated_attn|global": {
+      "MCC": 0.353604195372388,
+      "MCC_std": 0.0753134704475961,
+      "Precision": 13.912779204309862,
+      "Precision_std": 5.951451124278333,
+      "Sensitivity": 97.59562841529826,
+      "Sensitivity_std": 1.162813188531771,
+      "Accuracy": 94.8837705790122,
+      "Accuracy_std": 2.0389953321691348,
+      "Specificity": 94.86335464321519,
+      "Specificity_std": 2.063069018583886,
+      "FPR": 5.13664535678478,
+      "FPR_std": 2.0630690185838843,
+      "TP": 4167.333333333333,
+      "FP": 29134.333333333332,
+      "FN": 102.66666666666667,
+      "TN": 538051.6666666666,
+      "train_seconds": 928.0802812576294,
+      "n_params": 11427,
+      "seeds": 3,
+      "MCC_runs": [
+        0.30610095805795046,
+        0.31427094528640426,
+        0.44044068277280946
+      ]
+    },
+    "dilated_attn|receiver": {
+      "MCC": 0.4728726550542383,
+      "MCC_std": 0.04387764391639617,
+      "Precision": 25.21053295422807,
+      "Precision_std": 4.843089030452132,
+      "Sensitivity": 91.7252146760322,
+      "Sensitivity_std": 1.9664230226319177,
+      "Accuracy": 97.81983798111021,
+      "Accuracy_std": 0.6366661546841855,
+      "Specificity": 97.86572071007862,
+      "Specificity_std": 0.6559745297014036,
+      "FPR": 2.134279289921354,
+      "FPR_std": 0.655974529701403,
+      "TP": 3916.6666666666665,
+      "FP": 12105.333333333334,
+      "FN": 353.3333333333333,
+      "TN": 555080.6666666666,
+      "train_seconds": 924.3800195058187,
+      "n_params": 11427,
+      "seeds": 3,
+      "MCC_runs": [
+        0.4228091710388827,
+        0.4911602654026704,
+        0.5046485287211616
+      ]
+    }
+  }
+}

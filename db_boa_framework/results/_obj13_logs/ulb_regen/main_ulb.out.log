@@ -1,0 +1,380 @@
+
+
+██████████████████████████████████████████████████████████████████████
+█                                                                    █
+█                 DB-BOA FINANCIAL SECURITY FRAMEWORK                 █
+█              Prabanand & Thanabal (2025) — Replication              █
+█                                                                    █
+██████████████████████████████████████████████████████████████████████
+
+══════════════════════════════════════════════════════════════════════
+  ──────────────  PHASE 0  ─  DATA LOADING & ENGINEERING  ──────────────
+══════════════════════════════════════════════════════════════════════
+[DATA]  Dataset: ULB Credit Card (284,807 tx, 0.17 % fraud, no customer IDs)
+[DATA]  Loading ULB Credit Card Fraud dataset …
+[DATA]  Total samples : 284,807
+[DATA]  Normal        : 284,315  (99.83 %)
+[DATA]  Fraud         : 492   (0.17 %)
+[GRAPH] Building temporal-amount recurrence features (n=284,807, bins=50, window=100) …
+[GRAPH] Features computed — recur_before max=1.0000  recur_after max=1.0000  degree_ratio mean=0.5000
+[DATA]  Raw features after recurrence augmentation : 33
+[DATA]  Engineering temporal context features (PTC + NTC) …
+[DATA]  Feature dimensions after engineering : 301
+[DATA]  Train : 199,364 | Val : 28,481 | Test : 56,962
+[DATA]  Optimisation subset: 36,000 samples (301 features)
+══════════════════════════════════════════════════════════════════════
+  ──────  PHASE 1  ─  BLOCKCHAIN SETUP & LEADER BLOCK SELECTION  ──────
+══════════════════════════════════════════════════════════════════════
+══════════════════════════════════════════════════════════════════════
+[CHAIN] Initialising consortium blockchain with 10 nodes …
+──────────────────────────────────────────────────────────────────────
+[CHAIN] Node       Org            CT       CC       MS       Cost   Tokens
+──────────────────────────────────────────────────────────────────────
+  Node-00     Org1       0.4371   0.7630   0.6722     1.8723      100
+  Node-01     Org2       0.6388   0.1670   0.1826     0.9884      100
+  Node-02     Org1       0.1523   0.6996   0.5609     1.4129      100
+  Node-03     Org2       0.7373   0.0654   0.8744     1.6771      100
+  Node-04     Org1       0.8492   0.2093   0.2046     1.2630      100
+  Node-05     Org2       0.2651   0.2782   0.4960     1.0393      100
+  Node-06     Org1       0.4888   0.2684   0.5701     1.3272      100
+  Node-07     Org2       0.2255   0.2691   0.3614     0.8561      100
+  Node-08     Org1       0.5105   0.6389   0.2197     1.3691      100
+  Node-09     Org2       0.5628   0.4943   0.0895     1.1466      100
+──────────────────────────────────────────────────────────────────────
+══════════════════════════════════════════════════════════════════════
+[CHAIN] Running DB-BOA for Leader Block Selection …
+[CHAIN] Objective: minimise  CT + CC + MS  (Eq.10)
+──────────────────────────────────────────────────────────────────────
+   [DB-BOA] Leader Block Selection
+   [DB-BOA] pop=15  iter=25  dim=1
+  [Iter 001/25]  algo=BOA   rand=0.9096  best=0.806061  mean=1.053301
+  [Iter 002/25]  algo=DBOA  rand=0.1427  best=0.806061  mean=0.987406
+  [Iter 003/25]  algo=BOA   rand=0.6749  best=0.806061  mean=0.972492
+  [Iter 004/25]  algo=BOA   rand=0.8133  best=0.806061  mean=0.949902
+  [Iter 005/25]  algo=BOA   rand=0.8453  best=0.806061  mean=0.922772
+  [Iter 006/25]  algo=DBOA  rand=0.5515  best=0.806061  mean=0.922772
+  [Iter 007/25]  algo=DBOA  rand=0.1469  best=0.806061  mean=0.954185
+  [Iter 008/25]  algo=BOA   rand=0.7152  best=0.806061  mean=0.941079
+  [Iter 009/25]  algo=DBOA  rand=0.5302  best=0.806061  mean=0.941079
+  [Iter 010/25]  algo=BOA   rand=0.6842  best=0.806061  mean=0.913950
+  [Iter 011/25]  algo=DBOA  rand=0.5125  best=0.806061  mean=0.913950
+  [Iter 012/25]  algo=DBOA  rand=0.5260  best=0.806061  mean=0.913950
+  [Iter 013/25]  algo=DBOA  rand=0.5304  best=0.806061  mean=0.913950
+  [Iter 014/25]  algo=DBOA  rand=0.4854  best=0.806061  mean=0.913950
+  [Iter 015/25]  algo=DBOA  rand=0.2729  best=0.806061  mean=0.913950
+  [Iter 016/25]  algo=DBOA  rand=0.2249  best=0.806061  mean=0.913950
+  [Iter 017/25]  algo=DBOA  rand=0.6178  best=0.806061  mean=0.913950
+  [Iter 018/25]  algo=DBOA  rand=0.5745  best=0.806061  mean=0.945362
+  [Iter 019/25]  algo=DBOA  rand=0.4992  best=0.806061  mean=0.976774
+  [Iter 020/25]  algo=BOA   rand=0.7810  best=0.806061  mean=0.941079
+  [Iter 021/25]  algo=DBOA  rand=0.3455  best=0.806061  mean=0.941079
+  [Iter 022/25]  algo=DBOA  rand=0.3140  best=0.806061  mean=0.955993
+  [Iter 023/25]  algo=DBOA  rand=0.2250  best=0.806061  mean=1.050231
+  [Iter 024/25]  algo=BOA   rand=0.7626  best=0.806061  mean=0.987406
+  [Iter 025/25]  algo=DBOA  rand=0.6166  best=0.806061  mean=0.972492
+──────────────────────────────────────────────────────────────────────
+[CHAIN] ✔ LEADER SELECTED: Node-07 (Org2)
+[CHAIN]   CT  = 0.2255
+[CHAIN]   CC  = 0.2691
+[CHAIN]   MS  = 0.3614
+[CHAIN]   Total cost = 0.8561
+[CHAIN]   Reputation = 1.0000
+══════════════════════════════════════════════════════════════════════
+══════════════════════════════════════════════════════════════════════
+  ─────  PHASE 2  ─  DB-BOA HYPERPARAMETER OPTIMISATION  (Eq.11)  ─────
+══════════════════════════════════════════════════════════════════════
+[ADTCN] Starting DB-BOA hyperparameter search (2D) …
+[ADTCN] Search space: filters∈(5, 255)  SeD∈(50, 250)  epoch_count fixed=30
+----------------------------------------------------------------------
+[ADTCN] Surrogate protocol          : deterministic (k=1, rows=2000, fraud rows=30)
+   [DB-BOA] ADTCN Hyperparameter Optimisation
+   [DB-BOA] pop=20  iter=30  dim=2
+  [Iter 001/30]  algo=DBOA  rand=0.1220  best=-3.925569  mean=-3.288228
+  [Iter 002/30]  algo=BOA   rand=0.6948  best=-3.925569  mean=-3.537805
+  [Iter 003/30]  algo=BOA   rand=0.6963  best=-3.925569  mean=-3.648669
+  [Iter 004/30]  algo=BOA   rand=0.8095  best=-3.925569  mean=-3.773370
+  [Iter 005/30]  algo=DBOA  rand=0.6690  best=-4.138833  mean=-3.700841
+  [Iter 006/30]  algo=DBOA  rand=0.3380  best=-4.138833  mean=-3.718025
+  [Iter 007/30]  algo=DBOA  rand=0.6433  best=-4.138833  mean=-3.756361
+  [Iter 008/30]  algo=DBOA  rand=0.5813  best=-4.138833  mean=-3.673169
+  [Iter 009/30]  algo=DBOA  rand=0.4148  best=-4.138833  mean=-3.645496
+  [Iter 010/30]  algo=DBOA  rand=0.0318  best=-4.138833  mean=-3.565477
+  [Iter 011/30]  algo=DBOA  rand=0.1709  best=-4.138833  mean=-3.620997
+  [Iter 012/30]  algo=BOA   rand=0.9065  best=-4.138833  mean=-3.745698
+  [Iter 013/30]  algo=DBOA  rand=0.6411  best=-4.138833  mean=-3.687005
+  [Iter 014/30]  algo=BOA   rand=0.6250  best=-4.138833  mean=-3.797870
+  [Iter 015/30]  algo=DBOA  rand=0.5567  best=-4.138833  mean=-3.687005
+  [Iter 016/30]  algo=BOA   rand=0.9541  best=-4.138833  mean=-3.797870
+  [Iter 017/30]  algo=BOA   rand=0.9582  best=-4.138833  mean=-3.853215
+  [Iter 018/30]  algo=DBOA  rand=0.5607  best=-4.138833  mean=-3.814879
+  [Iter 019/30]  algo=DBOA  rand=0.0349  best=-4.138833  mean=-3.853215
+  [Iter 020/30]  algo=DBOA  rand=0.6209  best=-4.138833  mean=-3.742350
+  [Iter 021/30]  algo=BOA   rand=0.9747  best=-4.138833  mean=-3.919223
+  [Iter 022/30]  algo=DBOA  rand=0.1242  best=-4.138833  mean=-3.902214
+  [Iter 023/30]  algo=DBOA  rand=0.6325  best=-4.138833  mean=-3.867051
+  [Iter 024/30]  algo=DBOA  rand=0.8681  best=-4.138833  mean=-3.867051
+  [Iter 025/30]  algo=DBOA  rand=0.5231  best=-4.138833  mean=-3.825542
+  [Iter 026/30]  algo=DBOA  rand=0.2742  best=-4.138833  mean=-3.850042
+  [Iter 027/30]  algo=DBOA  rand=0.3972  best=-4.138833  mean=-3.860705
+  [Iter 028/30]  algo=DBOA  rand=0.8275  best=-4.138833  mean=-3.811706
+  [Iter 029/30]  algo=DBOA  rand=0.4743  best=-4.138833  mean=-3.825542
+  [Iter 030/30]  algo=DBOA  rand=0.5542  best=-4.138833  mean=-3.825542
+[ADTCN] Optimal Conv filters (F)    : 117
+[ADTCN] Epoch count (fixed)         : 30
+[ADTCN] Optimal steps/epoch  (SeD)  : 203
+[ADTCN] Best Obf2 (negated)         : -4.138833
+
+[OPT]   ✔ Optimal hyperparameters found (2D search):
+         Conv Filters (F)   : 117
+         Epoch Count (fixed): 30
+         Steps per Epoch    : 203
+══════════════════════════════════════════════════════════════════════
+  ─────────────────  PHASE 3  ─  ADTCN MODEL TRAINING  ─────────────────
+══════════════════════════════════════════════════════════════════════
+----------------------------------------------------------------------
+[ADTCN] Training 1D-CNN  |  in=33  filters=117×234  seq_len=10  epochs=30  batch=1122
+[ADTCN] Sequence tensor  : (227845, 10, 33)
+[ADTCN] Class weights    : normal=1.0  fraud=577.3
+[ADTCN] Architecture     : cnn
+[ADTCN]   epoch   1/30  loss=0.2676
+[ADTCN]   epoch   5/30  loss=0.0194
+[ADTCN]   epoch  10/30  loss=0.0176
+[ADTCN]   epoch  15/30  loss=0.0066
+[ADTCN]   epoch  20/30  loss=0.0025
+[ADTCN]   epoch  25/30  loss=0.0203
+[ADTCN]   epoch  30/30  loss=0.0049
+[ADTCN] Training complete.
+══════════════════════════════════════════════════════════════════════
+  ───────────────────  PHASE 4  ─  MODEL EVALUATION  ───────────────────
+══════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — DB-BOA-ADTCN
+═══════════════════════════════════════════════════════
+  Accuracy                99.86482 %
+  Precision               57.14286 %
+  Sensitivity             85.71429 %
+  Specificity             99.88921 %
+  NPV                     99.97536 %
+  FPR                      0.11079 %
+  FNR                     14.28571 %
+  FDR                     42.85714 %
+  F1-Score                68.57143 %
+  MCC                      0.69925 
+  TP                            84
+  TN                         56801
+  FP                            63
+  FN                            14
+═══════════════════════════════════════════════════════
+══════════════════════════════════════════════════════════════════════
+[STAT]  DB-BOA Statistical Evaluation (Table 2):
+         Min        : -4.138833
+         Max        : -3.925569
+         Mean       : -4.110398
+         Std        : 0.072496
+         Median     : -4.138833
+         dboa_iters : 22.000000
+         boa_iters  : 8.000000
+══════════════════════════════════════════════════════════════════════
+[OPT]  Comparing DB-BOA-optimal vs default hyperparameters …
+[OPT]  Default  (F=128, ep=30, spe=150)  Acc=99.8244%  MCC=0.6461
+[OPT]  DB-BOA   (F=117, ep=30, spe=203)  Acc=99.8648%  MCC=0.6993
+[OPT]  Gain from DB-BOA: Accuracy ▲0.0404%  MCC ▲0.0531
+══════════════════════════════════════════════════════════════════════
+[COMP]  Accuracy gain over baselines:
+══════════════════════════════════════════════════════════════════════
+  ───────────  PHASE 5  ─  CONSENSUS SIMULATION (5 ROUNDS)  ───────────
+══════════════════════════════════════════════════════════════════════
+[CHAIN] Leader election: REINFORCEMENT LEARNING (linear-FA Q-learning, ε-greedy)
+[CHAIN] ✔ RL LEADER : Node-07 (Org2)  Q=0.0000  ε=0.300 [exploit]
+──────────────────────────────────────────────────────────────────────
+[CHAIN] Consensus Round 001  |  Leader: Node-07  |  Transactions: 60
+[CHAIN]   ► [PROPOSE ]  Node-07 broadcasts block with 60 txns …
+[CHAIN]   ► [ENDORSE ]  Node-00(Org1) ✔ endorsed  (latency=21.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-01(Org2) ✔ endorsed  (latency=31.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-02(Org1) ✔ endorsed  (latency=7.6 ms)
+[CHAIN]   ► [ENDORSE ]  Node-03(Org2) ✗ failed to endorse
+[CHAIN]   ► [ORDER   ]  Orderer sequences the block …
+[CHAIN]   ► [COMMIT  ]  Block committed to all 10 peers.
+[CHAIN]   ✔ CONSENSUS OK  |  latency=2097.3 ms  |  throughput=40.3 tps
+······································································
+[CHAIN] ✔ RL LEADER : Node-07 (Org2)  Q=0.1729  ε=0.291 [exploit]
+──────────────────────────────────────────────────────────────────────
+[CHAIN] Consensus Round 002  |  Leader: Node-07  |  Transactions: 70
+[CHAIN]   ► [PROPOSE ]  Node-07 broadcasts block with 70 txns …
+[CHAIN]   ► [ENDORSE ]  Node-00(Org1) ✔ endorsed  (latency=21.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-01(Org2) ✔ endorsed  (latency=31.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-02(Org1) ✔ endorsed  (latency=7.6 ms)
+[CHAIN]   ► [ENDORSE ]  Node-03(Org2) ✔ endorsed  (latency=36.9 ms)
+[CHAIN]   ► [ORDER   ]  Orderer sequences the block …
+[CHAIN]   ► [COMMIT  ]  Block committed to all 10 peers.
+[CHAIN]   ✔ CONSENSUS OK  |  latency=2106.9 ms  |  throughput=40.3 tps
+······································································
+[CHAIN] ✔ RL LEADER : Node-02 (Org1)  Q=0.3079  ε=0.282 [explore]
+──────────────────────────────────────────────────────────────────────
+[CHAIN] Consensus Round 003  |  Leader: Node-02  |  Transactions: 80
+[CHAIN]   ► [PROPOSE ]  Node-02 broadcasts block with 80 txns …
+[CHAIN]   ► [ENDORSE ]  Node-00(Org1) ✔ endorsed  (latency=21.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-01(Org2) ✔ endorsed  (latency=31.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-03(Org2) ✔ endorsed  (latency=36.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-04(Org1) ✔ endorsed  (latency=42.5 ms)
+[CHAIN]   ► [ORDER   ]  Orderer sequences the block …
+[CHAIN]   ► [COMMIT  ]  Block committed to all 10 peers.
+[CHAIN]   ✔ CONSENSUS OK  |  latency=2122.3 ms  |  throughput=40.3 tps
+······································································
+[CHAIN] ✔ RL LEADER : Node-07 (Org2)  Q=0.5231  ε=0.274 [explore]
+──────────────────────────────────────────────────────────────────────
+[CHAIN] Consensus Round 004  |  Leader: Node-07  |  Transactions: 90
+[CHAIN]   ► [PROPOSE ]  Node-07 broadcasts block with 90 txns …
+[CHAIN]   ► [ENDORSE ]  Node-00(Org1) ✔ endorsed  (latency=21.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-01(Org2) ✔ endorsed  (latency=31.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-02(Org1) ✗ failed to endorse
+[CHAIN]   ► [ENDORSE ]  Node-03(Org2) ✔ endorsed  (latency=36.9 ms)
+[CHAIN]   ► [ORDER   ]  Orderer sequences the block …
+[CHAIN]   ► [COMMIT  ]  Block committed to all 10 peers.
+[CHAIN]   ✔ CONSENSUS OK  |  latency=2055.2 ms  |  throughput=40.3 tps
+······································································
+[CHAIN] ✔ RL LEADER : Node-07 (Org2)  Q=0.6839  ε=0.266 [exploit]
+──────────────────────────────────────────────────────────────────────
+[CHAIN] Consensus Round 005  |  Leader: Node-07  |  Transactions: 100
+[CHAIN]   ► [PROPOSE ]  Node-07 broadcasts block with 100 txns …
+[CHAIN]   ► [ENDORSE ]  Node-00(Org1) ✗ failed to endorse
+[CHAIN]   ► [ENDORSE ]  Node-01(Org2) ✔ endorsed  (latency=31.9 ms)
+[CHAIN]   ► [ENDORSE ]  Node-02(Org1) ✔ endorsed  (latency=7.6 ms)
+[CHAIN]   ► [ENDORSE ]  Node-03(Org2) ✗ failed to endorse
+[CHAIN]   ► [ORDER   ]  Orderer sequences the block …
+[CHAIN]   ► [COMMIT  ]  Block committed to all 10 peers.
+[CHAIN]   ✔ CONSENSUS OK  |  latency=2112.3 ms  |  throughput=40.3 tps
+······································································
+══════════════════════════════════════════════════════════════════════
+[CHAIN] Node Status after Incentive Application:
+──────────────────────────────────────────────────────────────────────
+[CHAIN] Node       Org        Tokens      Rep  Leader?   Wins  Fails
+──────────────────────────────────────────────────────────────────────
+  Node-00  Org1          100     1.000                 0       0
+  Node-01  Org2          100     1.000                 0       0
+  Node-02  Org1          110     1.020                 1       0
+  Node-03  Org2          100     1.000                 0       0
+  Node-04  Org1          100     1.000                 0       0
+  Node-05  Org2          100     1.000                 0       0
+  Node-06  Org1          100     1.000                 0       0
+  Node-07  Org2          140     1.080         ★       4       0
+  Node-08  Org1          100     1.000                 0       0
+  Node-09  Org2          100     1.000                 0       0
+══════════════════════════════════════════════════════════════════════
+══════════════════════════════════════════════════════════════════════
+[CHAIN] RL vs DB-BOA leader selection (20-round replay) …
+[CHAIN]  DB-BOA : reward= 200.0  success=100.0%  fairness(Gini)=0.900
+[CHAIN]  RL     : reward= 200.0  success=100.0%  fairness(Gini)=0.710
+══════════════════════════════════════════════════════════════════════
+  ───────────────────  PHASE 6  ─  RESULTS & PLOTS  ───────────────────
+══════════════════════════════════════════════════════════════════════
+══════════════════════════════════════════════════════════════════════
+  ────────────  PHASE 7  ─  FEDERATED MULTI-ORG SIMULATION  ────────────
+══════════════════════════════════════════════════════════════════════
+[FED]  Training BankA on 99,682 samples …
+[FED]  BankA accuracy (pre-fed): 99.87%
+[FED]  Training BankB on 59,809 samples …
+[FED]  BankB accuracy (pre-fed): 99.91%
+[FED]  Training BankC on 39,873 samples …
+[FED]  BankC accuracy (pre-fed): 99.92%
+[FED]  Federation triggers every 5 consensus rounds — demonstrating 3 events
+══════════════════════════════════════════════════════════════════════
+  ────────────────────────  FEDERATION ROUND 1  ────────────────────────
+══════════════════════════════════════════════════════════════════════
+[FED]  Round 1 — extracting model weights from ['BankA', 'BankB', 'BankC'] …
+[FED]  Krum scores      : BankA=620.6550  BankB=552.2476  BankC=552.2476
+[FED]  Krum selected    : BankB
+[FED]  Shapley attribution  : 7 coalitions …
+[FED]    v(['BankA']) = 0.500000
+[FED]    v(['BankB']) = 0.500000
+[FED]    v(['BankC']) = 0.500000
+[FED]    v(['BankA', 'BankB']) = 0.498000
+[FED]    v(['BankA', 'BankC']) = 0.499000
+[FED]    v(['BankB', 'BankC']) = 0.500000
+[FED]    v(['BankA', 'BankB', 'BankC']) = 0.499000
+[FED]  Shapley values      : BankA=0.1658  BankB=0.1663  BankC=0.1668
+[FED]  Aggregation weights : BankA=0.332  BankB=0.333  BankC=0.334
+[FED]  Aggregation : Krum → BankB
+[FED]  Post-federation accuracy:
+         BankA: 99.91%  (delta: +0.04%)
+         BankB: 99.91%  (delta: +0.00%)
+         BankC: 99.91%  (delta: -0.02%)
+······································································
+══════════════════════════════════════════════════════════════════════
+  ────────────────────────  FEDERATION ROUND 2  ────────────────────────
+══════════════════════════════════════════════════════════════════════
+[FED]  Round 2 — extracting model weights from ['BankA', 'BankB', 'BankC'] …
+[FED]  Krum scores      : BankA=0.0000  BankB=0.0000  BankC=0.0000
+[FED]  Krum selected    : BankA
+[FED]  Shapley attribution  : 7 coalitions …
+[FED]    v(['BankA']) = 0.500000
+[FED]    v(['BankB']) = 0.500000
+[FED]    v(['BankC']) = 0.500000
+[FED]    v(['BankA', 'BankB']) = 0.500000
+[FED]    v(['BankA', 'BankC']) = 0.500000
+[FED]    v(['BankB', 'BankC']) = 0.500000
+[FED]    v(['BankA', 'BankB', 'BankC']) = 0.500000
+[FED]  Shapley values      : BankA=0.1667  BankB=0.1667  BankC=0.1667
+[FED]  Aggregation weights : BankA=0.333  BankB=0.333  BankC=0.333
+[FED]  Aggregation : Krum → BankA
+[FED]  Post-federation accuracy:
+         BankA: 99.91%  (delta: +0.00%)
+         BankB: 99.91%  (delta: +0.00%)
+         BankC: 99.91%  (delta: +0.00%)
+······································································
+══════════════════════════════════════════════════════════════════════
+  ────────────────────────  FEDERATION ROUND 3  ────────────────────────
+══════════════════════════════════════════════════════════════════════
+[FED]  Round 3 — extracting model weights from ['BankA', 'BankB', 'BankC'] …
+[FED]  Krum scores      : BankA=0.0000  BankB=0.0000  BankC=0.0000
+[FED]  Krum selected    : BankA
+[FED]  Shapley attribution  : 7 coalitions …
+[FED]    v(['BankA']) = 0.500000
+[FED]    v(['BankB']) = 0.500000
+[FED]    v(['BankC']) = 0.500000
+[FED]    v(['BankA', 'BankB']) = 0.500000
+[FED]    v(['BankA', 'BankC']) = 0.500000
+[FED]    v(['BankB', 'BankC']) = 0.500000
+[FED]    v(['BankA', 'BankB', 'BankC']) = 0.500000
+[FED]  Shapley values      : BankA=0.1667  BankB=0.1667  BankC=0.1667
+[FED]  Aggregation weights : BankA=0.333  BankB=0.333  BankC=0.333
+[FED]  Aggregation : Krum → BankA
+[FED]  Post-federation accuracy:
+         BankA: 99.91%  (delta: +0.00%)
+         BankB: 99.91%  (delta: +0.00%)
+         BankC: 99.91%  (delta: +0.00%)
+······································································
+[SAVE]  Results JSON → D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\db_boa_results.json
+══════════════════════════════════════════════════════════════════════
+  ─────────────  PHASE 8  ─  ATTACK RESILIENCE SIMULATION  ─────────────
+══════════════════════════════════════════════════════════════════════
+[ATK]  Scenario: BankC is malicious — always reports isFraud=True
+[ATK]  Expected outcome: token depletion, reputation fall, low Shapley contribution weight
+══════════════════════════════════════════════════════════════════════
+[ATK]  Simulating 15 fraud-verdict rounds …
+══════════════════════════════════════════════════════════════════════
+  Rnd  y_true  Consensus  BankC  Outcome      Tokens     Rep
+······································································
+    1        0           0          1  DISPUTED         98   0.950
+    2        0           0          1  DISPUTED         96   0.900
+    3        0           0          1  DISPUTED         94   0.850
+    4        0           0          1  DISPUTED         92   0.800
+    5        0           0          1  DISPUTED         90   0.750
+    6        0           0          1  DISPUTED         88   0.700
+    7        0           0          1  DISPUTED         86   0.650
+    8        0           0          1  DISPUTED         84   0.600
+    9        0           0          1  DISPUTED         82   0.550
+   10        0           0          1  DISPUTED         80   0.500
+   11        0           0          1  DISPUTED         78   0.500
+   12        0           0          1  DISPUTED         76   0.500
+   13        0           0          1  DISPUTED         74   0.500
+   14        0           0          1  DISPUTED         72   0.500
+   15        0           0          1  DISPUTED         70   0.500
+══════════════════════════════════════════════════════════════════════
+[ATK]  Rounds disputed   : 15/15
+[ATK]  Token change      : 100 → 70 (-30)
+[ATK]  Reputation change : 1.000 → 0.500 (-0.500)
+══════════════════════════════════════════════════════════════════════
+[ATK]  Running Shapley attribution with attacker in federation …
+[ATK]  Prediction: Shapley assigns BankC near-zero weight (attacker hurts coalition Obf2)

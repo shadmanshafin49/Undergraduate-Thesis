@@ -1,0 +1,99 @@
+{
+  "objective": "entity temporal grid \u2014 PaySim TRANSFER+CASH_OUT (2,770,409 tx, 0.30 % fraud, no bank IDs, senders do not repeat)",
+  "protocol": {
+    "dataset": "paysim",
+    "orderings": [
+      "global",
+      "receiver"
+    ],
+    "split": "temporal; train val_step<323, test split_step>=354",
+    "seq_len": 10,
+    "epochs": 10,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "n_features": 39,
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "entity_derived_row_features": false,
+    "quick": false
+  },
+  "archs": [
+    "densenet"
+  ],
+  "complete": true,
+  "caveat": "the global arm is NOT a no-signal control on PaySim: time order carries a 151.6x fraud-clustering artefact (data/paysim_loader.py, design decision 4)",
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "written": "2026-09-11 16:55:02",
+  "seconds_this_process": 3622.7,
+  "conditional_fraud_probability": {
+    "global": 0.4493424257184608,
+    "receiver": 0.5862142552283397,
+    "base_rate": 0.002964544224336551
+  },
+  "reference_per_transaction_no_window": null,
+  "cells": {
+    "densenet|global": {
+      "MCC": 0.44112668356763246,
+      "MCC_std": 0.04867702721825992,
+      "Precision": 20.761796420512578,
+      "Precision_std": 4.7417852839635275,
+      "Sensitivity": 97.52537080405705,
+      "Sensitivity_std": 1.010650123248828,
+      "Accuracy": 97.08411496248179,
+      "Accuracy_std": 0.7486435379989451,
+      "Specificity": 97.08079301440209,
+      "Specificity_std": 0.7615718969774327,
+      "FPR": 2.919206985597904,
+      "FPR_std": 0.7615718969774373,
+      "TP": 4164.333333333333,
+      "FP": 16557.333333333332,
+      "FN": 105.66666666666667,
+      "TN": 550628.6666666666,
+      "train_seconds": 598.8168974717458,
+      "n_params": 4022,
+      "seeds": 3,
+      "MCC_runs": [
+        0.4157371387853489,
+        0.4972493414773962,
+        0.4103935704401524
+      ]
+    },
+    "densenet|receiver": {
+      "MCC": 0.4524397595661808,
+      "MCC_std": 0.0594247389929023,
+      "Precision": 22.251399595415055,
+      "Precision_std": 5.443932557796763,
+      "Sensitivity": 95.65183450429129,
+      "Sensitivity_std": 0.39211142403978516,
+      "Accuracy": 97.33231138238695,
+      "Accuracy_std": 0.8578400663079494,
+      "Specificity": 97.34496267538337,
+      "Specificity_std": 0.8615064783725219,
+      "FPR": 2.655037324616616,
+      "FPR_std": 0.8615064783725215,
+      "TP": 4084.3333333333335,
+      "FP": 15059.0,
+      "FN": 185.66666666666666,
+      "TN": 552127.0,
+      "train_seconds": 598.3995713392893,
+      "n_params": 4022,
+      "seeds": 3,
+      "MCC_runs": [
+        0.5079340541436589,
+        0.4596438219329834,
+        0.3897414026219001
+      ]
+    }
+  }
+}

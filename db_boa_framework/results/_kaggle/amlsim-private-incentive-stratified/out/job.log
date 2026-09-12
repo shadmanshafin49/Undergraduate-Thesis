@@ -1,0 +1,36 @@
+[kaggle_job] torch threads = 4
+==============================================================================
+  CONTRIBUTION 1 (B1) — weight-channel  vs  output-channel incentive DP
+  ε sweep=['1', '5', '10', '30', '50', '100', '300', '1000', '3000', '10000', '30000']
+  repeats=100  epochs=12
+==============================================================================
+[B1]  trained BankA  (69,257 samples, noise=0%)
+[B1]  trained BankB  (41,554 samples, noise=10%)
+[B1]  trained BankC  (27,703 samples, noise=25%)
+
+[B1]  GROUND TRUTH  w=[0.475, 0.166, 0.359]  tokens=[9.5, 3.31, 7.18]
+[B1]  d_weights=102658  n_orgs=3  theory budget gain ≈ √(d/n) ≈ 185×
+
+        ε |   WEIGHT inv  tok_err      ρ |   OUTPUT inv  tok_err      ρ |     s
+  ------------------------------------------------------------------------------
+        1 |    86/100       18.87  -0.02 |    88/100       19.67  +0.16 |    17
+        5 |    86/100       19.52  -0.05 |    82/100       15.74  +0.24 |    17
+       10 |    86/100       20.10  -0.09 |    64/100       11.28  +0.47 |    17
+       30 |    92/100       21.75  -0.22 |    25/100        4.02  +0.85 |    17
+       50 |    92/100       22.48  -0.25 |     9/100        2.39  +0.95 |    17
+      100 |    95/100       22.93  -0.32 |     1/100        1.19  +0.99 |    17
+      300 |    82/100       13.40  +0.12 |     0/100        0.39  +1.00 |    17
+     1000 |    34/100        5.66  +0.81 |     0/100        0.12  +1.00 |    17
+     3000 |     2/100        2.19  +0.99 |     0/100        0.04  +1.00 |    17
+    10000 |     0/100        0.65  +1.00 |     0/100        0.01  +1.00 |    17
+    30000 |     0/100        0.24  +1.00 |     0/100        0.00  +1.00 |    18
+
+[B1]  ε* (largest unfair ε):  WEIGHT=3000.0   OUTPUT=100.0   → 30× budget improvement
+[B1]    weight ε*=3000 decided by 2/100 draws (95 % CI 0.0024–0.0704)  ⚠ FRAGILE
+[B1]    output ε*=100 decided by 1/100 draws (95 % CI 0.0003–0.0545)  ⚠ FRAGILE
+[B1]  ordering (output ≤ weight inversions) holds at 10/11 budgets
+[B1]  done in 331.1s
+==============================================================================
+[B1]  saved /tmp/repo/db_boa_framework/results/private_incentive_sweep_amlsim_stratified.json
+[B1]  saved /tmp/repo/db_boa_framework/results/private_incentive_channel_amlsim_stratified.png
+[B1]  wrote draft → /tmp/repo/final_report_data/TASKB1_private_incentive_results_amlsim_stratified.md

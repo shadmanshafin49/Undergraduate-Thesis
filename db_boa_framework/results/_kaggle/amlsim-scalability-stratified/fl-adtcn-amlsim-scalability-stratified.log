@@ -1,0 +1,43 @@
+[{"stream_name":"stdout","time":1480.3886648,"data":"{\n"}
+,{"stream_name":"stdout","time":1480.390483024,"data":"  \"job\": \"amlsim-scalability-stratified\",\n"}
+,{"stream_name":"stdout","time":1480.390491142,"data":"  \"cmd\": [\n"}
+,{"stream_name":"stdout","time":1480.390495948,"data":"    \"experiments/scalability_sweep.py\",\n"}
+,{"stream_name":"stdout","time":1480.390500803,"data":"    \"--dataset\",\n"}
+,{"stream_name":"stdout","time":1480.390505448,"data":"    \"amlsim\",\n"}
+,{"stream_name":"stdout","time":1480.390509985,"data":"    \"--partition\",\n"}
+,{"stream_name":"stdout","time":1480.390514463,"data":"    \"stratified\",\n"}
+,{"stream_name":"stdout","time":1480.390519201,"data":"    \"--fit-pool\"\n"}
+,{"stream_name":"stdout","time":1480.390523721,"data":"  ],\n"}
+,{"stream_name":"stdout","time":1480.390528212,"data":"  \"started\": \"2026-09-11 17:52:50\",\n"}
+,{"stream_name":"stdout","time":1480.390533115,"data":"  \"bundle_sha256\": \"162d5e668d027e4e197733cf42a36e84f38647cb57db964ca08287ebf5c268ba\",\n"}
+,{"stream_name":"stdout","time":1480.390538647,"data":"  \"pip\": {\n"}
+,{"stream_name":"stdout","time":1480.390543485,"data":"    \"torch_rc\": 0,\n"}
+,{"stream_name":"stdout","time":1480.390548041,"data":"    \"others_rc\": 0,\n"}
+,{"stream_name":"stdout","time":1480.390552405,"data":"    \"stderr_tail\": \"\"\n"}
+,{"stream_name":"stdout","time":1480.39055687,"data":"  },\n"}
+,{"stream_name":"stdout","time":1480.390560857,"data":"  \"returncode\": 0,\n"}
+,{"stream_name":"stdout","time":1480.390565375,"data":"  \"job_seconds\": 1377.7,\n"}
+,{"stream_name":"stdout","time":1480.390569782,"data":"  \"job_torch_threads\": 4,\n"}
+,{"stream_name":"stdout","time":1480.390574692,"data":"  \"imported_versions\": \"{\\\"python\\\": \\\"3.12.13\\\", \\\"torch\\\": \\\"2.12.0+cpu\\\", \\\"threads\\\": 2, \\\"numpy\\\": \\\"2.3.2\\\", \\\"scikit-learn\\\": \\\"1.8.0\\\", \\\"pandas\\\": \\\"3.0.2\\\", \\\"scipy\\\": \\\"1.17.1\\\", \\\"matplotlib\\\": \\\"3.10.8\\\"}\",\n"}
+,{"stream_name":"stdout","time":1480.390584486,"data":"  \"laptop_versions\": {\n"}
+,{"stream_name":"stdout","time":1480.390589105,"data":"    \"python\": \"3.13.7\",\n"}
+,{"stream_name":"stdout","time":1480.390593746,"data":"    \"torch\": \"2.12.0\",\n"}
+,{"stream_name":"stdout","time":1480.390598375,"data":"    \"numpy\": \"2.3.2\",\n"}
+,{"stream_name":"stdout","time":1480.390602958,"data":"    \"scikit-learn\": \"1.8.0\",\n"}
+,{"stream_name":"stdout","time":1480.39060762,"data":"    \"pandas\": \"3.0.2\",\n"}
+,{"stream_name":"stdout","time":1480.390612222,"data":"    \"scipy\": \"1.17.1\",\n"}
+,{"stream_name":"stdout","time":1480.390616746,"data":"    \"matplotlib\": \"3.10.8\"\n"}
+,{"stream_name":"stdout","time":1480.39062142,"data":"  },\n"}
+,{"stream_name":"stdout","time":1480.390625845,"data":"  \"bundle_commit\": \"6d8e41e8b19213128b54ad653defec1129f29aaf\",\n"}
+,{"stream_name":"stdout","time":1480.39063092,"data":"  \"cpu_model\": \"Intel(R) Xeon(R) CPU @ 2.20GHz\",\n"}
+,{"stream_name":"stdout","time":1480.390635925,"data":"  \"platform\": \"Linux-6.12.90+-x86_64-with-glibc2.35\",\n"}
+,{"stream_name":"stdout","time":1480.390640678,"data":"  \"finished\": \"2026-09-11 18:17:29\",\n"}
+,{"stream_name":"stdout","time":1480.390645601,"data":"  \"total_seconds\": 1479.5\n"}
+,{"stream_name":"stdout","time":1480.390650123,"data":"}\n"}
+,{"stream_name":"stderr","time":1483.096854517,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":1483.096904222,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":1483.394411936,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":1483.394457179,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":1484.179966808,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":1485.760760588,"data":"[NbConvertApp] Writing 303353 bytes to __results__.html\n"}
+]

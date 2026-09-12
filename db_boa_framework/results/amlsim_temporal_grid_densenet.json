@@ -1,0 +1,127 @@
+{
+  "objective": "entity temporal grid \u2014 IBM AMLSim 10K, 3 native banks (198,015 tx, 0.35 % laundering \u2014 NOT fraud)",
+  "protocol": {
+    "dataset": "amlsim",
+    "orderings": [
+      "global",
+      "sender",
+      "receiver"
+    ],
+    "split": "temporal; train val_day<438, test split_day>=522",
+    "seq_len": 10,
+    "epochs": 10,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "n_features": 9,
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "entity_derived_row_features": false,
+    "quick": false
+  },
+  "archs": [
+    "densenet"
+  ],
+  "complete": true,
+  "caveat": "the label is laundering (is_sar), not fraud; per-row features sit at the floor, so any signal is relational",
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "written": "2026-09-11 17:09:54",
+  "seconds_this_process": 374.4,
+  "conditional_fraud_probability": {
+    "global": 0.010218978102189781,
+    "sender": 0.6473149492017417,
+    "receiver": 0.6147757255936676,
+    "base_rate": 0.0034593338888468045
+  },
+  "reference_per_transaction_no_window": null,
+  "cells": {
+    "densenet|global": {
+      "MCC": 0.0025635906629189287,
+      "MCC_std": 0.0028367627147364042,
+      "Precision": 0.28323237788524946,
+      "Precision_std": 0.018504412431068085,
+      "Sensitivity": 39.62264150939658,
+      "Sensitivity_std": 6.603773584899431,
+      "Accuracy": 62.75196532957049,
+      "Accuracy_std": 3.9075436126580296,
+      "Specificity": 62.813905310494505,
+      "Specificity_std": 3.9356850076675975,
+      "FPR": 37.18609468950523,
+      "FPR_std": 3.9356850076676015,
+      "TP": 42.0,
+      "FP": 14719.0,
+      "FN": 64.0,
+      "TN": 24863.0,
+      "train_seconds": 41.26295304298401,
+      "n_params": 2582,
+      "seeds": 3,
+      "MCC_runs": [
+        0.003925328987996535,
+        -0.0006972928891591616,
+        0.004462735889919413
+      ]
+    },
+    "densenet|sender": {
+      "MCC": 0.18987132606586635,
+      "MCC_std": 0.07687876182822474,
+      "Precision": 4.844231348928747,
+      "Precision_std": 3.701228436162539,
+      "Sensitivity": 87.73584905652099,
+      "Sensitivity_std": 2.8301886792426103,
+      "Accuracy": 93.57656386481194,
+      "Accuracy_std": 3.5132193110783634,
+      "Specificity": 93.59220521112265,
+      "Specificity_std": 3.5228586710653595,
+      "FPR": 6.407794788877083,
+      "FPR_std": 3.52285867106536,
+      "TP": 93.0,
+      "FP": 2536.3333333333335,
+      "FN": 13.0,
+      "TN": 37045.666666666664,
+      "train_seconds": 40.954837481180824,
+      "n_params": 2582,
+      "seeds": 3,
+      "MCC_runs": [
+        0.14963817923753936,
+        0.14145823843856098,
+        0.27851756052149873
+      ]
+    },
+    "densenet|receiver": {
+      "MCC": 0.17160527575645457,
+      "MCC_std": 0.0018876983725593238,
+      "Precision": 3.780462777201492,
+      "Precision_std": 0.08625161334469648,
+      "Sensitivity": 84.59119496847366,
+      "Sensitivity_std": 1.4410615392929296,
+      "Accuracy": 94.20563730430668,
+      "Accuracy_std": 0.2046562441781627,
+      "Specificity": 94.23138463611382,
+      "Specificity_std": 0.20836809461460204,
+      "FPR": 5.768615363885927,
+      "FPR_std": 0.2083680946146041,
+      "TP": 89.66666666666667,
+      "FP": 2283.3333333333335,
+      "FN": 16.333333333333332,
+      "TN": 37298.666666666664,
+      "train_seconds": 40.370172103246055,
+      "n_params": 2582,
+      "seeds": 3,
+      "MCC_runs": [
+        0.17060288456334702,
+        0.1704302213514428,
+        0.17378272135457387
+      ]
+    }
+  }
+}

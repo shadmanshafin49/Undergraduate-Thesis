@@ -1,0 +1,42 @@
+[kaggle_job] torch threads = 4
+======================================================================
+  TASK C — SCALABILITY OF CONTRIBUTION ATTRIBUTION (exact vs MC Shapley)
+  exact n=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  mc    n=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20]  (mc_samples=200, truncation=off)
+  equal-shard=8000/org  epochs=10  n_val=400
+======================================================================
+[C]  DEVIATION (--fit-pool): the pool of 138514 rows holds 17 shards of 8000 — MC range stops at n=16, exact at n=12; shard size, seeds and noise tiers unchanged
+[C]  shared val set: 400 samples, 37 fraud (9.2%) — fraud-stratified for meaningful Shapley
+[C]  training equal-shard pool of 16 orgs (8000 samples each) …
+[C]    trained Bank01  (8000 samples, 31 fraud, σ=0.00)  bal-acc=50.00%
+[C]    trained Bank02  (8000 samples, 31 fraud, σ=0.50)  bal-acc=48.46%
+[C]    trained Bank04  (8000 samples, 31 fraud, σ=1.50)  bal-acc=46.12%
+[C]    trained Bank06  (8000 samples, 31 fraud, σ=0.50)  bal-acc=50.00%
+[C]    trained Bank08  (8000 samples, 32 fraud, σ=1.50)  bal-acc=49.97%
+[C]    trained Bank10  (8000 samples, 32 fraud, σ=0.50)  bal-acc=49.98%
+[C]    trained Bank12  (8000 samples, 32 fraud, σ=1.50)  bal-acc=50.00%
+[C]    trained Bank14  (8000 samples, 32 fraud, σ=0.50)  bal-acc=49.98%
+[C]    trained Bank16  (8000 samples, 32 fraud, σ=1.50)  bal-acc=49.97%
+[C]  n= 3  exact=   0.133s (    7 cval)  mc=  0.110s (   7 cval)  speedup=   1.2x  L1=0.027  ρ=+0.50  top1=OK
+[C]  n= 4  exact=   0.225s (   15 cval)  mc=  0.225s (  15 cval)  speedup=   1.0x  L1=0.140  ρ=-0.40  top1=OK
+[C]  n= 5  exact=   0.471s (   31 cval)  mc=  0.467s (  31 cval)  speedup=   1.0x  L1=0.210  ρ=+0.60  top1=x
+[C]  n= 6  exact=   0.953s (   63 cval)  mc=  0.948s (  63 cval)  speedup=   1.0x  L1=0.213  ρ=+0.49  top1=x
+[C]  n= 7  exact=   1.900s (  127 cval)  mc=  2.018s ( 127 cval)  speedup=   0.9x  L1=0.207  ρ=-0.36  top1=x
+[C]  n= 8  exact=   3.865s (  255 cval)  mc=  3.764s ( 249 cval)  speedup=   1.0x  L1=0.170  ρ=+0.10  top1=x
+[C]  n= 9  exact=   7.516s (  511 cval)  mc=  6.743s ( 451 cval)  speedup=   1.1x  L1=0.236  ρ=-0.18  top1=x
+[C]  n=10  exact=  15.650s ( 1023 cval)  mc= 10.746s ( 697 cval)  speedup=   1.5x  L1=0.200  ρ=-0.22  top1=OK
+[C]  n=11  exact=  30.993s ( 2047 cval)  mc= 14.934s ( 965 cval)  speedup=   2.1x  L1=0.109  ρ=-0.02  top1=x
+[C]  n=12  exact=  61.952s ( 4095 cval)  mc= 19.144s (1265 cval)  speedup=   3.2x  L1=0.240  ρ=+0.08  top1=x
+[C]  n=14  exact=SKIPPED (2^n=16383 coalitions)        mc= 27.946s (1820 cval)
+[C]  n=16  exact=SKIPPED (2^n=65535 coalitions)        mc= 36.994s (2321 cval)
+[C]  dilution regime — splitting full train pool across n=[3, 5, 8, 12] …
+[C]  dilution n= 3  ~46171 samples/org  global bal-acc=50.00%
+[C]  dilution n= 5  ~27702 samples/org  global bal-acc=50.00%
+[C]  dilution n= 8  ~17314 samples/org  global bal-acc=50.00%
+[C]  dilution n=12  ~11542 samples/org  global bal-acc=50.00%
+
+[C]  done in 1372.5s
+[C]  saved /tmp/repo/db_boa_framework/results/scalability_sweep_amlsim_stratified.json
+[C]  saved /tmp/repo/db_boa_framework/results/scalability_shapley_runtime_amlsim_stratified.png
+[C]  saved /tmp/repo/db_boa_framework/results/scalability_fidelity_accuracy_amlsim_stratified.png
+[C]  wrote draft → /tmp/repo/final_report_data/TASKC_scalability_results_amlsim_stratified.md

@@ -1,0 +1,45 @@
+[{"stream_name":"stdout","time":2130.265260626,"data":"{\n"}
+,{"stream_name":"stdout","time":2130.265344323,"data":"  \"job\": \"paysim-grid-cnn\",\n"}
+,{"stream_name":"stdout","time":2130.265351256,"data":"  \"cmd\": [\n"}
+,{"stream_name":"stdout","time":2130.265355612,"data":"    \"experiments/entity_temporal_grid.py\",\n"}
+,{"stream_name":"stdout","time":2130.265359721,"data":"    \"--dataset\",\n"}
+,{"stream_name":"stdout","time":2130.265363672,"data":"    \"paysim\",\n"}
+,{"stream_name":"stdout","time":2130.265367678,"data":"    \"--archs\",\n"}
+,{"stream_name":"stdout","time":2130.265371622,"data":"    \"cnn\",\n"}
+,{"stream_name":"stdout","time":2130.265375997,"data":"    \"--out\",\n"}
+,{"stream_name":"stdout","time":2130.265379936,"data":"    \"paysim_temporal_grid_cnn.json\",\n"}
+,{"stream_name":"stdout","time":2130.265383827,"data":"    \"--with-reference\"\n"}
+,{"stream_name":"stdout","time":2130.26538761,"data":"  ],\n"}
+,{"stream_name":"stdout","time":2130.265391405,"data":"  \"started\": \"2026-09-11 14:17:37\",\n"}
+,{"stream_name":"stdout","time":2130.265395445,"data":"  \"bundle_sha256\": \"1d3029e4a01f77e2b8dd278425642495d3b04d834ea46bac796157da70d586cd\",\n"}
+,{"stream_name":"stdout","time":2130.265399571,"data":"  \"pip\": {\n"}
+,{"stream_name":"stdout","time":2130.265403336,"data":"    \"torch_rc\": 0,\n"}
+,{"stream_name":"stdout","time":2130.265407465,"data":"    \"others_rc\": 0,\n"}
+,{"stream_name":"stdout","time":2130.265411391,"data":"    \"stderr_tail\": \"\"\n"}
+,{"stream_name":"stdout","time":2130.265415331,"data":"  },\n"}
+,{"stream_name":"stdout","time":2130.265418893,"data":"  \"returncode\": 0,\n"}
+,{"stream_name":"stdout","time":2130.265422892,"data":"  \"job_seconds\": 2003.0,\n"}
+,{"stream_name":"stdout","time":2130.265438492,"data":"  \"job_torch_threads\": 4,\n"}
+,{"stream_name":"stdout","time":2130.26544247,"data":"  \"imported_versions\": \"{\\\"python\\\": \\\"3.12.13\\\", \\\"torch\\\": \\\"2.12.0+cpu\\\", \\\"threads\\\": 2, \\\"numpy\\\": \\\"2.3.2\\\", \\\"scikit-learn\\\": \\\"1.8.0\\\", \\\"pandas\\\": \\\"3.0.2\\\", \\\"scipy\\\": \\\"1.17.1\\\", \\\"matplotlib\\\": \\\"3.10.8\\\"}\",\n"}
+,{"stream_name":"stdout","time":2130.265451816,"data":"  \"laptop_versions\": {\n"}
+,{"stream_name":"stdout","time":2130.265456045,"data":"    \"python\": \"3.13.7\",\n"}
+,{"stream_name":"stdout","time":2130.265460327,"data":"    \"torch\": \"2.12.0\",\n"}
+,{"stream_name":"stdout","time":2130.265464347,"data":"    \"numpy\": \"2.3.2\",\n"}
+,{"stream_name":"stdout","time":2130.265468496,"data":"    \"scikit-learn\": \"1.8.0\",\n"}
+,{"stream_name":"stdout","time":2130.265472493,"data":"    \"pandas\": \"3.0.2\",\n"}
+,{"stream_name":"stdout","time":2130.265476351,"data":"    \"scipy\": \"1.17.1\",\n"}
+,{"stream_name":"stdout","time":2130.265480132,"data":"    \"matplotlib\": \"3.10.8\"\n"}
+,{"stream_name":"stdout","time":2130.265484413,"data":"  },\n"}
+,{"stream_name":"stdout","time":2130.265488256,"data":"  \"bundle_commit\": \"6d8e41e8b19213128b54ad653defec1129f29aaf\",\n"}
+,{"stream_name":"stdout","time":2130.265492389,"data":"  \"cpu_model\": \"Intel(R) Xeon(R) CPU @ 2.20GHz\",\n"}
+,{"stream_name":"stdout","time":2130.265496647,"data":"  \"platform\": \"Linux-6.12.90+-x86_64-with-glibc2.35\",\n"}
+,{"stream_name":"stdout","time":2130.265500782,"data":"  \"finished\": \"2026-09-11 14:53:06\",\n"}
+,{"stream_name":"stdout","time":2130.265504731,"data":"  \"total_seconds\": 2129.4\n"}
+,{"stream_name":"stdout","time":2130.265508698,"data":"}\n"}
+,{"stream_name":"stderr","time":2132.946770977,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":2132.946865167,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":2133.244220114,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":2133.244253066,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":2134.031649318,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":2135.603910764,"data":"[NbConvertApp] Writing 303349 bytes to __results__.html\n"}
+]

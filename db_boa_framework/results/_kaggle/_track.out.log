@@ -1,0 +1,4 @@
+[2026-09-11 23:53:31] [track] tracking amlsim-scalability-stratified
+amlsim-scalability-stratified: OK in 1377.7 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 4 file(s)
+[2026-09-12 00:19:34] [track] amlsim-scalability-stratified: fetched
+[2026-09-12 00:19:34] [track] tracking finished

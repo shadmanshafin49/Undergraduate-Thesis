@@ -479,8 +479,11 @@ def main():
         attacker_name = "BankC"
         # Override predict on the instance — Python checks __dict__ before class,
         # so self.predict(X) inside evaluate_on_validation also uses this.
+        # `groups` must be accepted: ADTCN.evaluate() passes it since OBJ-1 added
+        # entity-linked windows, and a lambda without it crashed Phase 8 with a
+        # TypeError on 2026-09-11 (after Phase 7 had already saved the results).
         attack_models[attacker_name].predict = (
-            lambda X: np.ones(len(X), dtype=int)
+            lambda X, groups=None: np.ones(len(X), dtype=int)
         )
 
         # ── Simulate N fraud-verdict rounds ───────────────────────────────────

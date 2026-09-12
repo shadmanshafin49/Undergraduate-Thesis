@@ -185,7 +185,7 @@ def _mc_cfg(quick):
 
 # ─── core sweep ───────────────────────────────────────────────────────────────
 
-def run_sweep(quick=False, dataset="ulb", partition=None):
+def run_sweep(quick=False, dataset="ulb", partition=None, fit_pool=False):
     t0 = time.time()
 
     if quick:
@@ -222,6 +222,35 @@ def run_sweep(quick=False, dataset="ulb", partition=None):
     n_raw  = loader.raw_feature_count
     Xtr, Xv, Xte, ytr, yv, yte = loader.load(verbose=False)
     Xvs, yvs = _balanced_val(Xv, yv, n_val, seed=INIT_SEED)
+
+    # ── does the training pool hold max_n equal shards? ────────────────────────
+    # split_for_orgs cuts each shard from what the earlier orgs left, and its
+    # stratified split needs >= 2 rows over, so the pool holds this many full
+    # shards.  ULB, BankSim and the Handbook hold all 20; AMLSim's 138,514
+    # training rows hold 17 (Kaggle, 2026-09-11: org 18 got the 2,513-row
+    # remainder and the split refused the single row left after it).
+    capacity = (len(ytr) - 2) // samples_per_org
+    pool_fit = None
+    if max(mc_ns) > capacity:
+        if not fit_pool:
+            raise SystemExit(
+                f"[C]  the training pool ({len(ytr)} rows) holds {capacity} shards of "
+                f"{samples_per_org}; the MC range needs {max(mc_ns)}.  Re-run with "
+                f"--fit-pool to stop the range at the largest n that fits (recorded "
+                f"in the output as a deviation).")
+        # Shards are cut in org order with seed random_state + i, and org i's noise
+        # tier is i % 4, so org i is the same org whether the pool stops at 16 or
+        # at 20: every runtime row kept is the one the full protocol computes.
+        pool_fit = {"train_pool_rows": int(len(ytr)), "pool_capacity_orgs": int(capacity),
+                    "mc_ns_preregistered": list(mc_ns),
+                    "exact_ns_preregistered": list(exact_ns)}
+        mc_ns    = [n for n in mc_ns if n <= capacity]
+        exact_ns = [n for n in exact_ns if n <= capacity]
+        max_n    = max(mc_ns)
+        print(f"[C]  DEVIATION (--fit-pool): the pool of {len(ytr)} rows holds {capacity} "
+              f"shards of {samples_per_org} — MC range stops at n={max_n}, exact at "
+              f"n={max(exact_ns)}; shard size, seeds and noise tiers unchanged",
+              flush=True)
     print(f"[C]  shared val set: {len(yvs)} samples, {int(yvs.sum())} fraud "
           f"({yvs.mean()*100:.1f}%) — fraud-stratified for meaningful Shapley",
           flush=True)
@@ -341,6 +370,7 @@ def run_sweep(quick=False, dataset="ulb", partition=None):
         "heterogeneity"   : f"graded feature noise σ∈{{0,.5,1.0,1.5}} (NOISE_MAX={NOISE_MAX})",
         "exact_ns"        : exact_ns,
         "mc_ns"           : mc_ns,
+        **({"pool_fit": pool_fit} if pool_fit else {}),
         "runtime"         : runtime_rows,
         "dilution"        : dilution_rows,
         "elapsed_sec"     : round(time.time() - t0, 1),
@@ -476,6 +506,14 @@ def write_report(summary):
             L.append(f"| {r['n_orgs']} | {2**r['n_orgs']-1} (infeasible) | — | "
                      f"{r['mc_coalitions']} | {r['mc_time_sec']:.3f} | — | — | — | — |")
     L.append("")
+    pf = summary.get("pool_fit")
+    if pf:
+        L.append(f"**Deviation, recorded before the run (`--fit-pool`).** The training pool "
+                 f"({pf['train_pool_rows']:,} rows) holds {pf['pool_capacity_orgs']} equal "
+                 f"shards of {summary['samples_per_org']:,}, so the MC range stops at "
+                 f"n={max_mc_n} instead of the pre-registered "
+                 f"n={max(pf['mc_ns_preregistered'])}. Shard size, seeds and noise tiers "
+                 f"are unchanged: every row above is the one the full protocol computes.\n")
 
     L.append("## 2. Accuracy under scaling — confound controlled vs realistic\n")
     L.append("| n_orgs | equal-shard bal-acc (per-org data FIXED) | "
@@ -562,6 +600,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--no-plots", action="store_true")
+    ap.add_argument("--fit-pool", action="store_true",
+                    help="if the training pool cannot hold the MC range's equal shards, "
+                         "stop the range at the largest n that fits and record it as a "
+                         "deviation (AMLSim); without it such a pool refuses to run")
     add_dataset_args(ap)
     args = ap.parse_args()
 
@@ -572,7 +614,7 @@ def main():
         return
 
     summary = run_sweep(quick=args.quick, dataset=args.dataset,
-                        partition=args.partition)
+                        partition=args.partition, fit_pool=args.fit_pool)
 
     json_path = os.path.join(
         RESULTS_DIR,

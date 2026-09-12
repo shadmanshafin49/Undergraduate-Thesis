@@ -1,0 +1,3 @@
+[RUN] dbboa_repaired_averaged seed=43 threads=2 filters=137 spe=109 epochs=30
+[RUN] dbboa_repaired_averaged seed=43  MCC=0.7409  Acc=99.8929%  TP=84 FP=47 FN=14  (80.6 min)
+[SAVE] D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\_multiseed_runs\dbboa_repaired_averaged_seed43_t2.json

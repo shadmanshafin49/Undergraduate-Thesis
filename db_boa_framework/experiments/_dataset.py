@@ -51,10 +51,11 @@ def add_dataset_args(ap):
     ap.add_argument("--dataset", choices=list(DATASETS), default="ulb",
                     help="which dataset to run the sweep on (default: ulb)")
     ap.add_argument("--partition",
-                    choices=["stratified", "customer", "terminal"], default=None,
-                    help="federated partition scheme; 'customer' and 'terminal' are "
-                         "entity-disjoint and need a dataset carrying that ID "
-                         "(customer: banksim, handbook — terminal: handbook)")
+                    choices=["stratified", "customer", "terminal", "bank"], default=None,
+                    help="federated partition scheme; 'customer', 'terminal' and 'bank' "
+                         "are entity-disjoint and need a dataset carrying that ID "
+                         "(customer: banksim, handbook — terminal: handbook — "
+                         "bank: amlsim, whose banks are native)")
     ap.add_argument("--redraft", action="store_true",
                     help="rebuild figures and the markdown draft from this run's "
                          "existing results JSON, without training anything")
@@ -121,6 +122,19 @@ def resolve(dataset: str = "ulb", partition: str = None, verbose: bool = True):
     loader = get_loader(dataset)
     if partition:
         loader.cfg["partition"] = partition
+        # An entity partition deals entities by the loader's `groups_train`,
+        # which hold whatever the rows were *ordered* by (Handbook: CUSTOMER_ID
+        # under ordering="customer", TERMINAL_ID under "terminal").  Without
+        # this, `--partition terminal` would silently deal *customers*.  A no-op
+        # for every result on disk: BankSim and the Handbook both default to
+        # ordering="customer", which is exactly what `--partition customer` needs.
+        # Only when the partition is ALSO an ordering: AMLSim's native `bank`
+        # partition deals banks, not a windowing entity, and must not be written
+        # into `ordering`.  Loaders without ENTITY_ORDERINGS (BankSim) keep the
+        # old behaviour.
+        if (partition in ENTITY_PARTITIONS.get(dataset, ())
+                and partition in getattr(loader, "ENTITY_ORDERINGS", (partition,))):
+            loader.cfg["ordering"] = partition
     if verbose:
         print(f"Loading data … ({DATASETS[dataset]['label']})", flush=True)
         if partition:

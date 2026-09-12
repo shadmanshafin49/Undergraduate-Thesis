@@ -44,7 +44,9 @@ warnings.filterwarnings("ignore")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config                  import (ADTCN_CONFIG, FEDERATION_CONFIG,
-                                     RESULTS_DIR, DATASETS, get_loader)
+                                     RESULTS_DIR, DATASETS, ENTITY_PARTITIONS,
+                                     get_loader)
+from experiments._dataset     import environment
 from models.adtcn            import ADTCN
 from models.federated_adtcn  import FederatedADTCN
 from models.federation_manager import FederationManager
@@ -137,10 +139,20 @@ def run_one_baseline(loader, X_train, X_val, X_test, y_train, y_val, y_test,
 def main(dataset="ulb", partition=None, out_name=None, filters=None, epochs=None):
     print(f"Loading data … ({DATASETS[dataset]['label']})", flush=True)
     loader = get_loader(dataset)
+    entity = tuple(ENTITY_PARTITIONS.get(dataset, ()))
     if partition:
-        if dataset != "banksim":
-            raise SystemExit("--partition requires --dataset banksim")
+        # ULB takes no partition at all; BankSim has customers; the Handbook has
+        # customers and terminals.  config.ENTITY_PARTITIONS is the one place
+        # that mapping lives (see experiments/_dataset.resolve).
+        if dataset == "ulb" or partition not in ("stratified",) + entity:
+            raise SystemExit(f"--partition {partition} is not available on "
+                             f"--dataset {dataset}")
         loader.cfg["partition"] = partition
+        # An entity split deals whatever the rows are ordered by, so the
+        # ordering must match it.  A no-op for BankSim/customer (its default).
+        # ...but only when the partition is also an ordering (AMLSim's `bank` is not).
+        if partition in entity and partition in getattr(loader, "ENTITY_ORDERINGS", (partition,)):
+            loader.cfg["ordering"] = partition
     X_train, X_val, X_test, y_train, y_val, y_test = loader.load(verbose=False)
     # Tell the detector how many leading columns are real features — see
     # ADTCN.fit. Without this BankSim's 79 features are truncated to 33.
@@ -186,7 +198,7 @@ def main(dataset="ulb", partition=None, out_name=None, filters=None, epochs=None
             loader, X_train, X_val, X_test, y_train, y_val, y_test,
             adtcn_base, override,
             test_groups=(getattr(loader, "groups_test", None)
-                         if (partition == "customer") else None),
+                         if partition in entity else None),
         )
         results[label] = m
         print_metrics_table(m, model_name=label)
@@ -200,6 +212,8 @@ def main(dataset="ulb", partition=None, out_name=None, filters=None, epochs=None
                 f"{dataset} test set",
         "dataset": DATASETS[dataset]["label"],
         "partition": partition or getattr(loader, "cfg", {}).get("partition", "stratified"),
+        "ordering": getattr(loader, "cfg", {}).get("ordering"),
+        "environment": environment(),
         "detector_width_source": ("pinned (DB-BOA search skipped; see "
                                   "experiments/objective_noise_audit.py)"
                                   if filters else "DB-BOA search"),
@@ -252,10 +266,13 @@ def main(dataset="ulb", partition=None, out_name=None, filters=None, epochs=None
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--dataset", choices=["ulb", "banksim"], default="ulb")
-    ap.add_argument("--partition", choices=["stratified", "customer"], default=None,
-                    help="BankSim only: 'customer' gives each bank whole "
-                         "customers, so no customer's history sits at two banks")
+    ap.add_argument("--dataset", choices=list(DATASETS), default="ulb")
+    ap.add_argument("--partition", choices=["stratified", "customer", "terminal", "bank"],
+                    default=None,
+                    help="'customer' / 'terminal' / 'bank' deal whole entities to banks, "
+                         "so no entity's history sits at two banks (BankSim: customer; "
+                         "Handbook: customer, terminal; AMLSim: bank, which is native). "
+                         "ULB takes no partition.")
     ap.add_argument("--out", default=None)
     ap.add_argument("--filters", type=int, default=None,
                     help="Pin the detector width and skip the DB-BOA search. "

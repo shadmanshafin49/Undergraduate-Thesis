@@ -1,0 +1,42 @@
+[{"stream_name":"stdout","time":111.391065336,"data":"{\n"}
+,{"stream_name":"stdout","time":111.391157516,"data":"  \"job\": \"amlsim-scalability-stratified\",\n"}
+,{"stream_name":"stdout","time":111.391166526,"data":"  \"cmd\": [\n"}
+,{"stream_name":"stdout","time":111.391170496,"data":"    \"experiments/scalability_sweep.py\",\n"}
+,{"stream_name":"stdout","time":111.391174326,"data":"    \"--dataset\",\n"}
+,{"stream_name":"stdout","time":111.391177486,"data":"    \"amlsim\",\n"}
+,{"stream_name":"stdout","time":111.391180806,"data":"    \"--partition\",\n"}
+,{"stream_name":"stdout","time":111.391182786,"data":"    \"stratified\"\n"}
+,{"stream_name":"stdout","time":111.391184796,"data":"  ],\n"}
+,{"stream_name":"stdout","time":111.391186826,"data":"  \"started\": \"2026-09-11 17:30:23\",\n"}
+,{"stream_name":"stdout","time":111.391188976,"data":"  \"bundle_sha256\": \"1d3029e4a01f77e2b8dd278425642495d3b04d834ea46bac796157da70d586cd\",\n"}
+,{"stream_name":"stdout","time":111.391191096,"data":"  \"pip\": {\n"}
+,{"stream_name":"stdout","time":111.391193086,"data":"    \"torch_rc\": 0,\n"}
+,{"stream_name":"stdout","time":111.391195096,"data":"    \"others_rc\": 0,\n"}
+,{"stream_name":"stdout","time":111.391197086,"data":"    \"stderr_tail\": \"\"\n"}
+,{"stream_name":"stdout","time":111.391199316,"data":"  },\n"}
+,{"stream_name":"stdout","time":111.391201266,"data":"  \"returncode\": 1,\n"}
+,{"stream_name":"stdout","time":111.391203196,"data":"  \"job_seconds\": 5.5,\n"}
+,{"stream_name":"stdout","time":111.391205166,"data":"  \"job_torch_threads\": 4,\n"}
+,{"stream_name":"stdout","time":111.391207186,"data":"  \"imported_versions\": \"{\\\"python\\\": \\\"3.12.13\\\", \\\"torch\\\": \\\"2.12.0+cpu\\\", \\\"threads\\\": 2, \\\"numpy\\\": \\\"2.3.2\\\", \\\"scikit-learn\\\": \\\"1.8.0\\\", \\\"pandas\\\": \\\"3.0.2\\\", \\\"scipy\\\": \\\"1.17.1\\\", \\\"matplotlib\\\": \\\"3.10.8\\\"}\",\n"}
+,{"stream_name":"stdout","time":111.391214206,"data":"  \"laptop_versions\": {\n"}
+,{"stream_name":"stdout","time":111.391217526,"data":"    \"python\": \"3.13.7\",\n"}
+,{"stream_name":"stdout","time":111.391221336,"data":"    \"torch\": \"2.12.0\",\n"}
+,{"stream_name":"stdout","time":111.391225056,"data":"    \"numpy\": \"2.3.2\",\n"}
+,{"stream_name":"stdout","time":111.391228816,"data":"    \"scikit-learn\": \"1.8.0\",\n"}
+,{"stream_name":"stdout","time":111.391232336,"data":"    \"pandas\": \"3.0.2\",\n"}
+,{"stream_name":"stdout","time":111.391235676,"data":"    \"scipy\": \"1.17.1\",\n"}
+,{"stream_name":"stdout","time":111.391239256,"data":"    \"matplotlib\": \"3.10.8\"\n"}
+,{"stream_name":"stdout","time":111.391242766,"data":"  },\n"}
+,{"stream_name":"stdout","time":111.391245886,"data":"  \"bundle_commit\": \"6d8e41e8b19213128b54ad653defec1129f29aaf\",\n"}
+,{"stream_name":"stdout","time":111.391248846,"data":"  \"cpu_model\": \"AMD EPYC 7B12\",\n"}
+,{"stream_name":"stdout","time":111.391251986,"data":"  \"platform\": \"Linux-6.12.90+-x86_64-with-glibc2.35\",\n"}
+,{"stream_name":"stdout","time":111.391255436,"data":"  \"finished\": \"2026-09-11 17:32:14\",\n"}
+,{"stream_name":"stdout","time":111.391258466,"data":"  \"total_seconds\": 110.2\n"}
+,{"stream_name":"stdout","time":111.391261346,"data":"}\n"}
+,{"stream_name":"stderr","time":113.656008353,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":113.656111252,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":114.028313618,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":114.028378778,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":114.716979654,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":116.245844249,"data":"[NbConvertApp] Writing 303282 bytes to __results__.html\n"}
+]

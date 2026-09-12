@@ -1,6 +1,6 @@
 % =====================================================================
 %  FL-ADTCN — WORK REPORT
-%  Paper-extension phase, 30 August – 5 September 2026
+%  Paper-extension phase, 30 August – 11 September 2026
 %  Build:  pdflatex -interaction=nonstopmode WORK_REPORT.tex   (run twice)
 % =====================================================================
 \documentclass[11pt]{article}
@@ -52,7 +52,7 @@
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\headrule}{\hbox to\headwidth{\color{rule}\leaders\hrule height \headrulewidth\hfill}}
 \fancyhead[L]{\small\color{steel}FL-ADTCN --- Work Report}
-\fancyhead[R]{\small\color{steel}Paper extension, 30 Aug -- 5 Sep 2026}
+\fancyhead[R]{\small\color{steel}Paper extension, 30 Aug -- 12 Sep 2026}
 \fancyfoot[C]{\small\color{steel}\thepage}
 
 % ---------------------------------------------------------------- shorthands
@@ -108,7 +108,7 @@
   {\normalsize \textbf{Shadman Sakib} (21301566)}\\[3pt]
   {\small with Md. Abrar-ud-doula Amiya \textbullet\ Mahima Islam \textbullet\ Nafi Alif Mahin \textbullet\ Muntasir Mahin Siam}\\[3pt]
   {\small Supervisor: Md. Golam Rabiul Alam}\\[16pt]
-  {\small\color{steel}Reporting period: 30 August -- 5 September 2026 \textbullet\ Compiled 5 September 2026}
+  {\small\color{steel}Reporting period: 30 August -- 11 September 2026 \textbullet\ Compiled 11 September 2026}
 \end{center}
 
 \vfill
@@ -151,6 +151,17 @@ which customer made which payment.
   effort, not the system. A number like that cannot safely be printed in a paper.
   \item \textbf{Put all of it into version control.} \emph{Why:} before 5 September roughly 20 hours of
   results existed only as untracked files on one machine.
+  \item \textbf{11--12 September: took the other three datasets to measurement.} The rule that had kept
+  us to two datasets (Rule~8) was suspended by the team lead, so the Fraud Detection Handbook, PaySim and
+  IBM AMLSim were pre-registered and run. \emph{Why it needed care:} two of them arrived with a trap that
+  would have decided the result on its own --- in PaySim, time order itself carries the label; in AMLSim,
+  our own first attempt at generating the data tied the bank to the answer. Both were caught before any
+  model saw them. \emph{Status, 12 September:} PaySim and AMLSim are fully measured, and all four of the Handbook's
+  pre-registered items are now scored. \textbf{Eleven pre-registered predictions were wrong} --- two on
+  PaySim, three in AMLSim's architecture grid, six on the Handbook --- one AMLSim criterion is reported as
+  two scores with no verdict (as is the Handbook's stratified privacy half, though its customer half
+  decides that item), and \textbf{the Handbook broke two defences that had held in every condition before it}
+  (Section~\ref{sec:firstresults}).
 \end{itemize}
 
 \smallskip
@@ -191,7 +202,7 @@ Three things this document does on purpose:
   what that answer actually produced, \emph{including the times it produced something worse than the
   road not taken}.
   \item \textbf{It reports failures as results.} Before each experiment we wrote down what we expected
-  to happen. Nine of those written-down predictions turned out to be wrong. Those nine are the most
+  to happen. Sixteen of those written-down predictions turned out to be wrong. Those sixteen are the most
   useful material in the whole period, so they are printed next to their original wording instead of
   being quietly replaced with what actually happened.
   \item \textbf{It marks the numbers that may no longer be used.} Several figures that appear in older
@@ -199,18 +210,19 @@ Three things this document does on purpose:
   Section~\ref{sec:quotable} lists them, with what to say instead.
 \end{itemize}
 
-\begin{keybox}{Status at a glance, 5 September 2026}
+\begin{keybox}{Status at a glance, 12 September 2026}
 \small
 \begin{tabularx}{\linewidth}{@{}p{4.7cm} X@{}}
 \toprule
-\textbf{Phase} & Thesis accepted 13 June 2026. Paper extension active. Deadline \textbf{19 September 2026} --- 14 days away. \\
+\textbf{Phase} & Thesis accepted 13 June 2026. Paper extension active. Deadline \textbf{19 September 2026} --- 7 days away. \\
 \textbf{Datasets assessed} & \textbf{Five}, compared side by side in Section~\ref{sec:fivedatasets}: ULB, BankSim, Fraud Detection Handbook, IBM AMLSim, PaySim. \\
-\textbf{Datasets measured} & \textbf{Two.} ULB credit-card (284{,}807 transactions, 0.17\% fraud, \emph{no customer IDs}) and BankSim (594{,}643 transactions, 1.211\% fraud, 4{,}112 customers). The Handbook is loaded and verified but unrun --- go/no-go 12 September; AMLSim and PaySim were assessed and not run. \\
-\textbf{Conditions measured} & \textbf{Three}: ULB/stratified, BankSim/stratified, BankSim/entity-disjoint. The third is a \emph{control} --- it exists only to pull apart two effects that used to move together. \\
+\textbf{Datasets measured} & \textbf{Four.} ULB credit-card (284{,}807 transactions, 0.17\% fraud, \emph{no customer IDs}), BankSim (594{,}643 transactions, 1.211\% fraud, 4{,}112 customers), PaySim (the 2.77\,M transactions of the two types that hold every fraud) and IBM AMLSim (198{,}015 transactions, three native banks; the label is laundering). The last two ran on Kaggle, from 11 September. The Handbook's stratified half --- three sweeps and the ablation --- landed on 12 September, and by that afternoon its customer sweeps and its 21-cell window grid had landed too, so \textbf{all four of its pre-registered items are scored}; only its two scalability runs remain (Section~\ref{sec:firstresults}). \\
+\textbf{Datasets running} & \textbf{One}: the Fraud Detection Handbook, part way through its suite on the laptop --- four of nine steps done by 10:30, about 24\,h left. All Kaggle work finished on 12 September. \\
+\textbf{Conditions measured} & \textbf{Seven}: ULB/stratified, BankSim/stratified, BankSim/entity-disjoint, Handbook/stratified, PaySim/stratified, AMLSim/stratified and AMLSim/native banks. The third is a \emph{control} --- it exists only to pull apart two effects that used to move together. Two sit at the pre-registered floor: AMLSim/stratified, and the Handbook/stratified split by six thousandths of MCC. \\
 \textbf{Promises tested on more than one dataset} & \textbf{Five of six.} The sixth group (RL, consensus, blockchain) does not depend on the dataset at all, by design. \\
-\textbf{Computer time spent} & Roughly 45 hours of experiments, of which one deliberately expensive run took 16.3 hours on its own. \\
-\textbf{Claims we withdrew or retired} & \textbf{Three}, and all three were killed by our own tests: the explanation for Krum's accuracy cost, ``the fast Shapley estimate fails from $n\!\approx\!6$'', and the privacy improvement factor as a headline number. \\
-\textbf{Code state} & Everything committed on branch \texttt{obj13-surrogate-repair}. Before 5 September the entire extension existed only as untracked files on one machine. \\
+\textbf{Computer time spent} & Roughly 45 hours of experiments to 10 September, of which one deliberately expensive run took 16.3 hours on its own. Since then: the ULB regeneration on the laptop (9\,h\,28\,m), and 28.8\,h of Kaggle sessions across 29 jobs. About 31\,h is still queued on the laptop. \\
+\textbf{Claims we withdrew or retired} & \textbf{Three}, and all three were killed by our own tests: the explanation for Krum's accuracy cost, ``the fast Shapley estimate fails from $n\!\approx\!6$'', and the privacy improvement factor as a headline number. \textbf{Plus one rescoping (11 September):} every ``partition effect'' also changed the training windows (Section~\ref{sec:control}). \textbf{Plus seven pre-registered predictions wrong} on PaySim, AMLSim and the Handbook --- and \textbf{two defences that had held everywhere failed there on the same attack}: Krum selected a label-flipping attacker, and the incentive layer isolated nobody at all (Section~\ref{sec:firstresults}). \\
+\textbf{Code state} & Committed through 10 September on branch \texttt{obj13-surrogate-repair}. The code written on 11--12 September is not yet committed; every Kaggle result records a hash of the exact code it ran. \\
 \bottomrule
 \end{tabularx}
 \end{keybox}
@@ -230,9 +242,17 @@ simply says ``not fraud'' to \emph{every single transaction} --- catching nothin
 \textbf{99.83\% accuracy}. That number looks excellent and the detector is worthless.
 
 This is not a hypothetical worry. It is exactly what bit us: in Section~\ref{sec:claims} a
-privacy-protected model is destroyed so badly that it becomes useless, and plain accuracy reports the
-damage as $-0.11$ percentage points. \textbf{Accuracy hides failure on rare-event data.} That is why we
-lead with MCC instead.
+privacy-protected model is destroyed so badly that it becomes useless (MCC falls from 0.428 to 0.012 on
+PaySim), and plain accuracy reports the damage as a \emph{gain} of 1.16 percentage points.
+\textbf{Accuracy hides failure on rare-event data.} That is why we lead with MCC instead.
+
+\begin{warnbox}{Corrected 12 September: this paragraph had the sign wrong}
+Earlier versions said plain accuracy recorded the ULB collapse as a \emph{fall} of 0.11\,pp. It was a
+\emph{rise}: the collapsed model flagged nothing at all, so it scored the base rate, 99.83\%, against
+FedAvg's 99.72\%. The regenerated ULB run of 12 September no longer shows the effect at all --- its
+collapsed model flags 43{,}089 transactions and accuracy falls 75\,pp (Section~\ref{sec:firstresults}) ---
+so the example now comes from PaySim, where it happens on the current files.
+\end{warnbox}
 
 \begin{center}\small
 \renewcommand{\arraystretch}{1.25}
@@ -404,7 +424,9 @@ the reason the rest of it can be believed. Six things were already solid on 30 A
 
   \item \textbf{The attack defence was built where its maths actually applies.} Krum's guarantee only
   holds when there are enough honest participants relative to attackers, so we ran it in that regime
-  and swept four different attack types. \textbf{The attacker was caught 8 times out of 8.}
+  and swept four different attack types. \textbf{The attacker was caught 8 times out of 8} --- in every
+  condition until the Handbook, where a label-flipping attacker is selected at both federation sizes
+  (Section~\ref{sec:firstresults}).
 
   \item \textbf{The work had already found and deleted its own invented numbers.} An earlier audit
   removed nine claims that no script had ever produced --- a 97.38\% accuracy, an MCC of 0.966, 85\,TPS,
@@ -506,8 +528,8 @@ The reason to do it is that human memory is generous. Without it, a surprising r
 ``well, that is roughly what we thought'' by the time it is written up. With it, being wrong is a
 recorded event you cannot talk your way out of.
 
-Across five runs in this period we wrote down \textbf{26 predictions. Nine of them were wrong} --- and
-those nine are the most valuable material in this report.
+Across seven runs in this period we have scored \textbf{44 predictions so far. Sixteen of them were
+wrong} --- and those sixteen are the most valuable material in this report.
 
 \begin{center}\small
 \begin{tabularx}{\linewidth}{@{}p{5.4cm} c c X@{}}
@@ -519,8 +541,10 @@ Confound control (1 Sep, scored 4 Sep) & 6 & 2 & Krum's utility cost tracks the 
 Privacy grid extension (4 Sep) & 5 & 1 & All three conditions de-censored, which we had predicted would not happen and had pre-named as the more valuable outcome. \\
 Privacy repeat-count pass (4 Sep) & 5 & 1 & ULB's output threshold did \emph{not} rise; the falsifier fired verbatim as written. \\
 Surrogate repair side-by-side (4--5 Sep) & 6 & 3 & Determinism does not make a noisy search reproducible --- shared draws do. This was pre-registered the other way round. \\
+PaySim and AMLSim on Kaggle (11--12 Sep) & 15 & 5 & Linking by receiving account helps on PaySim even where time order carries the label (6 of 7 models) --- pre-registered the other way round, with that exact alternative named. One more AMLSim item scores as two scores with no verdict and is counted neither way. \\
+Handbook, all four pre-registered items (12 Sep; only scalability still running) & 8 & 6 & Two defences that had held everywhere fail here on the same attack: Krum selects a label-flipping attacker, and the incentive layer never isolates anyone, so the collusion catch that worked five times returns a gap of exactly zero. The window grid adds a third surprise: \textbf{grouping by the entity that concentrates fraud most strongly produces the \emph{worst} windows}, the exact opposite of what the adjacency measurement predicted. \\
 \midrule
-\textbf{Total} & \textbf{26} & \textbf{9} & \textbf{In six of the nine, the pre-registration had already written down what failure would mean.} \\
+\textbf{Total} & \textbf{49} & \textbf{20} & \textbf{In six of the first nine, and in three of the seven new ones, the pre-registration had already written down what failure would mean.} \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -688,18 +712,21 @@ the file was written, not from the world.}
 \label{sec:fivedatasets}
 
 Decision~1 says which two datasets we run. This section says \textbf{which five we looked at}, what each
-one is, what each could and could not prove, and exactly how far each one got. Two are measured, one is
-wired up and ready but has not been run, and two were investigated and deliberately not run.
+one is, what each could and could not prove, and exactly how far each one got. Four are measured. On
+5 September one was wired up but unrun and two had been deliberately set aside; since 11 September all
+three have been pre-registered and run --- PaySim and AMLSim have results, and the Handbook is queued
+(Section~\ref{sec:firstresults}).
 
 \begin{keybox}{Read this before the table --- what ``compared'' means here}
-\textbf{Five datasets are compared on this page. Two of them have results.} That distinction is the
+\textbf{Five datasets are compared on this page. Four of them have results.} That distinction is the
 whole point of the table, so it is printed in its own column and never blurred. Under Rule~2, a dataset
 with no run behind it gets no numbers of its own --- it gets its measured properties, its cost, and an
 honest statement of what it would answer if it were run.
 
-Anyone who needs a one-line answer: \textbf{ULB and BankSim are measured; the Fraud Detection Handbook
-is loaded, verified and awaiting a go/no-go on 12 September; AMLSim and PaySim were assessed and
-rejected for this deadline, for different and specific reasons.}
+Anyone who needs a one-line answer: \textbf{ULB, BankSim, PaySim and IBM AMLSim are measured (the last
+two since 12 September, on Kaggle). The Fraud Detection Handbook is pre-registered and queued on the
+laptop; it has no result yet.} The
+status column records where each stands now, and what changed since 5 September.
 \end{keybox}
 
 {\small
@@ -724,15 +751,15 @@ rejected for this deadline, for different and specific reasons.}
 \textbf{3. Fraud Detection Handbook} \newline {\footnotesize simulated, ULB research group} &
 \textbf{1{,}754{,}155} transactions --- three times BankSim --- \textbf{0.837\% fraud} (14{,}681 cases) over 183 days. &
 \textbf{Customers (4{,}990) \emph{and} terminals (10{,}000)}, with exact timestamps to \textbf{one second}. The only candidate that links both. &
-\textcolor{amber}{\textbf{LOADED, NOT RUN}} --- loader landed 8 Sep, 42 acceptance checks pass, \textbf{zero results}. Cost measured at \textbf{about 11\,h} of CPU (the original 6\,h budget was too low). Go/no-go \textbf{12 September}. \\
+\textcolor{amber}{\textbf{PRE-REGISTERED, QUEUED}} --- loader landed 8 Sep (42 acceptance checks pass). Pre-registration approved 11 Sep; the full suite (both splits plus a three-way window grid, about 31\,h) is queued on the laptop behind the ULB re-run. \textbf{No result yet.} \\
 \textbf{4. IBM AMLSim} \newline {\footnotesize simulated multi-bank network} &
 Configurable. Its distinguishing feature is not size but structure: it models \emph{several institutions}, not one. &
 \textbf{Real bank identities} --- a federation we would not have to invent by dealing customers into piles. &
-\textcolor{steel}{\textbf{ASSESSED, DEFERRED}} --- right dataset, wrong fortnight. It is a Java generator needing a whole configuration pipeline before a single transaction exists, and the question it was going to settle got settled for free by our control run (Section~\ref{sec:control}). Revisit after the deadline. \\
+\textcolor{okgreen}{\textbf{MEASURED}} --- 2 conditions, on Kaggle. Deferred on 5 Sep (a Java generator, and its deciding question had been answered by the control). Taken up on 11 Sep after Rule~8 was suspended: 198{,}015 transactions generated from the real simulator with three native banks. Under a shuffled split it sits at the pre-registered floor; under its native banks it does not. Results in Section~\ref{sec:firstresults}: three of its five architecture-grid predictions were wrong. The label is \emph{laundering}, not fraud. \\
 \textbf{5. PaySim} \newline {\footnotesize simulated mobile money} &
 6.36M transactions with sender, receiver and account balances. Much the biggest of the five. &
 \textbf{Little that is useful.} No bank identities, and a sending account may appear only once or twice --- so there is no history to build a sequence from. &
-\textcolor{badred}{\textbf{ASSESSED, REJECTED}} --- fails Rule~8. It cannot test the federated story (no banks) and it cannot test the sequence story (no repeat customers). Being the largest file on the list buys nothing if it answers neither open question. \\
+\textcolor{okgreen}{\textbf{MEASURED}} --- 1 condition, on Kaggle. Rejected on 5 Sep under Rule~8, and the diagnosis was right: 99.87\% of senders appear once, and there are no banks. Run anyway since 11 Sep, restricted to the two transaction types that contain fraud; what it cannot test is stated, not skipped. \textbf{Two of its pre-registered predictions were wrong} (Section~\ref{sec:firstresults}). \\
 \bottomrule
 \end{xltabular}}
 
@@ -756,7 +783,9 @@ wrong} (Rule~8), so this is the column that decided the ordering:
   has genuine institutional boundaries. \textbf{Then our own three-hour control answered the question
   without it}, and its promotion rationale was spent. We recorded that demotion as a result following
   the data, not as a convenience.
-  \item \textbf{PaySim} can overturn nothing we currently claim. That is the entire verdict.
+  \item \textbf{PaySim} can overturn nothing we currently claim. That was the entire verdict on
+  5 September. On 11 September it was run anyway (Rule~8 suspended), and the reconnaissance found
+  something the verdict had missed: its time order carries the label (Section~\ref{sec:allfive}).
 \end{itemize}
 
 \begin{warnbox}{A sixth file that looked like a dataset and was not}
@@ -772,7 +801,7 @@ later draft. \textbf{Counting a file twice is not breadth.} The check cost twent
 written down so nobody spends that twenty minutes again.
 \end{warnbox}
 
-\begin{keybox}{Why the answer is two datasets and not five, stated plainly}
+\begin{keybox}{Why the answer was two datasets and not five --- until 11 September}
 It would read better to say we tested on five datasets. Rule~2 does not allow it, so here is the honest
 version.
 
@@ -786,6 +815,9 @@ The choice was therefore between \emph{two datasets with all six claims tested o
 \emph{three datasets with one claim tested and five claims left on ULB}. Rule~8 picks the first, because
 a reviewer attacks the five claims you left behind, not the one you showed off. \textbf{So: five
 datasets assessed, two measured, and this page saying exactly which is which.}
+
+\textbf{11 September.} The team lead suspended Rule~8: every assessed dataset is to be run and compared.
+This box is kept as the reasoning of 5 September; Section~\ref{sec:allfive} is what happened next.
 \end{keybox}
 
 \subsection{What the second dataset said about our own detector (31 August)}
@@ -873,6 +905,9 @@ code: the run was overwriting the original ULB figures in place, and the generat
 conclusions regardless of what had been measured. A draft that contradicts the table printed directly
 above it is the B9 failure with the numbers left in. \textbf{Regenerating any draft now takes seconds
 and reads from the data.}
+
+\emph{Rule~8 was suspended on 11 September (decision log, row 12); the choices made under it stand as
+history.}
 \end{decision}
 
 \subsection{The control that killed our best new claim (1--4 September)}
@@ -900,7 +935,7 @@ of the two changes moved it --- and we had confidently credited the second one.
 \node[cell,right=3.0cm of a] (b) {BankSim\\\scriptsize stratified split};
 \node[cell,below=1.6cm of b] (c) {BankSim\\\scriptsize entity-disjoint split};
 \draw[ar,okgreen] (a) -- node[above,font=\scriptsize,text=okgreen,align=center]{\textbf{dataset effect}\\\scriptsize only the data changes} (b);
-\draw[ar,lilac] (b) -- node[right,font=\scriptsize,text=lilac,align=left]{\textbf{partition effect}\\\scriptsize only the split changes} (c);
+\draw[ar,lilac] (b) -- node[right,font=\scriptsize,text=lilac,align=left]{\textbf{partition effect}\\\scriptsize the split changes --- and, found\\\scriptsize 11 Sep, the training windows} (c);
 \draw[ar,badred,dashed] (a.south) -- node[sloped,font=\scriptsize,text=badred,align=center,pos=0.62,fill=white,inner sep=1.5pt]{the only comparison we had before ---\\\textbf{both change at once}} (c.west);
 \node[draw=rule,fill=wash,rounded corners=2pt,anchor=north west,text width=12.6cm,align=center,font=\scriptsize,inner sep=5pt]
  at ($(a.south west)+(0,-2.9)$)
@@ -956,9 +991,28 @@ $n{=}7$ label-flip & $+0.00$ & $-11.61$ & $-6.32$ & $-11.61$ & \textbf{$+5.28$} 
 \end{tabularx}
 \end{center}
 
+\begin{warnbox}{Correction, 11 September --- the ``partition effect'' was never the split alone}
+The text above says the control changed \emph{only} the customer split. It did not, and we found out a
+week later. None of the attack experiments tells the detector where one customer's history ends, so
+each bank's model reads windows over its rows \emph{in whatever order the split leaves them}. The
+stratified split shuffles the rows, so its windows are ten random transactions. The entity-disjoint
+split keeps each bank's rows grouped by customer, so its windows are mostly one customer's own history.
+Measured without training anything (\texttt{check\_partition\_windowing.py}): \textbf{0.00\% of the
+stratified training windows come from a single customer, against 91.22\% under the entity-disjoint
+split} (96.37\% on the Handbook, 88.76\% on AMLSim's native banks).
+
+\textbf{What survives:} the withdrawal. Its decisive comparison is the \emph{dataset} column --- ULB
+against BankSim, both stratified, both training on random windows --- and that comparison was clean.
+\textbf{What changes:} every number in the \emph{partition} column above is the effect of entity-disjoint
+banks \emph{plus} customer-linked training windows, not of the split alone. The test windows were the
+same in both conditions, so only training moved. Read ``partition effect'' anywhere in this report as
+``entity-disjoint split, which also changes what the detector trains on''.
+\end{warnbox}
+
 \textbf{What survived, and it is worth having.} The security property is untouched and is now stronger
 than before: \textbf{Krum catches the attacker 8 times out of 8 in all three conditions.} That is the
-claim Krum is actually there to support, and it now holds on two datasets and three splits.
+claim Krum is actually there to support, and it held on two datasets and three splits --- \textbf{until
+12 September, when the Handbook produced the first exception} (Section~\ref{sec:firstresults}).
 
 What we lost is the \emph{explanation} for the accuracy cost, not the cost itself. Krum can cost
 accuracy; the amount tracks the dataset; and \textbf{we do not currently know why.} Writing that down is
@@ -1403,6 +1457,478 @@ direct paired measurement, under three surrogate protocols, at three seeds, at t
 \textbf{The negative result got stronger by being attacked.}
 \end{keybox}
 
+\subsection{All five datasets, taken to measurement (11 September)}
+\label{sec:allfive}
+
+On 11 September the team lead suspended Rule~8. Every dataset assessed in
+Section~\ref{sec:fivedatasets} is now to be run and compared, including the two that rule had set aside.
+That changes the scope, not the standard: Rules~2, 4, 6 and 11 still apply in full, so each new dataset
+got a reconnaissance pass, a loader with its own acceptance checks, and a written, approved
+pre-registration \emph{before} any model trained on it. This section records first what the preparation
+found --- in two of the three cases, a trap that would have decided the result on its own --- and then,
+in Section~\ref{sec:firstresults}, what the PaySim and AMLSim runs measured.
+
+\begin{decision}{12 --- Run every assessed dataset}
+\qlabel{Question raised:} Rule~8 had limited us to datasets that could overturn a claim, which is why
+PaySim was rejected and AMLSim deferred. Keep that gate with eight days left?
+
+\qlabel{Decision taken:} The team lead suspended Rule~8: all five datasets are run and compared.
+
+\qlabel{What it does not change:} a dataset that lacks the structure to test a claim is still reported
+as not testing it (Rule~6) --- never counted as a pass. PaySim has no banks, so it tests no
+entity-disjoint split; AMLSim has three banks, so the two sweeps that need five to twelve cannot run on
+its native split. Both limits are written into their pre-registrations.
+\end{decision}
+
+\begin{decision}{13 --- Where to run three more datasets}
+\qlabel{Question raised:} The laptop is booked for two days (the ULB re-run, then the Handbook). PaySim
+and AMLSim cannot finish on it before 16 September. Run them elsewhere, or subsample them?
+
+\qlabel{Decision taken:} ULB and the Handbook stay on the laptop --- the environment BankSim ran in, so
+those three stay comparable. PaySim and AMLSim run on Kaggle's free CPU sessions, five at a time.
+
+\qlabel{Why:} Kaggle is no faster per job (a probe measured a 4-vCPU Xeon at 2.2\,GHz); its value is
+running five jobs at once. The price is a second environment, and this project has already lost a day
+to one it could not reconstruct. So every Kaggle job installs the laptop's exact library versions (the
+probe showed they install cleanly), pins four threads, and records the versions it actually imported and
+a hash of the exact code it ran. Each dataset runs entirely on one machine, so its own comparisons never
+mix environments; a cross-dataset column involving PaySim or AMLSim is also an environment comparison,
+and is labelled so. Python itself cannot be matched (3.12 against 3.13), and that is recorded rather
+than hidden.
+
+\qlabel{Outcome so far:} the first end-to-end test job failed usefully, twice over: Kaggle silently drops
+empty folders, so the job could not write its results; and the thread setting did not take (the job
+reported 2 threads, not 4). Both were fixed before any real job was sent. Two more faults surfaced
+overnight, and both are fixed. A transient error from Kaggle's command-line tool was misread as a failed
+job; in the confusion one job was sent into a sixth, forbidden slot. Kaggle refused it, but the tool
+reported success, so the job sat unrun for four hours until a status check found it missing. The job tool
+now counts a job as sent only on Kaggle's explicit success message.
+\end{decision}
+
+\begin{decision}{14 --- IBM AMLSim: the real simulator, not a substitute}
+\qlabel{Question raised:} AMLSim is a Java simulator that needs a build and a configuration before a
+single transaction exists. IBM also publishes a newer, pre-generated dataset (AMLworld) with bank
+columns. Use that instead?
+
+\qlabel{Decision taken:} The team lead chose the real simulator, with its shipped 10K parameter set and
+three banks at our own 50/30/20 shares.
+
+\qlabel{Why it needed care:} choosing a simulator's configuration is a researcher degree of freedom --- a
+dataset can be tuned towards a result as surely as a model can. So the one change is applied by a
+script (\texttt{data/make\_amlsim\_config.py}) that refuses to run on anything but the pinned upstream
+commit, and the whole pipeline is one script (\texttt{data/generate\_amlsim.py}) that records a SHA-256
+for every file it writes. Two repairs were forced rather than chosen, and both were shown not to touch
+content: the shipped configuration lacked three keys the pinned code reads (copied from the repository's
+own root configuration, nothing overwritten), and upstream Python writes line endings on Windows that
+crash the Java half (the pipeline strips them and asserts that only those bytes went and the record
+count is unchanged). MASON, the simulation library, is on no public package registry and its release
+carries no jar, so it was built from its tagged source.
+\end{decision}
+
+\begin{warnbox}{Our own first AMLSim dataset tied the bank to the answer --- caught before any model saw it}
+The first derivation gave each bank a contiguous block of accounts. The reconnaissance pass then showed
+\textbf{94.6\% / 5.1\% / 0.2\%} of transactions sent from the three banks, and \textbf{43\%} of the third
+bank's transactions being laundering. The simulator fixes an account's activity by its position in the
+account list, so contiguous blocks had tied bank to activity --- and, through that, to the label. A
+detector could have ``found'' laundering just by learning which bank a transaction came from.
+
+Interleaving the banks every ten accounts fixed it: \textbf{50.1 / 30.0 / 19.9\%} of transactions, and the
+bank columns now predict nothing (MCC $-0.001$). The first dataset was discarded; nothing was ever
+trained on it. What remains is a genuine, smaller difference, reported rather than engineered away: the
+laundering rate is 0.24 / 0.37 / 0.57\% across the three banks.
+\end{warnbox}
+
+\begin{decision}{15 --- PaySim: which rows, which features}
+\qlabel{Question raised:} All 8{,}213 PaySim frauds sit in two of its five transaction types. Keep all
+6.36\,M rows, or only those two types? And the balance columns --- use them?
+
+\qlabel{Decision taken:} The two types (2.77\,M rows, every fraud) --- a call the team lead delegated. The
+four balance columns as given (the team lead's call), but none of the derived ``balance error'' terms
+that are PaySim's known leak, and not the simulator's own fraud flag, which is a subset of the label.
+
+\qlabel{Why:} the other three types contain \textbf{zero} fraud in 3.59\,M rows. Keeping them only adds
+negatives the type column alone classifies --- exactly the accuracy inflation this report warns about in
+Section~\ref{sec:scores}. It is the standard PaySim scope, and it keeps every job inside Kaggle's 12-hour
+limit. \textbf{A pre-registered sensitivity run} repeats the federated comparison on all 6.36\,M rows with
+the same split, so ``did the subset change your conclusion?'' will be answered by a measurement, not an
+argument.
+\end{decision}
+
+\begin{warnbox}{PaySim's time order carries the label}
+Every earlier dataset had the same shape: shuffle the rows inside each time step, and the previous
+transaction tells you nothing about the next one (ULB, BankSim, the Handbook: a lift of about
+1$\times$). PaySim breaks that. Even after the shuffle, a fraud is followed by another fraud
+\textbf{151.6$\times$} more often than chance. The reason is in the simulator: after hour 400 the ordinary
+traffic collapses while the fraud continues, so fraud climbs from 0.14--0.26\% of transactions to 0.86,
+1.24 and then \textbf{3.71\%} --- and most of the test period sits in that tail.
+
+So on PaySim the ``global window'' arm is \emph{not} a no-signal control, and linking by receiving account
+carries almost nothing (1.30$\times$; senders cannot be linked at all --- 99.87\% appear once). The
+pre-registration therefore predicts, in advance, that global windows will beat linked ones here --- and
+says that this would be read as the artefact, not as evidence that linkage fails.
+\end{warnbox}
+
+\begin{center}\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{@{}p{2.3cm} p{3.9cm} X@{}}
+\toprule
+\textbf{Dataset} & \textbf{What the rows carry} & \textbf{What it can and cannot test} \\
+\midrule
+\textbf{Handbook} & 35 row features; links: customer 13.35\x{}, terminal 71.65\x{} & Everything BankSim tested, plus a second linked ordering at one-second resolution. Runs on the laptop. \\
+\textbf{PaySim} & 39 row features, balances included; logistic reference MCC 0.261 & The stratified split only --- no banks and no sender history. Its global windows carry a time artefact. \\
+\textbf{AMLSim} & 9 row features, and they carry \textbf{nothing} (logistic MCC 0.0001); links: sender 26.0\x{}, receiver 41.5\x{} & The only native banks --- but three of them, so the two sweeps that need 5--12 banks cannot run natively, stated as such. The label is laundering. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{keybox}{Three pre-registrations, all approved before any run}
+Each is in \texttt{TASK.md}, and each was drafted, shown to the team lead and approved as written before
+its first job could start --- the Handbook's runner will not start until its header reads APPROVED. The
+questions they share: \textbf{(a)} is Krum's utility cost specific to BankSim? (the same thresholds on every
+dataset); \textbf{(b)} does ``isolation fires but does not help'' hold again? \textbf{(c)} does the
+privacy-channel ordering hold again? \textbf{(d)} do linked windows --- and does our own architecture ---
+exploit time? Two are dataset-specific: PaySim's \textbf{(e)} tests whether restricting the rows changed any
+conclusion, and AMLSim's \textbf{(f)}--\textbf{(g)} predict that it sits at the floor under the shuffled split
+and that linked windows lift it off.
+\end{keybox}
+
+\begin{keybox}{An open question answered: the reproduction failure does not reach the detector}
+Open question Q2 of 5 September asked whether the unexplained ULB reproduction failure reaches the
+detector numbers. \textbf{It does not.} Both stored detector runs from 31 August were re-run on
+11 September and came out \textbf{bit for bit identical} --- the same trained weights (hashes
+\texttt{e42481fb\ldots} and \texttt{799674f6\ldots}) and the same MCC (0.6461 and 0.7465). The detector
+headline sits on a state that still exists; the failure stays confined to the private-incentive sweep.
+\end{keybox}
+
+\subsection{First results from the new datasets (12 September)}
+\label{sec:firstresults}
+
+PaySim and AMLSim ran on Kaggle overnight: 29 jobs and 28.8 hours of session time, and all 29 finished
+cleanly in the end. Two had to be re-run: one because AMLSim is too small for a sweep's fixed design
+(Decision~18), the other because Kaggle refused it while its command-line tool reported success
+(Decision~13). Every verdict
+below is scored against a pre-registration written \emph{before} the run, and sits underneath the original
+wording in \texttt{TASK.md}. The Handbook ran next on the laptop, and its items are scored further below.
+
+\begin{center}\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{@{}p{0.75cm} >{\raggedright\arraybackslash}p{4.5cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{2.35cm}@{}}
+\toprule
+\textbf{Item} & \textbf{Pre-registered prediction} & \textbf{Measured} & \textbf{Verdict} \\
+\midrule
+\multicolumn{4}{@{}l}{\itshape PaySim, stratified split (Kaggle)} \\[1pt]
+(a) & Krum costs balanced accuracy in \atleast5 of 8 cells, and in most clean cells & Negative in \textbf{2 of 8}, both on contaminated baselines; on the 4 clean cells Krum is \emph{ahead}, $+3.8$ to $+19.2$\,pp & \WRONG \\
+(b) & Isolating a lone attacker improves accuracy in 0 of 3 cases & 0 of 3 (it fires in 2 of 3) & \HELD \\
+(c) & The output channel inverts rewards less often than the weight channel at \atleast10 of 11 noise levels & 11 of 11, under both readings & \HELD \\
+(d) & Global windows beat receiver-linked ones for \atleast4 of 7 models (the time artefact) & Receiver-linked windows win for \textbf{6 of 7} & \WRONG{} --- the named alternative holds \\
+    & Global windows beat the per-transaction model for \atleast5 of 7 & 5 of 7 --- one of them by $+0.0014$, inside seed noise & \HELD, at the threshold \\
+    & ADTCN is not first under either window type & 7th of 7 and 4th of 7 & \HELD \\
+(e) & Adding the 3.59\,M fraud-free rows raises FedAvg accuracy, moves its MCC by at most 0.05 and changes no ordering & Accuracy $+1.35$\,pp, MCC $-0.0098$, same order; DP at 0.012 and 0.001 & \HELD \\
+\midrule
+\multicolumn{4}{@{}l}{\itshape IBM AMLSim (Kaggle)} \\[1pt]
+(f) & Shuffled split: FedAvg stays below MCC 0.05 & $-0.011$ --- none of the 106 laundering cases caught & \HELD; so (a)--(c) are untestable there \\
+(g) & Native banks: FedAvg rises above 0.05 & $+0.158$ (82 of 106 caught) & \HELD \\
+(a) & Krum's utility cost & Needs 5 and 7 banks; there are 3 & \textcolor{steel}{\textbf{\small NOT TESTABLE}} \\
+(b) & Isolation helps in 0 of 3 cases (native banks) & 0 of 3 (it fires in 2 of 3) & \HELD \\
+(c) & The output channel inverts less often at \atleast10 of 11 levels (native banks) & \textbf{11 of 11} no more often; \textbf{8 of 11} strictly less often & \textcolor{steel}{\textbf{\small TWO SCORES,\newline NO VERDICT}} \\
+(d) & Linked windows beat global ones for every model, under both linked orderings & \textbf{14 of 14} & \HELD \\
+    & The receiver link gains more than the sender link for \atleast5 of 7 models & \textbf{0 of 7} --- the sender link gained more for every model & \WRONG \\
+    & Global windows stay within 0.05 MCC of the per-transaction model & 7 of 7; largest gap 0.006, everything at the floor & \HELD \\
+    & ADTCN is not first under any ordering & First under global windows --- by 0.0002 MCC, with all seven at the floor; 2nd and 5th under the linked ones & \WRONG{} as written \\
+    & ADTCN $-$ DTCN $\le 0$ under both linked orderings & $+0.048$ (sender) and $+0.015$ (receiver), each inside one seed s.d. & \WRONG \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{warnbox}{Two PaySim predictions were wrong --- and both point towards ULB, not BankSim}
+\textbf{Krum's utility cost is not a general property of non-ULB data.} We predicted PaySim would repeat
+BankSim, where choosing one bank's update instead of averaging costs accuracy. On every PaySim cell whose
+baseline is clean, Krum \emph{protected} accuracy instead: the scaled and Gaussian attacks cut unprotected
+FedAvg by 7.6 to 19.2\,pp, and Krum lost none of it. That is ULB's pattern. Neither named falsifier
+threshold was reached either (Krum ahead in 4 of 8 cells, where 5 were needed), so this is a failed
+prediction leaning towards the alternative, not a clean reversal. Whether the cost is specific to BankSim
+now waits on the Handbook.
+
+\textbf{Linking a receiver's transactions helps even where time order carries the label.} We expected
+PaySim's 151.6\x{} time clustering to make plain time-ordered windows win. Instead, linking by receiving
+account won for six of seven architectures. Our own ADTCN gained the most from the link ($+0.119$ MCC) and
+still ranked only fourth; under plain time order it ranked last.
+\end{warnbox}
+
+\begin{keybox}{AMLSim: the rows carry nothing, the links carry the signal}
+Under a shuffled split the federation catches none of the 106 laundering cases in the test set (MCC
+$-0.011$), exactly as pre-registered: AMLSim's rows carry no signal. Under the three native banks, where
+each bank's training windows are its own senders' histories, FedAvg reaches MCC $0.158$. That lift moves
+the split \emph{and} the windows together, so it is never quoted as a partition effect.
+
+With the federation off the floor, both incentive results replicate on a fourth condition. Isolation fires
+on 2 of 3 lone attackers and helps on none, and two colluding banks are still caught ($+6.4$ and
+$+28.6$\,pp). For the privacy channel, the two readings of the pre-registered criterion disagree: the
+output channel inverts no more often than the weight channel at 11 of 11 noise levels, and strictly less
+often at 8 of 11. The other three are levels where both channels rank the banks perfectly. By the team
+lead's rule, \textbf{we give both scores and no verdict} (Decision~19).
+
+\emph{Not pre-registered:} the fair-share split under the native banks is $[0.550, 0.316, 0.135]$,
+tracking the banks' sizes --- the first condition in this project where the incentive layer has something
+non-uniform to attribute.
+\end{keybox}
+
+\begin{warnbox}{AMLSim's architecture grid: the links carry everything --- and three of five predictions were wrong}
+As pre-registered, linking a sender's or a receiver's transactions lifts every one of the seven
+architectures from the floor (MCC about 0.003) to between 0.12 and 0.36. Three details went the other way:
+\begin{itemize}
+  \item \textbf{The sender link helped more than the receiver link, for all seven models.} The
+  reconnaissance figures (receiver 41.5\x, sender 26.0\x) had predicted the reverse. The grid's own
+  measure, taken on the orderings the models actually saw, ranks the two links the other way round
+  (187\x{} against 178\x).
+  \item \textbf{Our ADTCN came first under plain time order}, by 0.0002 MCC with every model at the
+  floor --- a ranking of noise. The prediction said ``under any ordering'', so it is scored as wrong.
+  \item \textbf{Its attention layer beat the no-attention version under both linked orderings}, which we
+  had predicted it would not --- by less than one seed's spread each time.
+\end{itemize}
+The named alternative did not happen: ADTCN was not first under a linked ordering. It came second and
+fifth; ResNet-1D led both.
+\end{warnbox}
+
+\begin{warnbox}{The Handbook's first sweep breaks a claim we had called safe}
+The Handbook suite started at 04:03 and its first sweep landed at 06:11; the rest runs for about another
+29 hours. Two results are already in.
+
+\textbf{(a) is wrong, in the same direction as PaySim.} Krum costs balanced accuracy in 4 of 8 cells
+against the 5 predicted, and in 1 of the 5 clean cells against the majority predicted. Neither named
+falsifier threshold is reached either. Taken with PaySim, the utility cost now looks like a \emph{BankSim}
+property: negative in 7 of 8 and 8 of 8 there, against 1 of 8 on ULB, 2 of 8 on PaySim and 4 of 8 here.
+
+\textbf{And Krum did not reject the attacker 8 times out of 8.} Every condition until now rejected all
+eight, and the pre-registration called that ``held by construction, not a finding''. On the Handbook it is
+6 of 8: under \emph{label-flip}, at both federation sizes, the poisoned organisation is the one Krum
+picks. It is not an outlier in weight space --- it scores \emph{below every honest organisation} (894
+against 914--995 at five banks; at seven banks both attackers rank first and second). The three attacks
+that change an update's magnitude are still rejected, their scores two to three orders of magnitude out.
+The cost is real: Krum's accuracy falls 18.64 and 11.77\,pp below its own no-attack reference.
+
+Why a label-flipped model sits closer to the centre than the honest ones is \textbf{not established
+here}, and we assert no mechanism. What changes today is the claim: the security property holds in five
+of six conditions, not everywhere.
+
+\textbf{Confirmed on the second partition (12:23).} Under the Handbook's customer split the attacker is
+caught 7 of 8 --- the same attack, label-flip, at seven banks, with the poisoned model again scoring below
+every honest one, and Krum's accuracy falling 13.4\,pp below its own reference. At five banks that attack
+did not capture Krum. Across the Handbook's two partitions the defence misses \textbf{2 of 16 cells}, so
+this is not an artefact of one split.
+\end{warnbox}
+
+\begin{warnbox}{The same blindness breaks the incentive layer's collusion catch}
+The Handbook's second sweep, at 07:18, makes the point twice over. \textbf{No organisation is ever
+isolated --- in any of the six scenarios} --- so every accuracy gap is exactly zero, including the
+two-attacker collusion cases that were caught in all five earlier conditions (by $+6.4$ to $+89.7$\,pp).
+
+The mechanism is visible in a single number. The layer lowers an organisation's reputation when its share
+of the fair-contribution split falls below an equal share (a third, with three banks). On BankSim the
+attacked bank scores 0.18, so its reputation hits the floor by round 3 and it is dropped with no tokens.
+On the Handbook the attacked bank scores \textbf{0.336 against an equal share of 0.333} --- so its
+reputation drifts \emph{upward} over the twelve rounds, while an honest bank, at 0.326, drifts down. The
+defence is not merely silent here; it is very slightly pointed the wrong way.
+
+So on this dataset \textbf{both defences fail on the same attack for the same reason}: Krum's distance
+test and the incentive layer's contribution test each rate a label-flipped model as normal or better. The
+pre-registered lone-attacker prediction (``improves accuracy in 0 of 3 cases'') does still hold here, but
+it holds \emph{vacuously} --- nothing fires, so nothing can help. That is worth considerably less than the
+five conditions where the mechanism fired and still did not help, and it is quoted that way.
+
+\textbf{The second partition made it worse, not better (13:17).} Under the customer split nothing is
+isolated either --- twelve scenarios across the two partitions, every gap exactly zero --- but here the
+contribution split is no longer flat, and it points the wrong way. In all three lone-attacker runs the
+layer ends up ranking an \emph{honest} bank as the worst contributor: against always-fraud the attacker
+finishes at reputation 1.007 while an honest bank falls to 0.529, and against label-flip the attacker
+finishes at 1.044 while an honest bank sits at \textbf{0.507 --- seven thousandths above the threshold at
+which the system expels a participant.} A slightly longer run would have thrown out the honest bank and
+kept the attacker. Against two colluding banks the ordering is at least correct, but far too slow to reach
+the threshold within the twelve rounds. Why the attribution mis-ranks here is \textbf{not established},
+and we assert no cause.
+\end{warnbox}
+
+\begin{warnbox}{The Handbook's own models sit just below the floor --- what that does and does not change}
+The federated ablation finished at 10:27 and puts the Handbook's plain federated model at \textbf{MCC
+0.0439}, six thousandths under the 0.05 floor line. Every table and figure in this report now marks that
+column, exactly as it marks AMLSim's shuffled split.
+
+\textbf{It is not AMLSim's kind of floor.} AMLSim's model catches 0 of 106 laundering cases --- inert. The
+Handbook's catches \textbf{1{,}422 of 3{,}177} (44.8\% recall) at 1.62\% precision: weak, and swamped by
+86{,}547 false positives, but not nothing.
+
+\textbf{What we are not doing is re-labelling this morning's results.} The Handbook's pre-registration has
+no floor clause --- that was AMLSim's item (f), written for AMLSim before AMLSim ran. Converting three
+already-scored items into ``untestable'' after seeing the ablation land just under a threshold borrowed
+from another dataset would turn a failed prediction into a non-result. The items stay scored as written,
+and the floor is reported beside them (Decision~21).
+
+\textbf{What it does change is how much they carry.} A weak model is a plausible reason why neither
+defence could separate the attacker here, and both failures are consistent with it.
+
+\textbf{The customer split, which ran next, did not settle it.} We expected that split to be far stronger,
+because entity grouping lifts every other dataset in this project. In the \emph{sweeps} it is not: their
+no-attack federated model scores 63.4 and 62.1\% balanced accuracy against 63.4 and 60.8\% on the
+stratified split --- the same within noise. So the hypothesis stays untested, and what the second
+partition did establish is that the security failure is not confined to one split.
+
+\textbf{Correction, added at 16:01 when the customer ablation landed.} An earlier draft of this box drew a
+second conclusion --- that on the Handbook, grouping by entity does not lift the models at all. \textbf{On
+the ablation that is wrong, and we are striking it.} With every other setting held identical and only the
+partition changed, the plain federated model goes from \textbf{MCC 0.0439 to 0.1500} --- more than three
+times better, and over the floor. What does not lift is the \emph{window} grouping, which is a different
+knob: the grid loses MCC under both linked orderings. \textbf{These two point in opposite directions on
+this dataset}, which is precisely the separation our own control forced us to make in September. Note the
+comparison is not clean --- the sweeps score balanced accuracy on unlinked windows, the ablation scores
+MCC on customer-linked ones --- so the lift is established \emph{for the ablation}, and why the two
+disagree we do not know.
+\end{warnbox}
+
+\begin{keybox}{Weight-channel privacy destroys the model in every condition that can show it}
+Nine conditions now have a federated ablation. In the seven where the plain federated model works at all
+(MCC \atleast{} 0.05), adding privacy noise to the weights drops it below that floor in \textbf{all seven}:
+ULB, both BankSim splits, both PaySim row scopes, AMLSim's native banks and --- new at 16:01 --- the
+Handbook's customer split. The other two, AMLSim's shuffled split and the Handbook's stratified split,
+start at the floor and cannot show anything. How the collapse looks on accuracy is not stable, and
+\textbf{it has now twice been invisible}: on PaySim accuracy \emph{rose} 1.16\,pp while MCC fell from 0.428
+to 0.012, and on the Handbook's customer split it \emph{rose} 0.64\,pp while MCC fell from 0.150 to
+$-0.005$. Changing nothing but which PaySim rows are included swings the collapsed model's accuracy from
+98.70\% to 28.22\%, with MCC near zero both times.
+\end{keybox}
+
+\begin{warnbox}{Two more things the Handbook's customer ablation says, one of them about our own detector}
+\textbf{Krum costs accuracy here after all.} On the stratified split Krum was one of only two conditions
+where it \emph{helped} the ablation ($+0.0081$). On the customer split it costs $-0.0411$ MCC. So the list
+of conditions where Krum helps shrinks back to ULB and the Handbook's own floor-bound stratified split,
+and it is negative in 7 of the 9 conditions we have measured.
+
+\textbf{And our own detector degenerates on this split.} DB-BOA-ADTCN reaches MCC $+0.0022$ by flagging
+\emph{everything}: all 3{,}177 frauds caught, 351{,}280 false positives, specificity 0.05\%, overall
+accuracy \textbf{0.95\%}. That is not a weak detector, it is a constant-positive one, and we would rather
+say so in a box than leave it to be found in a table.
+\end{warnbox}
+
+\begin{warnbox}{The privacy channel ordering fails for the first time --- on the Handbook's customer split}
+The claim this project is built around is that a bank should publish a \emph{noised contribution} rather
+than noised model weights, because the published channel scrambles the reward ranking less. We
+pre-registered it as: the published channel inverts rewards less often at \textbf{at least 10 of the 11
+noise levels, on each partition}. The Handbook's customer sweep finished at 14:09 and reaches \textbf{9 of
+11}.
+
+\textbf{This one is not a counting argument.} The stratified half had been ambiguous --- 10 of 11 if ties
+count in the claim's favour, 9 of 11 if they do not --- so we reported it as two scores and no verdict.
+The customer half has \textbf{no ties at all}, so both ways of counting give the same 9. And because the
+prediction was written ``on each partition'', \textbf{the item fails whichever way the stratified half is
+read}. We are not using the customer result to settle the stratified one: that half still gets quoted as
+two scores.
+
+\textbf{What did not fail is the direction.} At the noise level the pre-registration singles out, the
+published channel still ranks banks far better than the weight channel does, on both splits ($+0.057$
+against $+0.835$ stratified, $+0.096$ against $+0.630$ customer). The criterion that fails is the
+inversion \emph{rate}, and it fails at the two gentlest noise settings, where \emph{both} channels are
+already inverting 75--88\% of draws --- points our pre-registration said in advance would count against
+us, and named as such.
+
+\textbf{Two further cautions from the same file.} On the customer split the weight channel is
+\emph{censored}: 29 of 100 draws still invert at the strongest noise we tested, so its threshold lies
+outside the grid entirely. And the published channel's threshold there is decided by \textbf{2 draws out
+of 100}, against the fragility line of 5 that this project set for itself --- so that number is not
+quotable, and we do not quote it.
+\end{warnbox}
+
+\begin{warnbox}{The window grid: the entity that concentrates fraud the most produces the \emph{worst} windows}
+The Handbook's 21-cell grid --- 7 architectures $\times$ 3 window orderings, 3 seeds each --- finished on
+Kaggle and was merged at 15:09. \emph{Provenance matters here:} these cells ran on Kaggle, not the laptop,
+so every comparison inside the grid is sound, but Handbook-versus-BankSim \emph{architecture} comparisons
+are now environment comparisons too, and are marked wherever they appear.
+
+We predicted that entity-linked windows would beat unlinked ones for every architecture under both
+linkings --- 14 of 14. \textbf{We got 3 of 14.} Grouping by terminal helped \textbf{0 of 7}; grouping by
+customer helped 3. We further predicted that terminal grouping would beat customer grouping for at least
+5 of 7 architectures, because we had \emph{measured} terminal windows to be far more fraud-dense.
+\textbf{It wins for 1 of 7, and the sign is backwards.}
+
+\textbf{The measurement that motivated the prediction is not in doubt --- the grid reproduces it.} A
+transaction whose predecessor is fraudulent is 1.01 times as likely to be fraud under unlinked windows,
+\textbf{13.4} times under customer windows and \textbf{72.1} times under terminal windows. So the
+strongest concentration of fraud we can construct is also the one that trains the worst models: terminal
+windows lose MCC for all seven architectures, and even plain unlinked windows beat them for all seven.
+\textbf{Fraud adjacency does not predict learnable signal here; it inverts.} This directly contradicts
+what BankSim told us, where linked windows helped every architecture. \textbf{We do not know why, and we
+are not going to guess} --- but it is the third result in this one suite pointing the same way: the
+customer split did not strengthen the models either, and neither defence can separate a poisoned bank.
+
+\textbf{On our own architecture, the news is mixed and does not rescue it.} We predicted ADTCN would not
+rank first under any ordering, and it does not --- 2nd, 4th and 6th of 7. That is the one Handbook
+prediction of the four that held. But we also predicted ADTCN would not beat its own no-attention
+ablation on either linked ordering, and on terminal windows it does, by $+0.0068$. ADTCN's 2nd place
+under unlinked windows is its best placing anywhere in this project; it is also on the ordering we treat
+as the control, it falls to 4th and 6th once linkage is applied, and DTCN passes it on terminal.
+\textbf{The architecture verdict is unchanged.}
+\end{warnbox}
+
+\begin{warnbox}{The ULB ablation was regenerated --- and its numbers moved}
+The quotable list (Section~\ref{sec:quotable}) told us not to use the ULB federated ablation until the
+repaired search had been re-run. It was re-run on 12 September. The search now picks 117 hidden units and
+203 steps per epoch, where the 30 August run used 142 and 76, and the ULB column moved:
+\begin{itemize}
+  \item FedAvg went from 0.569 to 0.425 MCC;
+  \item FedAvg+Krum went from 0.776 to 0.751, so Krum's advantage with no attacker grew from $+0.207$ to
+  $+0.326$;
+  \item \textbf{the privacy collapse flipped direction.} The old collapsed model flagged nothing; the new
+  one flags 43{,}089 transactions, and accuracy falls 75\,pp.
+\end{itemize}
+So the \emph{direction} of a privacy collapse is not a property of the dataset: it changed between two ULB
+runs that differ in their searched settings. The collapse itself, MCC $\approx 0$, is the stable part. The
+figures in Section~\ref{sec:comparisons} use the regenerated file; the old one is kept in version control
+(commit \texttt{ccdd19f}).
+\end{warnbox}
+
+\begin{keybox}{And the pipeline itself reproduces bit for bit}
+The whole ULB pipeline was run again on 12 September (01:49--04:03) and compared against a snapshot of
+the run before it. Of the 16 fields its results file carries from phases 1--7, \textbf{15 are identical}.
+The one that differs is a UTC timestamp inside the federation rounds; every value inside those rounds
+matches exactly --- the hash of the global model weights, the Shapley values, the Krum scores, the
+aggregation weights, the coalition values and the per-organisation contributions.
+
+The re-run also restored the attack-simulation section that a separate bug had cut off (15 rounds, 15
+disputed, 70 tokens). So on ULB the pipeline is reproducible end to end, and the unexplained reproduction
+failure of 4 September stays confined to the private-incentive sweep --- which is exactly where open
+question Q2 left it.
+\end{keybox}
+
+\begin{decision}{18 --- AMLSim is too small for one sweep's fixed design}
+\qlabel{Question raised:} The scalability sweep gives each of up to 20 banks 8{,}000 training rows.
+AMLSim's training period holds 138{,}514, room for 17, so the job crashed after 5.5 seconds. Shrink every
+bank's share until 20 fit, drop the sweep, or stop the range where the data runs out?
+
+\qlabel{Decision taken:} Stop the fast estimator's range at 16 banks instead of 20, keep everything else,
+and write the change into \texttt{TASK.md} before any AMLSim scalability number existed.
+
+\qlabel{Why:} shrinking the shares would change the controlled variable at every federation size and break
+comparability with the other datasets. Dropping the sweep would throw away both pre-registered statements,
+which are read on 3 to 12 banks. Because banks are cut in order with fixed seeds, every size that is kept
+is identical to what the full design computes --- checked bit for bit on AMLSim and on ULB.
+
+\qlabel{Outcome:} the re-run finished cleanly, and both statements came out as pre-registered on PaySim
+and AMLSim. The exact calculation's cost is structural: 69.6 and 62.0\,s for 12 banks on Kaggle, against
+113.5 to 140.3\,s on the laptop --- a difference of machine, not of data. The fast estimator still picks the
+top contributor only intermittently, at 3 of 10 sizes on both.
+\end{decision}
+
+\begin{decision}{19 --- A pre-registered criterion scores differently under two readings}
+\qlabel{Question raised:} AMLSim's item (c) says the output channel inverts ``less often'' than the
+weight channel. Read strictly, that holds at 8 of 11 noise levels, below the threshold of 10. Read as ``no
+more often'' --- the statistic that scored every earlier condition --- it holds at 11 of 11. The three
+disputed levels are ties where both channels rank perfectly. Call it held?
+
+\qlabel{Decision taken (team lead):} No verdict. Wherever two readings of a pre-registered criterion
+disagree, the report gives both scores and no held/not-held label.
+
+\qlabel{Why:} the strict wording was a drafting error --- under it, every earlier condition would also
+score only 9 of 11 --- but a pre-registration is not reworded after its result is known.
+\end{decision}
+
 % =====================================================================
 \section{The decision log}
 
@@ -1432,6 +1958,16 @@ the choices which produced the most value were mostly the ones that went looking
 9 & The 30 August ULB result does not reproduce. Name a cause? & \textbf{Record it as unexplained.} Guessing the torch version would be inventing a cause. & Two ULB files marked not-quotable, and environment stamping now shipped in every sweep result file. \\
 10 & Consolidate or expand, with 15 days left? & \textbf{Consolidate first}, then expand; writing block protected. & The surrogate repair had to precede any third dataset, or that dataset's search arm would be generated on a search we already knew was broken --- and paid for twice. \\
 11 & Commit the extension, or keep iterating? & \textbf{Commit.} About 20\,h of results existed only as untracked files. & Two commits on a branch; and a \texttt{.gitignore} rule written for LaTeX was found to be silently swallowing \emph{experiment run logs}. \\
+12 & Keep gating datasets on what they can overturn (Rule~8)? & \textbf{No --- suspended by the team lead.} Run and compare all five. & PaySim and AMLSim measured by 12 September, and five of their predictions were wrong; the Handbook is queued; what each cannot test is written down, not skipped. \\
+13 & Where to run three more datasets? & \textbf{Laptop for ULB and the Handbook, Kaggle for PaySim and AMLSim}, with the laptop's library versions pinned and four threads. & Each dataset stays on one machine; the first test job found two ways the Kaggle path would have failed (dropped empty folders, an ignored thread setting), and overnight a refused job that the tool had reported as sent was found and re-run. \\
+14 & AMLSim: the real simulator or IBM's pre-generated substitute? & \textbf{The real simulator} (team lead), its configuration applied by a pinned script. & A reproducible dataset with native banks --- after one discarded first attempt (row 16). \\
+15 & PaySim: all rows, or the two types that hold every fraud? & \textbf{The two types}, plus a pre-registered all-rows sensitivity run. & Every fraud kept, no padding with trivially classified negatives, every job inside Kaggle's 12-hour limit. \\
+16 & Our first AMLSim data tied bank to label. Adjust it, or discard it? & \textbf{Discard and regenerate} before any model trained on it. & Bank volumes 94.6/5.1/0.2\% $\to$ 50.1/30.0/19.9\%; the bank columns stop predicting anything. \\
+17 & The control's ``partition effect'' also changed the training windows. Quietly fix it, or rescope in writing? & \textbf{Rescope in writing}: a warning box beside the table, and a row in Section~\ref{sec:quotable}. & The withdrawal survives (its decisive comparison was clean); every partition effect is now quoted as ``entity-disjoint split plus linked training windows''. \\
+18 & AMLSim holds 17 of the 20 banks one sweep needs. Shrink the banks, drop the sweep, or cut the range? & \textbf{Cut the range at 16}, written down before the run. & Both pre-registered statements measured on the untouched 3--12 range; every size kept is identical to the full design. \\
+19 & One pre-registered criterion scores 11/11 or 8/11 depending on the reading. Label it? & \textbf{No verdict --- both scores} (team lead). & The rule now binds every dataset, and the report, the brief and any slide. \\
+20 & The report's ULB accuracy example had the wrong sign. Correct it quietly? & \textbf{No --- correct it where it stood}, in a dated box. & The example now comes from PaySim on current files; the regenerated ULB run had flipped the collapse direction anyway. \\
+21 & The Handbook's ablation lands 0.006 under a floor borrowed from AMLSim's pre-registration, \emph{after} three of its items were scored. Re-label them untestable? & \textbf{No --- keep them scored as pre-registered}, and report the floor beside them. The Handbook's own pre-registration has no floor clause. & A failed prediction stays a failed prediction; the floor is context, not an eraser. Both defence failures are about \emph{selection}, not accuracy, so they stand either way. \\
 \bottomrule
 \end{xltabular}}
 
@@ -1441,7 +1977,10 @@ the choices which produced the most value were mostly the ones that went looking
 
 This is the scoreboard. For each of the six promises in the thesis title: which datasets it has now been
 tested on, and what the evidence says after the period. \textbf{Bold text marks what changed in these
-six days.}
+six days.} The PaySim and AMLSim results of 12 September are included wherever they exist
+(Section~\ref{sec:firstresults}), and so are the Handbook's, whose four pre-registered items were all
+scored on 12 September. A condition counts as \emph{testable} only
+if its plain federated model is above the pre-registered floor of MCC 0.05.
 
 \begin{center}\small
 \renewcommand{\arraystretch}{1.2}
@@ -1449,11 +1988,11 @@ six days.}
 \toprule
 \textbf{The promise} & \textbf{Tested on} & \textbf{Where it stands now} \\
 \midrule
-\textbf{Secure} \newline {\footnotesize (the privacy half)} & 2 datasets, 3 conditions & \textbf{Holds --- and the second dataset revealed something new.} Adding privacy noise to the weights destroys the model everywhere (MCC drops to roughly 0). But \emph{how} it fails differs: on ULB the wrecked model flags nothing, and plain accuracy records the disaster as a fall of $0.11$\,pp. On BankSim it flags everything --- 119{,}784 false alarms --- and accuracy falls $97.55$\,pp. \textbf{Same failure, one dataset reporting it as harmless.} That is an argument for our choice of score as much as for the privacy claim itself. \\
-\textbf{Secure} \newline {\footnotesize (the attack half)} & 2 datasets, 3 conditions & \textbf{The security property holds everywhere: the attacker is caught 8 times out of 8 in all three conditions.} What changed is the explanation for its accuracy cost. Krum can cost accuracy, the amount tracks the \emph{dataset}, and \textbf{our explanation for why is withdrawn} with nothing yet in its place. \\
-\textbf{Incentivized} \newline {\footnotesize (catching cheats)} & 2 datasets, 3 conditions & \textbf{Holds three times over.} Two banks colluding are caught in every condition ($+40.78/+44.39/+47.40$ and $+79.52/+86.95/+89.73$ on the two attack types). But the lone-attacker story changed: the isolation mechanism now \emph{fires} on BankSim (3 of 3, versus 0 of 3 on ULB) while \textbf{improving accuracy in 0 of 3 cases in every condition}. It goes off, and it does not help. That negative result is now solid across three conditions. \\
-\textbf{Incentivized} \newline {\footnotesize (privacy vs rewards)} & 2 datasets, 3 conditions & \textbf{The core contribution holds everywhere.} Noising the published contribution beats noising the weights at 12 out of 12 tested noise levels, and 11/11, 11/11, 10/11 across the full range --- the one exception being the most extreme setting, where \emph{both} approaches fail almost completely. \textbf{The ``improvement factor'' is retired as a headline}; the ranking gap at a stated noise level carries the claim instead. \\
-\textbf{Scalable} \newline {\footnotesize (fair attribution)} & 2 datasets, 3 conditions & The exact fairness calculation is expensive, and that cost is \textbf{structural} rather than dataset-specific (113.5 / 140.3 / 120.6\,s for 12 banks over the same 4{,}095 combinations) --- confirmation, not news. \textbf{``The fast approximation fails from about 6 banks onward'' is withdrawn}: the failures are intermittent (5/10, 5/10, 3/10) with no threshold at all. Worse, below about 10 banks the ``fast'' version is barely faster, and on ULB with 5 banks it is \emph{slower} than doing it exactly. \\
+\textbf{Secure} \newline {\footnotesize (the privacy half)} & 5 datasets, 9 conditions, 7 testable & \textbf{Holds in all seven testable conditions}: adding privacy noise to the weights drops MCC below 0.05 in each. Two conditions start at the floor and cannot show it --- AMLSim's shuffled split and the Handbook's stratified split. \emph{How} the model fails is not stable: the regenerated ULB model flags 43{,}089 transactions where the 30 August one flagged none, and on BankSim/entity-disjoint it flags 119{,}784. On PaySim, accuracy \emph{rose} 1.16\,pp while MCC fell from 0.428 to 0.012, and on the Handbook's customer split it \emph{rose} 0.64\,pp while MCC fell from 0.150 to $-0.005$. \textbf{Same failure, sometimes reported as harmless} --- an argument for our choice of score as much as for the privacy claim itself. \\
+\textbf{Secure} \newline {\footnotesize (the attack half)} & 5 datasets, 7 conditions (two at the floor) & \textbf{The security property has its first exceptions.} The attacker is caught 8 times out of 8 in five conditions --- ULB, both BankSim splits, PaySim and AMLSim --- and fails on \emph{both} Handbook partitions: 6 of 8 under the stratified split and 7 of 8 under the customer split. Every failure is the same attack, \emph{label-flip}, and Krum's accuracy falls 18.6, 11.8 and 13.4\,pp below its own no-attack reference. That poisoned model is not an outlier in weight space; it scores \emph{lower} than every honest organisation. The accuracy cost does not generalise either: on PaySim's clean cells Krum \emph{protects} accuracy ($+3.8$ to $+19.2$\,pp), ULB's pattern, and the prediction that PaySim would repeat BankSim was wrong. \textbf{Our explanation for the cost stays withdrawn}, and the security claim now carries the Handbook caveat. \\
+\textbf{Incentivized} \newline {\footnotesize (catching cheats)} & 5 datasets, 8 conditions, 5 testable & \textbf{Held five times, then failed on both Handbook splits.} Two colluding banks are caught on ULB, both BankSim splits, PaySim and AMLSim's native banks ($+40.78/+44.39/+47.40/+37.71/+6.44$ and $+79.52/+86.95/+89.73/+72.64/+28.59$\,pp on the two attack types). \textbf{On neither Handbook split are they caught at all:} no organisation is ever isolated, in any of the twelve scenarios, so every gap is exactly zero. Worse, under the customer split the layer ranks an \emph{honest} bank lowest in all three lone-attacker runs --- one finishes 0.007 above the isolation threshold while the attacker's reputation \emph{rises} above where it started --- so a slightly longer run would have expelled the honest participant and kept the attacker. The lone attacker: isolation fires in 0 to 3 of 3 depending on the condition and \textbf{improves accuracy in 0 of 3 everywhere} --- on the Handbook only vacuously, because it never fires. \\
+\textbf{Incentivized} \newline {\footnotesize (privacy vs rewards)} & 5 datasets, 8 conditions, 5 testable & \textbf{The core contribution held everywhere it could be tested until 12 September, and then the Handbook's customer split failed it.} Noising the published contribution beats noising the weights at 12 out of 12 tested noise levels, and inverts rewards no more often at 11/11, 11/11, 10/11 across the full range on ULB and BankSim --- the one exception being the most extreme setting, where \emph{both} approaches fail almost completely. Also \textbf{11/11 on PaySim} (strictly less often at all 11) and \textbf{11/11 on AMLSim's native banks} (strictly less often at 8; no verdict, by Decision~19). \textbf{The Handbook splits it.} Its stratified half reaches 10/11 one way of counting and 9/11 the other, so it gives no verdict either. Its \textbf{customer half reaches 9 of 11 under \emph{both} counts} --- below the pre-registered 10 --- with two counter-examples rather than one, and both at settings where \emph{both} channels invert 75--88\% of the time. The prediction was made ``on each partition'', so \textbf{the item is scored wrong whichever way the stratified half is read.} The ranking gap at $\eps = 50$ still points the predicted way on both Handbook splits ($+0.057$ against $+0.835$ stratified; $+0.096$ against $+0.630$ customer), so what fails is the inversion-rate criterion, not the direction of the effect. \emph{Also on the customer split:} the weight channel is censored --- 29 of 100 draws still invert at the top of the grid --- and the published channel's threshold rests on 2 draws against this project's own fragility line of 5, so \textbf{that threshold is not quotable}. \textbf{The ``improvement factor'' stays retired as a headline}; the ranking gap at a stated noise level carries the claim instead. \emph{The Handbook's customer ablation has since landed above the floor, so this condition is testable.} \\
+\textbf{Scalable} \newline {\footnotesize (fair attribution)} & 4 datasets, 5 conditions & The exact fairness calculation is expensive, and that cost is \textbf{structural} rather than dataset-specific: 113.5 / 140.3 / 120.6\,s for 12 banks on the laptop and 69.6 / 62.0\,s on Kaggle (PaySim, AMLSim), over the same 4{,}095 combinations --- the spread is the machine, not the data. Confirmation, not news. \textbf{``The fast approximation fails from about 6 banks onward'' stays withdrawn}: the failures are intermittent (5/10, 5/10, 3/10, 3/10, 3/10) with no threshold at all. Below about 10 banks the ``fast'' version is barely faster, and on ULB with 5 banks it is \emph{slower} than doing it exactly. AMLSim's range stops at 16 banks (Decision~18), and its models sit at the floor, so its fidelity figures say little. \\
 \textbf{RL / Consensus / Blockchain} & does not depend on the dataset & Leader election spreads the work far more evenly (inequality falls from 0.90 to 0.782 over 5 runs) and largely stops picking unhealthy nodes (100\% $\to$ 15.2\%). The real Fabric network commits in 2115.9\,ms on average and peaks at 40.3\,TPS, with performance collapsing immediately after that peak. \\
 \bottomrule
 \end{tabularx}
@@ -1462,9 +2001,10 @@ six days.}
 \begin{figure}[h]
 \centering
 \includegraphics[width=\linewidth]{db_boa_framework/results/byzantine_robustness_krum_vs_fedavg_banksim_stratified.png}
-\caption{The Byzantine layer on the control condition. \textbf{(b)} shows the security property that
-replicates everywhere --- the poisoned organisation's Krum score is orders of magnitude above the
-others, so it is never selected. \textbf{(a)} shows the part we had to withdraw a mechanism for: the
+\caption{The Byzantine layer on the control condition. \textbf{(b)} shows the security property as it
+looks in five of the six conditions --- the poisoned organisation's Krum score is orders of magnitude
+above the others, so it is not selected. The Handbook is the exception: there a label-flipping attacker
+scores \emph{lower} than every honest organisation and is selected (Section~\ref{sec:firstresults}). \textbf{(a)} shows the part we had to withdraw a mechanism for: the
 accuracy difference between Krum and unprotected averaging is small and mostly negative here, and it
 tracks the dataset rather than the federation structure.}
 \end{figure}
@@ -1485,18 +2025,19 @@ script does no training and no sampling of its own, so it cannot introduce a num
 measured.
 
 \begin{keybox}{Count the columns before you read them}
-Every figure in this section has \textbf{three} columns, and it is worth being clear about why, because
-Section~\ref{sec:fivedatasets} compares \emph{five} datasets.
+The comparison figures in this section now have \textbf{seven} columns, and it is worth being clear about
+what they are, because Section~\ref{sec:fivedatasets} compares \emph{five} datasets.
 
-The three columns are \textbf{ULB/stratified}, \textbf{BankSim/stratified} and
-\textbf{BankSim/entity-disjoint}. That is \textbf{two datasets in three conditions}, not three datasets.
-The third column is a \emph{control} --- it exists purely to separate ``the data changed'' from ``the
-customer split changed'', which is the whole subject of Section~\ref{sec:control}.
+The seven columns are \textbf{five datasets in seven conditions}: ULB/stratified, BankSim/stratified and
+BankSim/entity-disjoint (the control of Section~\ref{sec:control}), Handbook/stratified, PaySim/stratified,
+and AMLSim under a shuffled split and under its three native banks. A \dag{} marks a column run on Kaggle;
+comparing it with an unmarked column is also comparing machines. A * marks the two conditions whose plain
+federated model is below the pre-registered floor of MCC 0.05 --- AMLSim's shuffled split and the
+Handbook's stratified split: both are drawn, and nothing is read from them.
 
-Of the other three datasets on the five-way comparison: the Handbook is loaded and verified but has not
-been run (a go/no-go on 12 September), and AMLSim and PaySim were assessed and not run at all. Under
-Rule~2 an unrun dataset gets no column, so it has none here. \textbf{Every figure below has three
-columns because three is exactly what was measured.}
+The Handbook's \emph{customer} split is still running, so it has no column yet. Under Rule~2 an unrun
+condition gets none. The figures are drawn by a script that adds a column the moment its result file
+exists. \textbf{Every figure has seven columns because seven is exactly what has been measured.}
 \end{keybox}
 
 \subsection{What changed when the dataset changed}
@@ -1504,14 +2045,15 @@ columns because three is exactly what was measured.}
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_cross_dataset_comparison.png}
-\caption{The three conditions, compared on the things that moved. \textbf{(a)} The same four federated
-methods scored under each condition: the ordering of FedAvg and FedAvg+Krum \emph{swaps} between ULB and
-BankSim, and the DP arm is at MCC $\approx 0$ in all three. \textbf{(b)} Why the metric choice is part
-of the claim: differential privacy destroys the model in every condition, but accuracy reports that as
-$-0.11$\,pp on ULB and $+97.55$\,pp on BankSim/entity-disjoint --- the same failure, read as almost
-harmless on the 0.17\%-fraud file. \textbf{(c)} What Krum costs: positive on ULB, negative on both
-BankSim conditions, tracking the \emph{dataset} rather than the federation structure. That is the
-measurement that killed our best new claim.}
+\caption{The federated ablation in every condition measured so far. \textbf{(a)} The same four federated
+methods scored under each condition, with the MCC 0.05 floor dashed: FedAvg+Krum beats FedAvg on ULB and,
+at the floor, on the Handbook, and the DP arm is below the floor everywhere. \textbf{(b)} Why the metric
+choice is part of the claim: differential privacy drops MCC below the floor in all five testable
+conditions, yet accuracy moves anywhere from $-97.55$\,pp (BankSim/entity-disjoint) to $+1.16$\,pp
+(PaySim, in red: accuracy did not fall at all). \textbf{(c)} What Krum costs with no attacker: $+0.326$ on
+ULB, and a small loss in every other condition above the floor --- tracking the \emph{dataset}, not the
+federation structure. The two grey columns are the conditions at the floor: the Handbook's stratified
+split and AMLSim's shuffled split. The ULB column is the regenerated file of 12 September.}
 \label{fig:crossdataset}
 \end{figure}
 
@@ -1520,7 +2062,7 @@ measurement that killed our best new claim.}
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{db_boa_framework/results/figures/fig_score_index.png}
-\caption{The full score index as small multiples: six metrics, four federated methods, three conditions.
+\caption{The full score index as small multiples: six metrics, four federated methods, seven conditions.
 The panels are worth reading against each other rather than one at a time --- accuracy separates the
 methods least and MCC separates them most, and the DP arm is the case that proves it.}
 \label{fig:scoreindex}
@@ -1534,10 +2076,12 @@ methods least and MCC separates them most, and the DP arm is the case that prove
 \end{center}
 
 \vspace{-2pt}
-{\small\color{steel} Every number above is read from the three \texttt{baselines*.json} files, one per
+{\small\color{steel} Every number above is read from the seven \texttt{baselines*.json} files, one per
 condition; the machine-readable form is \texttt{results/figures/score\_index.csv}. DP runs at $\eps=1$,
-$\delta=10^{-5}$ throughout. The DB-BOA-ADTCN row on ULB is a degenerate all-positive model --- that is
-why its accuracy is 0.21\% and its recall 100\%. It is reported, not hidden.}
+$\delta=10^{-5}$ throughout. \dag{} marks a condition run on Kaggle; * marks the two conditions where
+FedAvg is below the MCC 0.05 floor --- the Handbook's stratified split and AMLSim's shuffled split. The ULB rows are the regenerated file of 12 September. Its
+DB-BOA-ADTCN row is a near-all-positive model --- that is why its accuracy is 3.19\% and its recall
+98.98\%. It is reported, not hidden.}
 
 \subsection{The two negative results, tested}
 
@@ -1597,13 +2141,17 @@ this list first.} The left column is what not to say; the right column is what t
 \toprule
 \textbf{Do not say this} & \textbf{Say this instead --- and here is why} \\
 \midrule
-``Krum costs 1.5--12.6\,pp when banks hold separate customers'' & The explanation was falsified by our own control (Section~\ref{sec:control}), and part of the range came from a contaminated score. Say: \textbf{Krum catches the attacker 8/8 in all three conditions}; it can cost accuracy by an amount that \textbf{tracks the dataset}; \textbf{we do not yet know why}. If you need numbers, use the uncontaminated cells only: $-4.73$ to $-1.48$\,pp (separate customers), $-9.15$ to $+0.54$\,pp (mixed). \\
+``Krum costs 1.5--12.6\,pp when banks hold separate customers'' & The explanation was falsified by our own control (Section~\ref{sec:control}), and part of the range came from a contaminated score. Say: \textbf{Krum catches the attacker 8/8 in five of the six conditions, and 6/8 on the Handbook}, where a label-flipping attacker is selected at both federation sizes; it can cost accuracy by an amount that \textbf{tracks the dataset} --- on PaySim it \emph{protected} accuracy instead; \textbf{we do not yet know why}. If you need numbers, use the uncontaminated cells only: $-4.73$ to $-1.48$\,pp (separate customers), $-9.15$ to $+0.54$\,pp (mixed). \\
 ``a 60\x{} privacy improvement'' --- or 30\x, 33\x, or $\ge$100\x & \textbf{All four of these are the same data read with different arbitrary cut-offs.} The number is not stable, so no version of it is safe. Say instead: the \textbf{ordering} (the output channel wins at 12 of 12 tested settings) and the \textbf{ranking gap at a stated noise level}. If a magnitude is truly unavoidable: ``one to two orders of magnitude, and sensitive to definition''. \\
-``the fast Shapley estimate fails from 6 banks onward'' & There is no threshold. The failures are \textbf{intermittent} --- 5/10, 5/10, 3/10 --- and on BankSim the first failure is at 3 banks, not 6. Say it is unreliable in a way that does not depend on size. \\
-Any number out of \texttt{db\_boa\_results.json} or \texttt{baselines.json}, including MCC 0.677 as a tuned result & \textbf{Invalid for three separate reasons}: a search that could not rank its own candidates, a stand-in model tested on rows it had memorised, and the unexplained ULB reproduction failure. The first two are now fixed; the third is not. Regenerate before quoting anything, and state the third limitation explicitly. \\
+``the fast Shapley estimate fails from 6 banks onward'' & There is no threshold. The failures are \textbf{intermittent} --- 5/10, 5/10, 3/10, and 3/10 again on both PaySim and AMLSim --- and on BankSim the first failure is at 3 banks, not 6. Say it is unreliable in a way that does not depend on size. \\
+Any number from the \textbf{30 August} \texttt{db\_boa\_results.json} or \texttt{baselines.json}, including MCC 0.677 as a tuned result, or FedAvg 0.569 and Krum $+0.207$ on ULB & \textbf{Invalid for three separate reasons}: a search that could not rank its own candidates, a stand-in model tested on rows it had memorised, and the unexplained ULB reproduction failure. The first two are fixed, and both files were regenerated on 11--12 September (ULB FedAvg is now 0.425, Krum $+0.326$). Quote only the regenerated files, and state the third limitation explicitly. \\
 MCC 0.313, 97.38\% accuracy, MCC 0.966, 85\,TPS, 180\,ms & All withdrawn --- either before submission or during the multi-run work. The detector headline is \textbf{0.753 $\pm$ 0.055 over five runs}; the blockchain figures are \textbf{2115.9\,ms and 40.3\,TPS}. \\
 A repaired ``steps per epoch'' value quoted as a precise optimum & Quote \textbf{the batch size it implies} instead. Even repaired, that setting produces only 23 distinct batch sizes across 201 possible values, and a third of the range collapses into just two of them --- so a precise-looking value is not precise. \\
-Any ULB result generated before 1 September & \textbf{Nothing yet.} The reproduction failure is genuinely unexplained, so those numbers cannot be defended. BankSim is unaffected --- both of its splits reproduced exactly. \\
+Any ULB result generated before 1 September & \textbf{Detector numbers: yes} --- both stored detector runs re-ran bit for bit on 11 September. \textbf{Private-incentive numbers: still no} --- that failure remains unexplained. BankSim is unaffected --- both of its splits reproduced exactly. \\
+Any ``partition effect'' from the control --- e.g.\ ``entity-disjointness pushes Krum the other way at $n=7$'' & The split was not the only thing that moved: 91.22\% of the entity-disjoint training windows are single-customer, against 0.00\% under the stratified split. Say ``entity-disjoint split (which also changes the training windows)''. The \emph{dataset} effects are unaffected. \\
+Any number from the first AMLSim dataset & Discarded before any model trained on it: bank had become a proxy for the label (43\% of one bank's transactions were laundering). Only the interleaved second dataset is used. \\
+``On PaySim global windows beat linked ones, so linkage fails'' & PaySim's time order itself carries the label (151.6\x{} after the within-step shuffle). That reading was pre-registered as the artefact, not as evidence. \\
+Any smoke-test number (2 epochs, 1 seed) & Never. A smoke run checks that a code path works; its numbers are not results. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -1624,8 +2172,8 @@ later by a reader.
 % =====================================================================
 \section{What is left, and the plan to 19 September}
 
-Three things remain, and \textbf{the order they are in is not negotiable} --- each one would be wasted
-work if done before the one above it.
+Five things remain as of 11 September. Items 1--3 run in parallel on two machines; item 4 needs all
+three; item 5 is protected whatever happens.
 
 \begin{center}\small
 \renewcommand{\arraystretch}{1.2}
@@ -1633,9 +2181,11 @@ work if done before the one above it.
 \toprule
 \textbf{\#} & \textbf{What has to be done} & \textbf{Why it sits in this position} & \textbf{Cost} \\
 \midrule
-1 & \textbf{Re-run what the surrogate repair forces us to re-run.} Regenerate the two now-invalid result files using the fixed pool, then re-run the five-seed detector test with the repaired configuration added as an extra arm. & Our detector headline ($+0.047$, $p = 0.34$) currently compares the default against a configuration that a \emph{broken} search picked --- so it is not really a comparison of anything. The code is already written. \textbf{Read the note on the ULB reproduction failure first:} a regenerated ULB number is only safe to quote if that third problem is fixed or stated explicitly alongside it. & 3--5\,h \\
-2 & \textbf{The third dataset} (Fraud Detection Handbook). \textbf{Go/no-go on 12 September.} & It has to come \emph{after} item 1. Run it before, and its search results are produced by a search we already know is broken --- and we pay for the whole thing twice. & loader \newline + about 11\,h \\
-3 & \textbf{Writing:} set out the privacy threat model properly, and narrow the two title words that currently claim too much (B8). & Both were flagged as must-fix before publication, and both are writing rather than code, so neither is blocked by anything above. & writing only \\
+1 & \textbf{Re-run what the surrogate repair forces us to re-run} --- \textbf{done 12 September, 01:48}, bar one re-run. Two bit-for-bit reproduction checks (passed), the repaired configuration as two extra detector arms over five seeds, and the two invalid ULB files regenerated on the fixed pool --- the ablation file moved (Section~\ref{sec:firstresults}). \texttt{main.py} was run once more, finishing at 04:03, so that its results file regains the attack-simulation section that a separate bug had cut off. That re-run doubles as a reproducibility check, and it passed (Section~\ref{sec:firstresults}). & Our detector headline ($+0.047$, $p = 0.34$) compares the default against a configuration a \emph{broken} search picked; the new arms are paired against valid records. & 9\,h\,28\,m, plus 2\,h\,14\,m for the re-run \\
+2 & \textbf{The Handbook} --- pre-registered and approved; queued on the laptop behind item 1, and it starts itself. & Same environment as ULB and BankSim, so its cross-dataset columns stay clean. The 12 September go/no-go still stands: if its first sweeps are not sane on the day, it is dropped. & about 31\,h \\
+3 & \textbf{PaySim and IBM AMLSim} --- \textbf{done 12 September, 03:12} --- the last AMLSim grid part had to be re-sent at 02:58 after Kaggle refused it. & Each dataset stays on one machine, so its own comparisons are clean; a cross-dataset column involving them is also an environment comparison, and is labelled so. & 28.8\,h of Kaggle sessions, 29 jobs \\
+4 & \textbf{Compare all five and update this report} as results land --- \textbf{done for PaySim and AMLSim}: the collators and the figure script now take every condition, and both pre-registrations are scored underneath their original wording. The Handbook's columns and scores follow when it lands. & A dataset whose results have not landed gets no column (Rule~2). & hours, no training \\
+5 & \textbf{Writing:} set out the privacy threat model properly, and narrow the two title words that currently claim too much (B8). & Both were flagged as must-fix before publication, and both are writing rather than code, so neither is blocked by anything above. & writing only \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -1657,19 +2207,20 @@ in it. Writing this down now is the only way to stop sunk cost making the decisi
   \item \textbf{Why does the 30 August ULB result not reproduce?} Everything reachable has been
   eliminated. The remaining candidate --- the numeric library version at the time --- is unrecoverable.
   Recorded as unexplained; guarded against recurrence.
-  \item \textbf{Does that reproduction failure reach the detector track?} Only one sweep was
-  re-verified. Every ULB number generated before 1 September sits on a code and environment state that
-  no longer exists. If a detector number moved the way the contribution split did, that is a
-  Chapter\,5 problem, not a paper-extension one. \emph{If nothing moved, that is a clean reproducibility
-  statement worth having in writing.}
+  \item \textbf{Does that reproduction failure reach the detector track?} \textbf{Answered on
+  11 September: no.} Both stored detector runs re-ran bit for bit (identical weight hashes; MCC 0.6461
+  and 0.7465), so the detector headline sits on a state that still exists. The failure stays confined to
+  the private-incentive sweep, still unexplained.
   \item \textbf{Why does Krum cost utility on BankSim?} The effect is measured and real; the mechanism
   we proposed is falsified. No replacement is on record, and inventing one would be the failure this
   whole period was about.
   \item \textbf{Should the deployed model adopt the repaired batch-size formula?} Zero CPU to decide,
   but changing it invalidates every trained model. Deliberately still open.
-  \item \textbf{What do Shapley values look like under an entity-disjoint split?} Still unmeasured ---
-  the current near-uniform values $[0.167, 0.165, 0.165]$ are the reason the incentive layer has little
-  to attribute. Not on the locked plan; no window before the deadline.
+  \item \textbf{What do Shapley values look like under an entity-disjoint split?} \textbf{Partly answered
+  on 12 September:} under AMLSim's three native banks the fair-share split is $[0.550, 0.316, 0.135]$,
+  tracking the banks' sizes --- the first condition where the incentive layer has something non-uniform
+  to attribute (Section~\ref{sec:firstresults}). ULB's near-uniform $[0.167, 0.165, 0.165]$ was why it had
+  little to attribute before. Under an entity-disjoint BankSim split it is still unmeasured.
 \end{enumerate}
 
 % =====================================================================
@@ -1678,7 +2229,8 @@ in it. Writing this down now is the only way to stop sunk cost making the decisi
 Six days ago the work had one genuine contribution standing on one dataset, an unexamined search sitting
 at its centre, and a number quoted as measured that had never been measured.
 
-It now has the same contribution standing on \textbf{two datasets and three conditions}, a search that
+It now has the same contribution standing on \textbf{four datasets and five testable conditions} (on one
+of them as two scores, by rule), a search that
 has been examined thoroughly and whose bad news came out \emph{stronger} for the examination, and a
 number we have deliberately stopped quoting because we proved it was not stable enough to print.
 
@@ -1738,6 +2290,9 @@ the field.
 \multicolumn{2}{@{}l}{\textit{\color{steel}Data and experiment design}} \\
 \textbf{ULB} & Our first dataset. 284{,}807 real anonymised card transactions, 0.17\% fraud, \textbf{no customer column}. Section~\ref{sec:fivedatasets}. \\
 \textbf{BankSim} & Our second dataset. 594{,}643 simulated transactions, 1.211\% fraud, and crucially \textbf{4{,}112 identifiable customers}, so a window can be one person's own history. \\
+\textbf{Fraud Detection Handbook} & Our third dataset: 1.75\,M simulated card transactions timed to the second, with customer \emph{and} terminal IDs. \\
+\textbf{PaySim} & A simulated mobile-money dataset (6.36\,M transactions). No banks, and senders almost never repeat; we use the 2.77\,M rows of the two types that contain fraud. \\
+\textbf{IBM AMLSim} & A simulator of money laundering between accounts at several banks. We generated 198{,}015 transactions with three native banks. Its label is \emph{laundering}, not fraud. \\
 \textbf{Stratified vs entity-disjoint split} & Two ways of dealing transactions out to the three banks. \emph{Stratified:} shuffle everything and deal equally, keeping the fraud ratio the same --- so the same customer can land in two banks. \emph{Entity-disjoint:} deal out whole \emph{customers}, so nobody's history is split across banks. The second is far more realistic. \\
 \textbf{Window (global vs entity-linked)} & The 10 transactions the detector reads at once. \emph{Global:} whatever 10 rows came next in the file, probably 10 different people. \emph{Entity-linked:} 10 transactions by the \emph{same} customer. The difference between these two is worth more than any architecture choice we tested. \\
 \textbf{Confound control} & An extra run that deliberately changes only \emph{one} factor, so an effect can be pinned on a cause. The one in Section~\ref{sec:control} cost three hours and killed our best claim. \\
@@ -1771,6 +2326,14 @@ takes seconds.
 \texttt{obj13\_shipped\_path\_check.py} & The check that found the memorised-rows leak. Zero training. \\
 \texttt{obj13\_surrogate\_repair.py} & The three-mode side-by-side and its held-out yardstick. \\
 \texttt{make\_report\_figures.py} & \textbf{Every figure in Sections~\ref{sec:work} and~\ref{sec:comparisons}, plus the score-index table and CSV.} Reads stored results only --- no training, no sampling, no new numbers --- and prints the provenance of each panel. Regenerate with \texttt{python -m experiments.make\_report\_figures}; outputs land in \texttt{results/figures/}. \\
+\texttt{handbook\_temporal\_grid.py} & The Handbook window grid (7 architectures $\times$ 3 orderings), resumable cell by cell. \\
+\texttt{entity\_temporal\_grid.py} & The same grid for PaySim and AMLSim, split per architecture for Kaggle, with a merge step that refuses mixed protocols. \\
+\texttt{paysim\_recon.py}, \texttt{amlsim\_recon.py} & Reconnaissance before any loader decision: repeat structure, the file-order trap, link strength, a floor and ceiling check. \\
+\texttt{check\_paysim\_loader.py}, \texttt{check\_amlsim\_loader.py} & Acceptance checks that re-derive every number the configuration quotes. No training. \\
+\texttt{check\_partition\_windowing.py} & How entity-linked each split's training windows are --- the 11 September correction. No training. \\
+\texttt{check\_detector\_repro.py} & Bit-for-bit comparison of re-run detector records against the stored ones. \\
+\texttt{kaggle\_jobs.py} & Bundles the code, pushes one private Kaggle job per experiment, keeps five running, and imports a job's results only if it succeeded. \\
+\texttt{../data/make\_amlsim\_config.py}, \texttt{../data/generate\_amlsim.py} & The AMLSim configuration and the end-to-end generation pipeline, with a SHA-256 for every output file. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -1788,12 +2351,19 @@ asserts the code is in the state you think it is before spending the CPU. It cos
 the only reason the 16-hour run finished with no surprises in it.
 \item \textbf{Every detector number is meaningless without a pinned torch version and thread count.}
 This is not a formality --- Section~7.1 is the story of what happens when they differ.
+\item \textbf{Never put the Kaggle token on a command line.} It lives only in the git-ignored
+\texttt{kaggle.md}; the tools read it into the child process's environment.
+\item \textbf{Kaggle drops empty folders and ignored our thread setting.} The job script now recreates its
+output folders and sets torch's thread count explicitly. Both were found by a test job, not by reading.
+\item \textbf{Upstream Python on Windows writes doubled line endings} (\texttt{\textbackslash r\textbackslash r\textbackslash n}),
+which AMLSim's Java half reads as empty records. The generation pipeline repairs them and proves that
+nothing else changed.
 \end{itemize}
 \end{keybox}
 
 \vfill
 \begin{center}\footnotesize\color{steel}
-Compiled 5 September 2026 from the repository state at branch \texttt{obj13-surrogate-repair}.\\
+Compiled 12 September 2026 from the working tree on branch \texttt{obj13-surrogate-repair}; the code of 11--12 September is not yet committed, and every Kaggle result records a hash of the exact code it ran.\\
 Every figure in this document was produced by a script in that repository.
 \end{center}
 

@@ -7,8 +7,9 @@ CLASSIFICATION ...... INTERNAL / TEAM T2430460
 OPERATOR ............ Shadman Sakib  (+ Amiya, Mahima, Nafi, Muntasir)
 AREA OF OPS ......... DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main
 PHASE ............... THESIS ACCEPTED (2026-06-13) -> PAPER EXTENSION ACTIVE
-DEADLINE ............ 2026-09-19  ·  T-11 days at this sitrep  ·  OBJ-16 go/no-go 2026-09-12 (T-4)
-LAST SITREP ......... 2026-09-08  (OBJ-16 LOADER LANDED — Handbook wired + 42 checks pass, zero results yet · file-order trap does NOT fire (1.02x) · NEW: TERMINAL_ID linkage 71.65x, the strongest in the project · cost measured at ~11 h, the ~6 h budget was low)
+DEADLINE ............ 2026-09-19  ·  T-8 days at this sitrep  ·  OBJ-16 go/no-go 2026-09-12 (T-1)
+LAST SITREP ......... 2026-09-11  (RULE 8 SUSPENDED — operator decision: datasets no longer gated on what they could overturn, nor ordered claims-first · every other rule unchanged · decisions taken under it stand as history)
+                      2026-09-08  (OBJ-16 LOADER LANDED — Handbook wired + 42 checks pass, zero results yet · file-order trap does NOT fire (1.02x) · NEW: TERMINAL_ID linkage 71.65x, the strongest in the project · cost measured at ~11 h, the ~6 h budget was low)
                       2026-09-05  (OBJ-13 SIDE-BY-SIDE LANDED — 0 of 9 searched configs beat the hand-set default · CRN averaging is what converges the search, determinism is NOT)
                       2026-09-04  (OBJ-13 — leak FIXED + verified 0/11 · side-by-side launched at production budget, operator-approved)
                       2026-09-04  (OBJ-13 — ULB surrogate VALIDATES ON MEMORISED ROWS (9/9) · knee scored, prereg 6 WRONG both halves)
@@ -33,7 +34,14 @@ LAST SITREP ......... 2026-09-08  (OBJ-16 LOADER LANDED — Handbook wired + 42 
 5. **The repo is the truth.** Handbooks, decks, and chat exports are claims to check against `results/*.json` — never status.
 6. **Scope every claim.** "Scalable" = contribution attribution, not throughput. "Secure" = ≤f colluders at n≥2f+3.
 7. **No invention claims.** DP, Krum, Shapley, Fabric are prior art. FedCoin (2020) owns Shapley-on-blockchain.
-8. **A new dataset must be able to change a conclusion, and breadth across *claims* beats breadth
+8. ⛔ **SUSPENDED 2026-09-11 — operator decision (Shadman): "we will break this rule."** It no
+   longer gates what gets run or in what order. The decisions already taken under it (Decision 2;
+   the OBJ-11 PaySim, OBJ-12 AMLSim and OBJ-16 gates below) stand as history but are no longer
+   binding — do not cite this rule as a reason to reject, defer or down-rank a dataset. **Every other
+   rule is unchanged**, rules 1–4 included: a dataset that lacks the structure to test a claim (PaySim
+   has no bank IDs, so no entity-disjoint split) is still reported as not testing it. Reason for the
+   suspension: not stated. *Original text, kept verbatim:*
+   **A new dataset must be able to change a conclusion, and breadth across *claims* beats breadth
    across *datasets*.** Before adding a dataset, write down what it could *overturn*. BankSim earned
    its place by flipping the DP collapse direction and killing "temporal complexity does not pay".
    But a claim tested on three datasets while four sibling claims sit on one is not rigour — it is
@@ -211,6 +219,285 @@ repeated, repeat it at pop=20×30.
 
 ---
 
+## ▣ SESSION HANDOFF — 2026-09-12 13:30 (read this first, then the RESUME block below)
+
+**Live OS processes (they survive a chat session; monitors do NOT):**
+
+| What | PID | State |
+|---|---|---|
+| `run_obj16_handbook.ps1` (Handbook suite) | **28780** | steps 1–6 of 11 done; step 7 `private_incentive_sweep_customer` started 13:17:34 |
+| `kaggle_jobs.py queue` (Handbook grid) | **9048** | 6 of 7 parts fetched; only `handbook-grid-efficientnet` still running (ETA ~14:30) |
+
+**Re-arm the watchers in the new session** (the old ones died with the old chat):
+```
+tail -n 0 -F "/d/THESIS/FINAL PROJECT/DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main/db_boa_framework/results/_kaggle/_queue.log" | grep --line-buffered -E "fetched|FAILED|ended in|PUSH|finished|slot limit"
+cd "/d/THESIS/FINAL PROJECT/DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main/db_boa_framework/results" && tail -n 0 -F _obj16_logs/handbook/_runner.out.log | grep --line-buffered -E "OK |FAIL|ERROR|finished"
+```
+
+**THE ONE TIME-CRITICAL ACTION.** When `handbook-grid-efficientnet` is fetched:
+```
+python experiments/handbook_temporal_grid.py --merge      # writes results/handbook_temporal_grid.json
+```
+It must land **before the runner reaches its grid step (~16:30, after `baselines_customer`)**. The merged
+file is marked `complete: true` and its protocol was verified to match what this laptop computes, so the
+runner's `--resume` grid step then returns in seconds instead of spending ~16 h.
+- If the runner gets there first: **kill only the `handbook_temporal_grid.py` child process**, let the
+  runner record that step FAILED and move to scalability, then merge. Do **not** kill runner 28780.
+- ⛔ Never write a partial merge to that path while the runner is live (see the warning further down).
+
+**Scored today (all under their pre-registrations, in this file):** PaySim (a) WRONG · (b)(c)(e) held ·
+(d) 1 wrong + 2 held. AMLSim (f)(g)(b) held · (c) two scores no verdict · (d) 2 held + 3 wrong.
+Handbook (a) **WRONG** · (b) COMPLETE (lone clause held *vacuously* both partitions, collusion clause
+**WRONG** both partitions, plus the reputation-inversion finding) · (c) COMPLETE **WRONG** (`customer`
+= 9 of 11 under *both* readings, so the "on each partition" clause fails whichever way `stratified` is
+read; `stratified` itself stays two scores, no verdict) · (d) **1 held, 3 wrong** (d1 ✗ 3 of 14 gains
+positive, d2 ✗ 1 of 7 and the sign is backwards, d3a ✓ ADTCN never 1st, d3b ✗ +0.0068 on terminal), with
+the **adjacency-lift inversion** finding. ULB: pipeline reproduces bitwise; its ablation was regenerated
+and the DP collapse flipped.
+
+**✅ THE TIME-CRITICAL MERGE IS DONE — 2026-09-12 15:09:30, about an hour before it was needed.**
+`handbook-grid-efficientnet` was fetched 15:08:38 (not ~14:30; the queue then finished, pid 9048 gone).
+All 7 parts merged: `results/handbook_temporal_grid.json`, `complete: true`, 21 cells, reference present,
+protocol identical to the runner's defaults, and `merged_from` holds **one** environment, so the file
+records Kaggle rather than `mixed`. The runner's grid step will now return after only the data load.
+**(d) is scored below its pre-registration: 1 held, 3 wrong.**
+
+**✅ The runner accepted the merge.** It reached `temporal_grid` at 16:01:56 and returned **OK at
+16:02:18 — 22 seconds**, logging `already complete — nothing to resume`. The file was not touched
+(still `written: 2026-09-12 15:09:30`, 21 cells). **~16 h of recomputation avoided.**
+*Bonus check:* before the early return the laptop rebuilt all three orderings itself and reproduced
+Kaggle's windowing statistics exactly — P(fraud | prev fraud) = 0.0084 / 0.1121 / 0.6034, matching the
+parts' recorded values — so the two environments construct the data identically.
+
+**✅ `baselines_customer` landed 16:01:56 and it moved several standing claims** (full block below,
+under the Handbook scorecards). Headline: **FedAvg +0.1500, ABOVE the floor**, so the Handbook does
+contribute a testable condition; collators now read **9 conditions, 7 testable**. It also **falsified this
+morning's wording** that "grouping by entity does not lift the models at all" — with only the partition
+changed, the ablation goes 0.0439 → 0.1500 (3.4×), while the *window* grid still loses MCC. Both TASK.md
+and WORK_REPORT now separate the two factors. Plus: DP collapses below the floor with accuracy **rising**
+0.64 pp (2nd such case), Krum costs −0.0411 here, and **DB-BOA-ADTCN degenerates to constant-positive**
+(recall 100 %, 351,280 FP, accuracy 0.95 %).
+
+**Report re-sent 16:07 — 57 pp**, clean build (no undefined refs; the same 17 pre-existing overfull boxes).
+
+**Still to score:** the two scalability runs (suite steps 10–11), and nothing else.
+`scalability_sweep_stratified` started 16:02:18.
+
+⚠ **Timing moved EARLIER:** `private_incentive_sweep_customer` finished 14:09:21 (52 m, not 69 m), so
+`baselines_customer` runs 14:09–~16:09 and **the grid step arrives ~16:09, not ~16:30.**
+
+**✅ WORK_REPORT rebuilt and re-sent 2026-09-12 15:19 — 56 pp, `pdflatex` ×2, no undefined refs.**
+Added this session, on top of the 12:33 copy: the **(c) channel-ordering failure** box, the **(d) window
+grid** box (with the adjacency-lift inversion), and these corrections to claims that had gone stale:
+- ⛔ The scoreboard's *Incentivized (privacy vs rewards)* row said **"The core contribution holds wherever
+  it can be tested"** — **false** once Handbook/`customer` failed it. Rewritten to say it held everywhere
+  testable until 12 Sep and then failed there, keeping the ρ-gap direction, the censoring and the
+  2-draw fragility beside it. Condition count 7 → 8.
+- Pre-registration tally: the Handbook row 3 & 2 → **8 & 6**; totals 44 & 16 → **49 & 20**; the summary
+  bullet's "Seven pre-registered predictions were wrong" → **Eleven** (2 PaySim, 3 AMLSim, **6 Handbook**).
+- Three "still running / has not run yet" statements about the Handbook, now all false, corrected.
+
+ℹ **Pre-existing layout defect, NOT introduced by these edits:** one overfull `box` (275.6 pt) on
+**page 40**. Verified by an A/B build with the two new boxes removed — identical 275.64471 pt and the same
+17 overfull boxes. Left alone; it predates this session's work.
+
+ℹ **The grid feeds no collator.** `handbook_temporal_grid.json` is read by nothing in
+`sweeps_cross_condition.py` / `federated_cross_dataset.py` / `make_report_figures.py`; the merge writes its
+own draft to `final_report_data/OBJ16_handbook_temporal_grid.md`, and the report carries (d) in prose.
+`make_report_figures.py:421` still plots **BankSim's grid only**. Extending that figure to the Handbook
+would put a Kaggle column beside a laptop column — **an operator decision, not a re-run**, so it was not
+done.
+
+**Waiting on the operator:** rotate the Kaggle token; say when to commit (nothing since 10 Sep is
+committed, branch `obj13-surrogate-repair`). The stray Neptune processes were killed at 10:37 with
+permission.
+
+## ▮ RESUME HERE — IN FLIGHT 2026-09-11 (all five datasets; read this block first)
+
+> **Two detached runners are on the laptop. Verify with `Get-Process python` before trusting this.**
+>
+> | Runner | PID | What | Gate | Logs |
+> |---|---|---|---|---|
+> | `experiments/run_obj13_ulb_regen.ps1` | 25208 | board item 1: `detector_multiseed` pool (2 bitwise **reproduction** re-runs of the 2026-08-31 arms + the 2 repaired arms × seeds 42–46, 4 workers × 2 threads) → `check_detector_repro.py` → `--collect` → `main.py --dataset ulb --no-plots --attack` → `run_baselines.py --dataset ulb` | started 2026-09-11 16:20:57; ~12 h | `results/_obj13_logs/ulb_regen/` |
+> | `experiments/run_main_ulb_rerun.ps1` | **7400** | operator-requested re-run of `main.py --dataset ulb --no-plots --attack` after the Phase-8 fix, so `db_boa_results.json` regains `attack_simulation`. Doubles as a reproducibility check: the Phase 1–7 fields must match the 22:50 snapshot (`db_boa_results_phase1to7_2250.json`) exactly → `main_rerun_compare.txt` | waits for 25208 to exit; ~2 h | `results/_obj13_logs/ulb_regen/_main_rerun.out.log` |
+> | `experiments/run_obj16_handbook.ps1` | **28780** (was 13192; relaunched 23:02 so it waits for the rerun) | Handbook: byzantine / economic / private sweeps + ablation (`--filters 32`) × {stratified, customer} → `handbook_temporal_grid.py --resume` → scalability × 2 | waits for **7400** (the rerun) to exit, **then** for the Handbook pre-registration header to read APPROVED (✅ approved 2026-09-11); ~31 h | `results/_obj16_logs/handbook/` |
+> | `experiments/kaggle_jobs.py queue` (polls Kaggle; no local CPU) | **33112** (was 18572) | the 28 PaySim + AMLSim jobs, 5 at a time, in priority order: pre-registered (a)–(c), PaySim scope (e), AMLSim floor (f)/(g), the other sweeps, the 14 grid parts, scalability last | launched 2026-09-11 18:28:57; smoke v2 passed first (exit 0, 4 threads, pins installed). **Restarted 22:35:** the old status test substring-matched "error" in the CLI output, misread a transient CLI/API error as a kernel ERROR, and wrote off `paysim-all-baselines-stratified` while Kaggle still reported it RUNNING. Fixed to parse the `KernelWorkerStatus` token (unreadable poll = retry); that job's state reset to `running`, with a note in `_queue.json`. New stdout/stderr: `_queue2.*.log` | `results/_kaggle/_queue.log`; state `_queue.json` |
+> | `kaggle_jobs.py track amlsim-scalability-stratified` (polls Kaggle; no local CPU) | **25920** | the AMLSim scalability job, **relaunched with `--fit-pool`** after the 23:35 crash. The pool holds 17 of the 20 shards; see ▸ DEVIATION under the AMLSim scorecards. The queue marked the job `failed` and never polls it again; `track` follows the new kernel version (v2) and never touches `_queue.json` | code bundle re-versioned and reported ready, then pushed 2026-09-11 23:52; the job records its own `bundle_sha256`. **Check on landing:** `job.log` carries the `DEVIATION (--fit-pool)` line, i.e. it ran the new code | `results/_kaggle/_queue.log` (`[track]` lines); `_track.*.log`; failed run kept in `amlsim-scalability-stratified__failed_2335/` |
+>
+> **Update 2026-09-12 03:00 — Kaggle.** Tracker 25920 finished: AMLSim scalability was **fetched at 00:19**,
+> exited 0, and carries the DEVIATION line. The PaySim grid is complete (efficientnet at 01:37) and merged;
+> PaySim scalability was fetched at 02:51. Both are scored below their pre-registrations.
+>
+> ⚠ **`amlsim-grid-dilated-attn` had never run.**
+> - At 22:32 the old queue misread a running job as ERROR and pushed this one into a phantom sixth slot.
+> - Kaggle refused the push (`Kernel push error: Maximum batch CPU session count of 5 reached`), but the
+>   CLI exited 0, so the queue logged `pushed` and has waited on a 404 ever since.
+> - The fix: `push()` now accepts only `successfully pushed`, and anything else raises, which `queue`
+>   treats as a slot limit and retries.
+> - The job was **re-pushed at 02:58:10** (kernel v1) on bundle `162d5e66…`. That bundle's changes
+>   (`main.py`, `scalability_sweep.py`, `kaggle_jobs.py`) touch nothing the grid imports.
+> - Queue 33112 picks it up from `pushed` on its next poll. It is the last Kaggle job.
+> - **03:12: fetched** — exit 0, 4 threads, bundle `162d5e66…`. Queue 33112 **finished**, so **all Kaggle
+>   work is done** (PaySim + AMLSim). The AMLSim grid is merged and (d) is scored below its
+>   pre-registration: 2 held, 3 wrong.
+>
+> **ULB ablation regenerated 2026-09-12 01:48 (`run_baselines.py --dataset ulb`, board item 1) — the ULB
+> column moved.** The width now comes from the repaired DB-BOA search (117 hidden / 203 steps,
+> deterministic surrogate, k=3); the 30 August file used 142 / 76.
+>
+> | Arm (MCC) | 30 Aug file | regenerated |
+> |---|---|---|
+> | FedAvg | 0.5694 | **0.4247** |
+> | Krum | 0.7762 | **0.7508** |
+> | Krum − FedAvg | +0.2069 | **+0.3261** |
+> | DP | 0.0000 | **−0.0012** |
+> | DB-BOA-ADTCN | 0.0008 | 0.0048 |
+>
+> **The DP collapse changed direction.**
+> - The 30 August DP model flagged nothing (TP 0, FP 0). Its accuracy was 99.83 %, *above* FedAvg's
+>   99.72 %: **a rise of 0.11 pp, which WORK_REPORT printed as a "fall"** — a sign error, now to fix.
+> - The regenerated DP model flags 43,089 transactions (TP 73), and accuracy falls 75.08 pp.
+> - So a DP collapse's direction is not a property of the dataset: it moved between two ULB runs that
+>   differ in width. "Accuracy hides the collapse" is now carried by PaySim/stratified (+1.16 pp) and by
+>   PaySim's own row-scope swing (98.70 → 28.22 %).
+>
+> The old file is recoverable at `ccdd19f`. Every ULB ablation number in WORK_REPORT must move to the
+> regenerated file.
+>
+> **`main.py` rerun finished 2026-09-12 04:03:18 (pid 7400) — phases 1–7 reproduce bitwise.**
+> - 15 of the 16 phase-1–7 fields are identical to `db_boa_results_phase1to7_2250.json`.
+> - The only differing field is `fed_rounds`, and inside it only `timestamp`:
+>   `models/federation_manager.py:227` stamps rounds with `datetime.utcnow()`, so the rerun's 04:02 local
+>   reads `22:02` UTC and the snapshot's `16:49` UTC is the crashed run's 22:49 local. **Not a data
+>   difference.**
+> - Identical inside the rounds: `global_weights_hash`, `shapley_values`, `krum_scores`,
+>   `aggregation_weights`, `clean_aggregation_weights`, `coalition_values`, `org_contributions`,
+>   `accuracy_deltas`, `private_incentive`, the DP fields and `krum_selected_org`.
+> - `attack_simulation` is back: 15 rounds, 15 disputed, 70 tokens, reputation 0.5, DB-BOA weight under
+>   attack 0.0. Comparison kept in `main_rerun_compare.txt`.
+>
+> **Handbook suite started 2026-09-12 04:03:37** (python pid 40244 under runner 28780): the APPROVED gate
+> passed, preflight OK (torch 2.12.0+cpu, 4 threads), first step `byzantine_robustness_sweep_stratified`;
+> about 31 h.
+>
+> ⚠ **Foreign CPU load on the laptop.** A python process from a different Claude session (pid 19048, the
+> Neptune project) has been running since 2026-09-11 22:52 and had 17,247 CPU-seconds by 04:03. It
+> contends with the Handbook run throughout, and it would inflate the wall-clock the Handbook's
+> scalability sweeps measure at the end of the suite. Check it is gone before those run.
+>
+> **When results land:** *(updated 2026-09-12)*
+>
+> Done:
+> - ✅ PaySim grid merged, and (d) scored.
+> - ✅ The three collators extended to all eight conditions: `sweeps_cross_condition.py`,
+>   `federated_cross_dataset.py` and `make_report_figures.py`. A column appears only when its result file
+>   exists, and each file's own record marks Kaggle runs and floor conditions.
+> - ✅ The collator's false "both partitions window identically" paragraph replaced by the windowing
+>   correction, with the shares read from `partition_windowing.json`.
+> - ✅ `WORK_REPORT.tex` carries every PaySim/AMLSim scorecard (§ First results, 12 Sep), the ULB
+>   regeneration and the corrected ULB accuracy sign.
+>
+> Still to do:
+> - ~~`entity_temporal_grid.py --merge amlsim` once `amlsim-grid-dilated-attn` lands; then score AMLSim
+>   (d).~~ ✅ Done 2026-09-12 03:12: 2 held, 3 wrong.
+> - The Handbook suite (laptop, after the main.py rerun); then score Handbook (a)–(d), with (c) under the
+>   both-scores rule if its two counts disagree.
+> - After each landing, re-run the three collators and `make_report_figures.py`, then rebuild the report.
+>
+> **Update 2026-09-12 10:55 — the Handbook GRID moved to Kaggle (operator decision).**
+> - **Why:** the grid is ~16 h of the ~24 h left (its own docstring's estimate) and it is the only part
+>   that parallelises — `--archs` splits it 7 ways. Every comparison (d) is scored on is **within** the
+>   Handbook, so a second environment cannot touch the verdict.
+> - **What did NOT move:** the four sweeps and the ablation. Their headline question is cross-dataset
+>   against BankSim, so Decision 13 keeps them in BankSim's environment. `kaggle_jobs.LAPTOP_ONLY_SWEEPS`
+>   enforces it — the Handbook contributes grid jobs only (verified: 0 sweep/baseline jobs in the table).
+> - **Data:** `datasets/handbook_transactions.csv` (99.8 MB) uploaded as the private Kaggle dataset
+>   `fl-adtcn-handbook`; status ready.
+> - **New code:** `handbook_temporal_grid.py --skip-reference` (only the `cnn` part computes the
+>   per-transaction reference) plus `--merge` / `--allow-partial`, mirroring the entity grid's refusals:
+>   an incomplete part, a mixed protocol, a cell claimed twice, or two references each stop the merge.
+>   Verified: with no parts on disk it refuses and writes nothing.
+> - **Queue pid 9048**, 7 jobs, 5 at a time, longest first (efficientnet, dtcn, dilated-attn, lstm,
+>   densenet | resnet, cnn). First wave pushed 10:55:06–10:55:38, each with Kaggle's explicit success line.
+> - **The runner needs no surgery.** `Invoke-Step` skips a step whose JSON already exists, and the grid
+>   step runs `--resume`, which returns in seconds when `results/handbook_temporal_grid.json` is already
+>   `complete: true`. So merging the Kaggle parts to that path before the runner reaches the grid
+>   (~16:50, after the four `customer` steps) makes the step a no-op.
+> - ⛔ **Never write a PARTIAL merge to `results/handbook_temporal_grid.json` while the runner is live.**
+>   `--resume` would accept it (the protocol matches), see `complete: false`, and compute the *missing*
+>   cells **on the laptop** — mixing two environments inside one grid, which is exactly the confound (d)
+>   must not carry.
+> ⛔ **CORRECTION 2026-09-12 14:15 — do NOT use `--allow-partial` for inspection; that advice was wrong.**
+>   `merge()` (`handbook_temporal_grid.py:368`) hardcodes its target to `RESULTS_DIR/DEFAULT_OUT` and
+>   **never reads `--out`** — the flag exists but `merge()` ignores it. So `--merge --allow-partial` would
+>   write a PARTIAL file to exactly the live path the line above forbids. Inspect the parts with a
+>   separate read-only script instead (done this session: all six pass every refusal `merge()` applies).
+> ℹ **The grid step costs minutes, not "seconds".** The runner passes `$null` as `outJson`
+>   (`run_obj16_handbook.ps1:159`), so `Invoke-Step`'s skip path never fires; the script runs and loads the
+>   1.75 M-row frame and prepares all three orderings *before* reaching the `complete` check at line 236.
+>   It still avoids the ~16 h — just not instantly.
+> - ⚠ **Fallback if Kaggle runs late:** kill only the `handbook_temporal_grid.py` child the runner starts;
+>   the runner marks that step FAILED and continues to scalability. Merge afterwards. **Do not kill the
+>   runner itself, and never pre-create a "complete" file — that would be fabricating a result.**
+> - The Handbook's grid column in the report must carry the Kaggle mark when (d) is written up; its
+>   within-dataset comparisons are unaffected, but Handbook-vs-BankSim architecture comparisons become
+>   environment comparisons too.
+>
+> **Kaggle (PaySim + AMLSim) — both pre-registrations ✅ APPROVED 2026-09-11.** PaySim data:
+> `ealaxi/paysim1`. AMLSim data: generated here (`data/generate_amlsim.py`; IBM/AMLSim @ `7338a4bc`;
+> MASON 20 built from tag `v20`; config `data/make_amlsim_config.py` — the **second** derivation, the
+> first tied bank to label and was discarded) and uploaded as the private dataset
+> `shadmansakib1566/fl-adtcn-amlsim-10k-3banks`. Code: private dataset
+> `shadmansakib1566/fl-adtcn-code` (`kaggle_jobs.py bundle`; every job records `bundle_sha256`).
+> Jobs: `python experiments/kaggle_jobs.py list` (28 real + 1 smoke). Run detached with
+> `kaggle_jobs.py queue <jobs> --max 5`; state `results/_kaggle/_queue.json`, log `_queue.log`;
+> `fetch` imports a job's results only if it exited 0. Smoke v1 failed usefully (Kaggle drops the empty
+> `results/`; torch ran 2 threads, not 4) — both fixed; smoke v2 pushed 18:18. Set
+> `KAGGLE_CLI=%LOCALAPPDATA%\Programs\fl-adtcn-kaggle-venv\Scripts\kaggle.exe` (durable venv).
+> Toolchain: Maven 3.9.9 (SHA-512 verified) in `%LOCALAPPDATA%\Programs`, Android Studio's JBR 21 as the
+> JDK, Python 3.8.20 + networkx 1.11 in `datasets/amlsim/py38`.
+>
+> ⚠ **Before quoting any partition effect, read "TWO FINDINGS" below** — the entity splits also change
+> the training windows (0 % → 88–96 % single-entity).
+>
+> ⚠ **Kaggle token:** lives only in the gitignored `kaggle.md`; read it into `KAGGLE_API_TOKEN` inside the command, never print it or paste it into a command line. The Kaggle CLI (2.2.4) sits in the session scratchpad venv — a new session recreates it with `python -m venv` + `pip install kaggle`.
+>
+> **New code this session:** `check_detector_repro.py`, `handbook_temporal_grid.py`, `make_amlsim_config.py`, both runners; `run_baselines.py` and `_dataset.resolve` now accept the Handbook (and sync `ordering` to an entity partition — a no-op for every result on disk).
+
+## ▮ 2026-09-11 — TWO FINDINGS THAT CHANGE WHAT THE REPORT MAY SAY
+
+**1. ✅ The ULB reproduction failure does NOT reach the detector track** (answers follow-up A /
+report Q2). Both 2026-08-31 `detector_multiseed` records re-ran today **bit for bit**:
+`hand_set_default` seed 42 @ 2 threads → weights `e42481fbb1f908e1`, MCC 0.6461 (stored: identical);
+`dbboa_tuned` seed 42 @ 2 threads → `799674f67ba957e0`, MCC 0.7465 (identical). Source:
+`results/_obj13_logs/ulb_regen/repro_*.out.log`; `check_detector_repro.py` writes
+`results/detector_repro_check.json` when the pool finishes. So the detector headline
+(0.753 ± 0.055) sits on a state that still exists, and the repaired arms are paired against valid
+records. The OBJ-17 failure stays confined to the private-incentive sweep, still unexplained.
+
+**2. ⛔ CORRECTION — the partition was never the only factor moving.** The OBJ-15 control section
+says *"none of the four sweeps passes `groups=` … so both partitions window identically and the
+partition really is the only factor moving."* **That is wrong.** With `groups=None` the model slides
+windows over each org's rows *in the order the partition leaves them*: the stratified split
+(`train_test_split`, shuffle=True) leaves them random; an entity split (order-preserving masks)
+leaves them grouped by entity. Measured without training (`experiments/check_partition_windowing.py`
+→ `results/partition_windowing.json`):
+
+| Condition | single-entity training windows | adjacency lift inside org streams |
+|---|---|---|
+| BankSim stratified → customer | 0.00 % → **91.22 %** | 0.7–0.9× → 28.5–33.6× |
+| Handbook stratified → customer | 0.00 % → **96.37 %** | 0.8–1.0× → 12.7–14.8× |
+| AMLSim stratified → bank | 0.00 % → **88.76 %** | 0.0–2.4× → 95.7–162.2× |
+
+**What survives:** the Krum withdrawal — its decisive comparison is the *dataset* effect (ULB/strat
+vs BankSim/strat), and both sides train on random windows. **What changes:** every *partition*
+effect quoted from OBJ-15 (e.g. *"at n=7 entity-disjointness pushes Krum the other way"*, the
+partition column of the two-factor tables) is **entity-disjointness plus ~91 % customer-linked
+training windows**, not entity-disjointness alone. Test windows are identical across the two
+conditions (loader order), so only training moved. Wherever a partition effect is quoted, the report
+must say *"entity-disjoint partition (which also changes the training windows)"*. The Handbook and
+AMLSim pre-registrations state this in advance.
+
 ## ▮ RESUME HERE — handoff 2026-09-04 (rev. 2, after OBJ-18)
 
 > First thing a new session reads. ⚠ **Check before trusting this line.** It said "nothing is running" on 2026-09-04 while the knee sweep was still going; the sweep finished at **20:38** and a scout timed against it read **12 % slow** (2.68 vs 2.36 s/eval). `Get-Process python` costs a second.
@@ -303,7 +590,7 @@ Full write-up in [OBJ-13].
 | ✅ | Surrogate-size knee sweep | **COMPLETE — landed 2026-09-04 20:38**, all 8 cells. ⚠ the board's "nothing is running" was wrong; it was still going. **Pre-registration 6 is WRONG on both halves** and the curve is non-monotone on both datasets — scored in [OBJ-13] |
 | ✅ | ⛔ **`obj13_shipped_path_check.py`** — **RUN 2026-09-04, CONFIRMED and worse than written.** The shipped ULB pool holds **5 unique fraud transactions**, so the surrogate's 30 fraud rows are those 5 repeated **6.01×** — and **9 of 9 validation positives are copies of a training row**. The repair does **not** close it: `deterministic` leaks 9/9 too. BankSim is clean on both. See [OBJ-13] | ran in seconds |
 | ✅ | `deterministic` vs `averaged` vs `legacy`, side by side | **COMPLETE 2026-09-05 13:13, exit 0, 9/9, 16.3 h** at the operator-chosen production budget (BankSim, pop 20×30, filters 5–255, 3 modes × 3 seeds). **0 of 9 beat the hand-set default**; items 1–5 scored in [OBJ-13]. → `results/obj13_surrogate_repair_banksim.json`, draft `OBJ13_surrogate_repair_banksim.md` |
-| ☐ | Regenerate `db_boa_results.json` + `baselines.json` (ULB) **on the fixed pool** | **UNBLOCKED — the CPU is free.** ⚠ but see the ULB reproduction freeze; three defects invalidate these files and only two are fixed |
+| ◐ | Regenerate `db_boa_results.json` + `baselines.json` (ULB) **on the fixed pool** | **`db_boa_results.json` REGENERATED 2026-09-11 22:50** (laptop, 4 threads; `surrogate_eval_mode` deterministic, pool 36,000). Search optimum **117 filters / 203 steps-per-epoch** — per costing rule (iii) the spe value is coarse; quote the batch size it implies, never the spe. Best surrogate Obf2 **3.93** (`db_boa_stats` max −3.9256), **not the 5.0000 ceiling**: the leak fix shows on the shipped path. Single-seed test MCC **0.6993** (TP 84 · FP 63 · FN 14) vs the hand-set default **0.6461** — one seed each, **not a claim**; the 5-seed paired test (pre-reg 5, ✅ held: a tie) is the statistic. The default arm reproduces the multiseed seed-42 value 0.6461 exactly. ⚠ **Phase 8 (`--attack`) crashed** on a pre-existing bug — the attacker's stand-in `predict` lambda lacked the `groups` argument `evaluate()` has passed since OBJ-1 — *after* Phase 7 had saved the file, so it **lacks `attack_simulation`**. Nothing in the report, the brief or this file quotes that section (checked). Bug fixed in `main.py`; re-running only to restore the section costs ~2 h and is deferred until after the Handbook. `baselines.json`: running since 22:51. The ULB reproduction caveat still applies to both files, stated alongside any number quoted from them |
 | ☐ | ⛔ **NEW: `ADTCN.fit:681` still uses the pre-repair floored formula** `max(32, len(X_train) // spe)` — the repair only touched `_score_once`. At ~400 k rows the floor never binds, so the **final model's `spe` axis was always live and only the surrogate's was dead**. Decide whether `fit` should adopt `ceil` too | zero CPU to decide; changing it invalidates every trained model |
 | ☐ | `detector_multiseed.py` with the repaired config as a new arm | plumbing is done: the side-by-side writes `results/_multiseed_runs/extra_configs.json` and `detector_multiseed.py` picks it up with no code edit. ⚠ the arm is fixed to the **production seed 42**, never the best of the nine — selecting on the yardstick and then quoting the yardstick would be this objective's own defect one level up |
 
@@ -371,7 +658,11 @@ them:
 | ULB vs **BankSim/stratified** | dataset only | **the dataset** |
 | **BankSim/stratified** vs BankSim/customer | partition only | **entity-disjointness** |
 
-**✅ The single-factor claim was verified before launching, not assumed.** None of the four sweeps
+~~**✅ The single-factor claim was verified before launching, not assumed.**~~ ⛔ **WRONG —
+corrected 2026-09-11** (see "TWO FINDINGS" above RESUME HERE): the grep below is accurate, but the
+conclusion drawn from it is not — the customer split keeps each org's rows grouped by customer, so
+**91.22 %** of its training windows are single-customer, against 0.00 % under the shuffled stratified
+split. The paragraph is kept as written so the error stays visible. None of the four sweeps
 passes `groups=` to `ADTCN.fit()` (grepped: `economic_byzantine_sweep:194`,
 `byzantine_robustness_sweep:119`, `private_incentive_sweep:107`, `scalability_sweep:234,309` all
 call `split_for_orgs` and then `fit()` with no groups), and `fit(groups=None)` builds **global**
@@ -1026,7 +1317,7 @@ so it gets scored). Rule 3: the repair is diagnosis of a negative result, not a 
 | **2** | ❌ **WRONG for `averaged`, and the failure is the best result in the objective.** |
 | **3** | ❌ ordering **WRONG** (`averaged` is *worst*) · ✅ structure **held**. |
 | **4** | ✅ held, plus a defect found: the dead axis was **surrogate-only**. |
-| **5** | ⏳ needs `detector_multiseed`; the surrogate-side evidence is **0 of 9**. |
+| **5** | ✅ **HELD — scored 2026-09-11 20:45 from `results/detector_multiseed.json`** (ULB test set, 5 paired seeds 42–46, 2 threads, laptop; both stored arms first re-verified bit for bit — `results/detector_repro_check.json`). Repaired − hand-set default, paired t: **deterministic (137/111) +0.0469, 95 % CI [−0.0378, +0.1316], p = 0.199, wins 4/5; averaged (137/109) −0.1471, CI [−0.4421, +0.1479], p = 0.239, wins 2/5.** Both intervals contain zero: neither post-repair configuration is distinguishable from the hand-set default, so rule 3's negative result survives the repair on the test set too. Method check: the old 142/76 arm recomputes to the published +0.0475, CI [−0.0737, +0.1688], p = 0.338. *Not pre-registered, recorded not interpreted:* the two repaired arms differ only in 111 vs 109 steps/epoch yet their seed spreads are **0.0087 vs 0.2596** MCC — an unstable operating point, n = 5. The arms come from the BankSim search, as pre-wired (production seed 42, never the yardstick's best). |
 | **6** | ❌ **WRONG ON BOTH HALVES, and the pre-registration named this exact alternative in advance.** See below. |
 
 #### ▸ THE HEADLINE — `results/obj13_surrogate_repair_banksim.json`, 9/9 runs, 16.3 h, exit 0
@@ -1835,9 +2126,431 @@ so take the cheapest one that can run all four sweeps.
       it needs no new dataset and must not be held hostage to one. Run it on the extended grid
       when it lands here, so all four conditions share one grid.
 
-> **Rule 8 still applies within this objective.** Adding AMLSim must be justified by what it can
-> overturn — written above, before any CPU is spent — not by the fact that three datasets sound
-> more thorough than two.
+#### ▸ OPERATOR DECISIONS 2026-09-11 — scope and placement
+
+| Decision | Taken | Consequence |
+|---|---|---|
+| Rule 8 | **suspended** (see RULES) | all five assessed datasets are run and compared, not two |
+| Handbook scope | **mirror BankSim + 3-way grid** | 4 sweeps + federated ablation on `stratified` and `customer`; temporal grid over `global` / `customer` / `terminal`. ~31 h, measured-rate estimate |
+| Where things run | **ULB + Handbook on this laptop; PaySim + AML data on Kaggle** | ULB, BankSim and Handbook share one environment (torch 2.12.0+cpu, 4 threads), so their cross-dataset columns stay clean. PaySim and the AML dataset are too big for the laptop before Sep 16 and run in parallel Kaggle CPU sessions. Each dataset stays single-environment; `environment()` stamps every JSON, and the report must say which ran where |
+| The AMLSim slot | **real IBM AMLSim, built with Java** — not the pre-generated AMLworld data | a JDK + Maven + a generator configuration before any transaction exists. **The configuration is a researcher degree of freedom and goes into that dataset's pre-registration** |
+| AMLSim configuration | **shipped `paramFiles/10K`, three banks at 50/30/20** (upstream commit `7338a4bc`) | the one edit: each `accounts.csv` row is split across `bank_a` / `bank_b` / `bank_c` at our org shares, so a bank is never tied to a transaction model; `alertPatterns.csv` `bank_id` left blank (bank-agnostic), the upstream `small_banks` convention. `random_seed` 0 and `total_steps` 720 as shipped. Rejected: `small_banks` as shipped (300 accounts, 6 laundering patterns — too few positives), equal thirds, 100K (too heavy before Sep 16) |
+| AMLSim build + forced repairs (measured 2026-09-11) | toolchain and generator provenance | **MASON 20** is not on Maven Central and GitHub's `v20` release has no jar, so it is **built from source** at `eclab/mason` tag `v20` (commit `b799a4a3`, 2019-08-30): `mason-20.jar`, SHA-256 `593B310302F1CD4C1770CC1D15239F21B80FEF043E9544E7592DA2961098629E`. AMLSim `7338a4bc` builds with Maven 3.9.9 on Android Studio's JBR 21 (source/target 1.8). **Forced repair, not a choice:** the shipped 10K `conf.json` predates three keys the pinned code reads; `data/make_amlsim_config.py` copies them from the repo's own root `conf.json` and changes nothing 10K sets — `input.normal_models`, `simulator.sar_interval` (7), `simulator.sar_balance_ratio` (1.0). Generator (Python 3.8.20, networkx 1.11 — uv has no 3.7): 12,043 accounts (bank_a 6,022 / bank_b 3,613 / bank_c 2,408), 3,000 normal models, 100 typologies / 743 member accounts, 62,988 base transactions |
+| Pre-registrations | **drafted by Claude, approved by the operator before any run** | the Handbook text below was **approved as written**, 2026-09-11 |
+
+#### ▸ PRE-REGISTRATION — Handbook (OBJ-16) — ✅ APPROVED 2026-09-11 (drafted by Claude, approved as written by the operator)
+
+> **Nothing runs on the Handbook until this header reads APPROVED.** After approval, do not edit
+> above the scoring line; score underneath. Per OBJ-15's lesson each item names the **property**,
+> the **metric** (rule 11), and the **alternative that would falsify it**.
+
+**Protocol, fixed in advance.** Same code paths as BankSim, so the Handbook is a third condition and
+not a new experiment: four sweeps at their defaults (ε grid = the 11-point `DEFAULT_EPS_GRID` to
+30000, `n_repeats=100`); federated ablation pinned exactly as BankSim's (`--filters 32`, 30 epochs,
+150 steps/epoch — the DB-BOA search is skipped, so nothing here depends on OBJ-13's re-runs);
+temporal grid exactly as BankSim's (7 architectures, 10 epochs, 32 filters, batch 2048, seeds
+42/7/123). Partitions `stratified` and `customer`; windows inside the sweeps stay **global**, as on
+BankSim, so no sweep result may be described as using customer-linked sequences.
+
+**(a) Krum's utility cost is not BankSim-specific.** Metric: Krum − FedAvg, balanced-accuracy pp,
+`byzantine_robustness_sweep`, 8 cells (n ∈ {5, 7} × sign-flip / scaled / gaussian / label-flip),
+Handbook/`stratified`. Predicted: **negative in ≥ 5 of 8 cells, and in a majority of the clean
+subset** (cells whose attacked FedAvg does not beat its own no-attack reference by > 0.5 pp). Reason:
+Krum keeps one org's model, and on a dataset whose per-row features are thin (35 columns, no entity
+aggregates) one org's model should trail the average. **Falsified if |Δ| ≤ 1 pp in ≥ 6 of 8, or
+positive in ≥ 5 of 8 — then the cost is a BankSim property, and that is what gets reported.**
+Krum rejects the attacker 8/8 on both partitions — held by construction, not a finding.
+
+**(b) Isolation fires-but-does-not-help, a third time.** Metric: accuracy gap, isolated vs not,
+`economic_byzantine_sweep`, the three lone attackers (always-fraud, label-flip, free-rider).
+Predicted: **accuracy improves in 0 of 3 on both partitions.** No prediction on *whether* it fires
+(ULB 0/3, BankSim 3/3, no mechanism on record) — reported as measured. 2-of-3 collusion: caught
+(positive gap) on both attack types, both partitions.
+
+**(c) The channel ordering holds a fourth time.** Metric: **inversion rate** (the pre-registered
+one — not ρ), `private_incentive_sweep`. Predicted: output < weight at **≥ 10 of 11 ε points on each
+partition**; a point where both channels fail near-totally counts as *not held* and is named. No
+budget factor is computed for a headline (retired, OBJ-17); the ρ gap at ε = 50 is reported.
+
+**(d) Does linkage — and does ADTCN — exploit time at one-second resolution?** Metric: test MCC,
+mean of 3 seeds, temporal grid. Predicted: **(d1)** linked windows beat global windows for **every**
+architecture under **both** linked orderings (14 of 14 gains > 0); **(d2)** the terminal gain
+exceeds the customer gain for **≥ 5 of 7** architectures, following the measured adjacency lift
+(71.65× vs 13.35×); **(d3)** ADTCN is **not 1st of 7 under any ordering**, and ADTCN − DTCN ≤ 0 on
+both linked orderings. **If ADTCN ranks 1st under terminal windows, the architecture verdict is
+dataset-dependent at fine resolution — reported as a finding, not a rescue.** Check, not a
+prediction: the global arm's P(fraud | previous fraud) stays near the base rate (recon: 1.01×).
+
+<!-- HANDBOOK SCORING BELOW THIS LINE, AFTER APPROVAL. -->
+
+#### ▸ SCORECARD — Handbook (a), scored 2026-09-12 from `results/byzantine_robustness_sweep_handbook_stratified.json`
+
+Provenance: laptop (Windows, Python 3.13.7, torch 2.12.0+cpu, 4 threads — the same environment as ULB and
+BankSim), 2 h 07 m, suite step 1 of 9. Metric: the sweep's own balanced accuracy, 8 cells. Contamination
+rule: attacked FedAvg more than 0.5 pp above its own no-attack reference.
+
+| cell | Krum | FedAvg | ref FedAvg | Krum − FedAvg | baseline | attacker rejected? |
+|---|---|---|---|---|---|---|
+| n=5 sign-flip | 63.11 | 63.47 | 63.40 | −0.36 | clean | yes |
+| n=5 scaled | 63.11 | 60.72 | 63.40 | **+2.39** | clean | yes |
+| n=5 gaussian | 63.11 | 60.75 | 63.40 | **+2.36** | clean | yes |
+| n=5 label-flip | 40.70 | 64.00 | 63.40 | −23.30 | (!) contaminated | ⛔ **no — Krum selected the attacker** |
+| n=7 sign-flip | 59.85 | 63.75 | 60.80 | −3.89 | (!) contaminated | yes |
+| n=7 scaled | 59.85 | 56.75 | 60.80 | **+3.11** | clean | yes |
+| n=7 gaussian | 59.85 | 55.41 | 60.80 | **+4.45** | clean | yes |
+| n=7 label-flip | 44.87 | 62.44 | 60.80 | −17.57 | (!) contaminated | ⛔ **no — Krum selected the attacker** |
+
+**(a) ❌ WRONG.** Predicted: negative in ≥ 5 of 8 cells and in a majority of the clean subset. Measured:
+negative in **4 of 8**, and in **1 of the 5** clean cells. **Neither named falsifier is reached either:**
+positive in 4 of 8 (threshold ≥ 5) and |Δ| ≤ 1 pp in 1 of 8 (threshold ≥ 6). The same shape as PaySim —
+the prediction failed, and the result leans to the named alternative without meeting its threshold.
+Across the project the utility cost now looks like a **BankSim** property: negative in 7/8 and 8/8 there,
+against 1/8 on ULB, 2/8 on PaySim and 4/8 here.
+
+⛔ **NEW FINDING, and it contradicts something this project has reported as universal: Krum did NOT reject
+the attacker 8/8. It rejected 6 of 8.** Under **label-flip, at both federation sizes**, the poisoned
+organisation is the one Krum selects:
+- n=5: attacker Bank05 scores **894.2 — the lowest of the five** (honest 913.7 … 994.7).
+- n=7: both attackers rank first and second — Bank07 **1202**, Bank06 **1305**, below every honest org
+  (1368 … 1426).
+- The cost is real: Krum's accuracy falls **18.64 pp** (n=5) and **11.77 pp** (n=7) below its own
+  no-attack reference (59.34 and 56.64).
+- The three magnitude-changing attacks are still rejected, with the attacker two to three orders of
+  magnitude out (2 732 · 2.027e6 · 8 427 against ≈ 1 000).
+- **Mechanism: only as far as the numbers go.** Krum keeps the most central update, and the label-flipped
+  model is not an outlier in weight space — it is *more* central than the honest ones. **Why** it is more
+  central is **not established here; do not assert a cause.**
+- Every earlier condition rejects 8/8 (ULB, BankSim ×2, PaySim, AMLSim/stratified) — re-checked in the
+  same pass. The pre-registration called 8/8 *"held by construction, not a finding"*; **that wording is
+  falsified, and WORK_REPORT now says so** (it had the universal claim in the copy sent at 03:30).
+
+⚠ *Noted, not interpreted:* the three rejected attacks leave Krum **above** its own no-attack reference
+(+3.77 pp at n=5, +3.22 pp at n=7) — the same "an attack cannot improve a model" pattern the FedAvg
+contamination rule exists to flag, here on the Krum arm.
+
+#### ▸ RESULT — Handbook byzantine sweep, `customer`, landed 2026-09-12 12:23:32 (suite step 5 of 11)
+
+(a) is pre-registered on `stratified` only, so this partition is context — and it carries two findings.
+
+| cell | Krum | FedAvg | ref FedAvg | Krum − FedAvg | baseline | attacker rejected? |
+|---|---|---|---|---|---|---|
+| n=5 sign-flip | 59.07 | 67.05 | 63.37 | −7.99 | (!) contaminated | yes |
+| n=5 scaled | 59.07 | 57.90 | 63.37 | **+1.17** | clean | yes |
+| n=5 gaussian | 59.07 | 60.79 | 63.37 | −1.72 | clean | yes |
+| n=5 label-flip | 59.07 | 65.92 | 63.37 | −6.86 | (!) contaminated | yes — an honest org was picked |
+| n=7 sign-flip | 58.60 | 65.81 | 62.14 | −7.21 | (!) contaminated | yes |
+| n=7 scaled | 58.60 | 55.41 | 62.14 | **+3.20** | clean | yes |
+| n=7 gaussian | 58.60 | 54.05 | 62.14 | **+4.55** | clean | yes |
+| n=7 label-flip | 43.33 | 64.60 | 62.14 | −21.27 | (!) contaminated | ⛔ **no — Krum selected the attacker** |
+
+- **The security exception is not confined to one partition.** Rejection is **7 of 8** here against 6 of 8
+  on `stratified`. The failure is again **label-flip**, again with the attacker (Bank07) holding the
+  **lowest** Krum score. At n=5 the same attack did not capture Krum. Across both partitions: **2 of 16
+  cells**, and Krum's accuracy falls 13.36 pp below its own no-attack reference in this one.
+- ⚠ **The `customer` split did NOT produce stronger models, so it does not test the "weak models explain
+  it" hypothesis.** FedAvg's no-attack reference is 63.37 / 62.14 here against 63.40 / 60.80 on
+  `stratified` — the same within noise. **My expectation, written into WORK_REPORT's floor box, that this
+  split would be "far stronger" was WRONG; the box is corrected.**
+- This agrees with the grid parts landing in parallel: on the Handbook, entity grouping does not lift the
+  models — customer- and terminal-linked windows both *lose* MCC there. Two independent experiments, same
+  direction.
+- Krum − FedAvg negative in **5 of 8** (clean subset 1 of 4). Had (a) been pre-registered on this
+  partition, it would have met the ≥ 5 clause and still failed the clean-majority clause. It was not:
+  **(a) stays scored on `stratified`, 4 of 8, WRONG.**
+
+#### ▸ SCORECARD — Handbook (b), `stratified` half, scored 2026-09-12 from `results/economic_byzantine_sweep_handbook_stratified.json`
+
+Laptop, 4 threads, 1 h 07 m; suite step 2 of 9. The `customer` half is still to run, so (b) is only half
+scored. Honest banks trained to 60.19 / 59.21 / 58.70 % balanced accuracy — the run is healthy.
+
+| scenario | isolated? | with → without | gap |
+|---|---|---|---|
+| always-fraud ×1 | **never** | 60.78 → 60.78 % | 0.00 |
+| label-flip ×1 | **never** | 59.81 → 59.81 % | 0.00 |
+| free-rider ×1 | **never** | 58.62 → 58.62 % | 0.00 |
+| always-fraud ×2 | **never** | 50.00 → 50.00 % | 0.00 |
+| label-flip ×2 | **never** | 41.69 → 41.69 % | 0.00 |
+| free-rider ×2 | **never** | 50.00 → 50.00 % | 0.00 |
+
+**Lone attackers: ✅ HELD, but vacuously.** "Improves accuracy in 0 of 3" is satisfied (0 of 3), and
+isolation **fires 0 of 3** (reported as measured; ULB 0/3, BankSim 3/3, PaySim 2/3, AMLSim 2/3). Because
+nothing is ever isolated, `acc_with == acc_without` by construction — this is not the same evidence as the
+five conditions where it fired and still did not help. **Say "vacuous" wherever this is quoted.**
+
+**Collusion: ❌ WRONG — the pre-registration's "2-of-3 collusion: caught (positive gap) on both attack
+types" fails here.** Gap 0.00 on both attack types, against +40.78/+44.39/+47.40/+37.71/+6.44 (always-fraud)
+and +79.52/+86.95/+89.73/+72.64/+28.59 (label-flip) in the five earlier conditions.
+
+**Mechanism — established from the rule and the numbers, not guessed.** `economic_byzantine_sweep.py:139–156`:
+each round `reputation += REP_GAIN × (w − fair)` where `w` is the org's Shapley aggregation weight and
+`fair = 1/n`; isolation needs reputation at `REP_FLOOR` **and** token share < ½ fair.
+- BankSim, label-flip ×1: attacker `w` far below fair → reputation 1.0 → 0.833 → 0.667 → **0.5 by round 3**,
+  token share 0.0 → isolated.
+- Handbook, label-flip ×1: attacker `w` = **0.3358 against fair 0.3333**, so its reputation drifts **up**
+  (1.0012 → 1.0145 over 12 rounds), while honest BankB at `w` = 0.3264 drifts **down** to 0.9585. Nothing
+  reaches the floor; nothing is isolated. In the ×2 scenarios both attackers end **above** the honest bank
+  (1.0202/1.0202 vs 0.9597; 1.0751/1.0277 vs 0.8972).
+- **Same root cause as the Krum finding above:** on this dataset a poisoned model is not distinguishable —
+  not by Krum's distance test, and not by the Shapley contribution test. Two independent defences, one
+  blindness. **Why the Handbook's Shapley attribution cannot separate the poisoned org is not established
+  — do not assert a cause.**
+
+#### ▸ SCORECARD — Handbook (b) COMPLETE — `customer` half added 2026-09-12 13:17 from `results/economic_byzantine_sweep_handbook_customer.json`
+
+Laptop, 4 threads, 54 m; suite step 6 of 11. (b) was predicted "on both partitions", so it is now fully
+scored.
+
+| scenario | isolated? | gap | attacker final reputation | lowest reputation of the three |
+|---|---|---|---|---|
+| always-fraud ×1 | never | 0.00 | BankC **1.0068** | honest BankB **0.5291** |
+| label-flip ×1 | never | 0.00 | BankC **1.0444** | honest BankB **0.5068** |
+| free-rider ×1 | never | 0.00 | BankC 0.8323 | an honest org, 0.8081 |
+| always-fraud ×2 | never | 0.00 | BankB · BankC 0.6411 | the attackers |
+| label-flip ×2 | never | 0.00 | BankB 0.6535 · BankC 0.7069 | attacker BankB |
+| free-rider ×2 | never | 0.00 | BankB · BankC 0.8206 | the attackers |
+
+**(b) lone attackers: ✅ HELD on both partitions — and vacuous on both.** 0 of 3 improve; isolation fires
+**0 of 3** on each (measured, not predicted: ULB 0/3, BankSim 3/3, PaySim 2/3, AMLSim 2/3). Nothing is
+ever isolated on either partition, so `acc_with == acc_without` by construction. **Always quote it as
+vacuous.**
+
+**(b) collusion: ❌ WRONG on both partitions.** "2-of-3 collusion: caught (positive gap) on both attack
+types, both partitions" — measured **0.00 on both types, both partitions**, against +6.44 … +89.73 pp in
+the five earlier conditions.
+
+⛔ **NEW FINDING, not pre-registered, and worse than the silence: under `customer` the reputation ordering
+INVERTS for every lone attacker.** The rule (`economic_byzantine_sweep.py:139–156`) is
+`reputation += REP_GAIN × (w − fair)` each round with `REP_GAIN = 0.5`, `fair = 1/3`, floor 0.5, 12 rounds.
+- always-fraud ×1: the attacker's Shapley weight is **0.3345 — above the fair share** — so its reputation
+  *rises* to 1.0068, while honest BankB (w = 0.2549) falls to **0.5291**, the lowest of the three.
+- label-flip ×1: attacker **1.0444**; honest BankB **0.5068 — 0.0068 above the isolation floor.**
+  Arithmetic: 0.5 × (0.2511 − 0.3333) = −0.0411 per round × 12 = −0.493 → 0.507 ✓.
+- **One more round would have isolated an honest bank and left the attacker in place.**
+- In the three collusion scenarios the direction is correct (attackers lowest, 0.64–0.82) but far too slow
+  to cross the floor within 12 rounds.
+- On `stratified` the weights are near-uniform (≈ 0.33 each), so nothing moves in either direction.
+- **Do not assert why the attribution mis-ranks here.** What is measured: on the Handbook a poisoned org's
+  Shapley weight sits at or above an honest org's, on both partitions.
+
+#### ▸ SCORECARD — Handbook (c), `stratified` half, scored 2026-09-12 from `results/private_incentive_sweep_handbook_stratified.json`
+
+Laptop, 4 threads, 1 h 09 m; suite step 3 of 9. The `customer` half is still to run, and (c) is predicted
+"on each partition", so this is half of it. Metric: inversion rate, 100 paired draws, the 11-point grid.
+
+| ε | 1 | 5 | 10 | 30 | 50 | 100 | 300 | 1000 | 3000 | 10000 | 30000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| weight | 0.88 | 0.90 | 0.82 | 0.87 | 0.86 | 0.89 | 0.83 | 0.81 | 0.58 | 0.13 | 0.00 |
+| output | 0.89 | 0.80 | 0.67 | 0.49 | 0.31 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
+
+⛔ **Two scores, no verdict** — the two readings fall on opposite sides of the pre-registered ≥ 10:
+- **No more often (≤): 10 of 11** — meets the threshold.
+- **Strictly less often (<): 9 of 11** — below it.
+- The one tie is a **zero–zero tie at ε = 30000**: both channels rank the banks perfectly, so neither can
+  be better.
+- The one counter-example is **ε = 1**, output 0.89 against weight 0.88 — **one draw in 100**, and a point
+  where **both channels fail near-totally** (88 % and 89 % of draws invert). The pre-registration says such
+  a point "counts as *not held* and is named": it is named here. BankSim's entity-disjoint condition
+  produced the same ε = 1 counter-example.
+- **ρ gap at ε = 50, which the pre-registration asks for:** weight **+0.057**, output **+0.835** — a gap of
+  **+0.778**.
+
+*Context, not pre-registered:* ε\*(weight) = 10000, ε\*(output) = 50, and the weight channel is **not**
+censored (0.00 at the top of the grid). No budget factor is computed (retired, OBJ-17). Neither ε\* is
+fragile here — 13 draws of 100 decide the weight threshold and 31 the output one, where ULB's and
+BankSim's rested on a single draw.
+
+#### ▸ SCORECARD — Handbook (c) COMPLETE — `customer` half added 2026-09-12 14:09 from `results/private_incentive_sweep_handbook_customer.json`
+
+Laptop, 4 threads, 51 m 32 s; suite step 7 of 11. (c) was predicted "on each partition", so it is now
+fully scored. Metric: inversion rate, 100 paired draws, the same 11-point grid.
+
+| ε | 1 | 5 | 10 | 30 | 50 | 100 | 300 | 1000 | 3000 | 10000 | 30000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| weight | 0.75 | 0.81 | 0.82 | 0.82 | 0.77 | 0.87 | 0.85 | 0.75 | 0.56 | 0.46 | 0.29 |
+| output | 0.88 | 0.85 | 0.78 | 0.64 | 0.51 | 0.28 | 0.02 | 0.00 | 0.00 | 0.00 | 0.00 |
+
+**This half is not ambiguous: both readings give the same count, 9 of 11 — below the pre-registered ≥ 10.**
+- No more often (≤): **9 of 11**. Strictly less often (<): **9 of 11**. There are **no ties**, so the two
+  readings cannot diverge here the way they did on `stratified`.
+- The sweep's own summary line agrees: `[B1] ordering (output ≤ weight inversions) holds at 9/11 budgets`.
+- **Two counter-examples, and the pre-registration names both as *not held*:** ε = 1 (output 0.88 against
+  weight 0.75) and ε = 5 (output 0.85 against weight 0.81). Both are points where **both channels fail
+  near-totally** — 75–88 % of draws invert — which is exactly the case the pre-registration said "counts as
+  *not held* and is named". `stratified` produced one such point (ε = 1); so did BankSim's entity-disjoint
+  condition.
+
+**(c) ❌ WRONG.** The prediction was "< at ≥ 10 of 11 ε points **on each partition**". The `customer`
+partition reaches 9 of 11 under **both** readings, so the conjunction fails **whichever** way the
+`stratified` half is read. **This verdict does not depend on resolving that ambiguity** — and the
+`stratified` half is *not* thereby resolved: it stays **two scores, no verdict** (10 of 11 under ≤, 9 of 11
+under <) in its own right, and must keep being quoted that way.
+
+**ρ gap at ε = 50, which the pre-registration asks for:** weight **+0.096**, output **+0.630** — a gap of
+**+0.534** (`stratified`: +0.778). The gap is in the predicted direction on both partitions even though the
+inversion-rate criterion is not met.
+
+⚠ **ε\*(output) here is FRAGILE by this project's own criterion, and `stratified`'s was not.** Only **2
+draws of 100** decide it, against the recorded `fragile_draws_threshold` of **5**. The `stratified` half
+rested on 13 (weight) and 31 (output). **Do not quote ε\*(output) = 300 as a stable threshold on this
+partition.**
+
+*Context, not pre-registered:* ε\*(weight) = 30000 and the weight channel **is censored** on this partition
+— at the top of the grid 29 of 100 draws still invert, so its true threshold lies outside the grid. On
+`stratified` the weight channel reached 0.00 and was not censored. No budget factor is computed (retired,
+OBJ-17).
+
+**Across the project the channel ordering now stands at:** held on ULB and BankSim, two-scores-no-verdict
+on Handbook/`stratified`, and **failed on Handbook/`customer`** — the first partition where both readings
+agree that it does not hold.
+
+#### ▸ RESULT — Handbook federated ablation, `stratified`, landed 2026-09-12 10:27:44 (suite step 4 of 9)
+
+Laptop, 4 threads, 2 h 00 m; pinned 32 filters / 30 epochs / 150 spe (search skipped), ordering `customer`.
+
+| arm | MCC | Accuracy | Precision | Recall | TP | FP | FN |
+|---|---|---|---|---|---|---|---|
+| FedAvg | **+0.0439** | 75.10 | 1.62 | 44.76 | 1,422 | 86,547 | 1,755 |
+| FedAvg+Krum | +0.0520 | 89.56 | 2.36 | 26.44 | 840 | 34,702 | 2,337 |
+| FedAvg+DP | +0.0090 | 34.75 | 0.96 | 70.10 | 2,227 | 230,437 | 950 |
+| DB-BOA-ADTCN | +0.0126 | 66.29 | 1.06 | 39.79 | 1,264 | 117,628 | 1,913 |
+
+⚠ **FedAvg lands at 0.0439 — 0.0061 BELOW the 0.05 floor.** Every collator and figure now marks
+Handbook/`stratified` as `[floor]`, exactly as it marks AMLSim/`stratified`.
+
+**Decision, recorded 2026-09-12 before the `customer` split runs: the three items already scored stay
+scored.** (WORK_REPORT decision-log row 21.)
+- The Handbook's pre-registration has **no floor clause** — the floor is AMLSim's item (f), written for
+  AMLSim before AMLSim ran. Applying it to the Handbook *after* seeing (a) fail would convert a failed
+  prediction into a non-result. **A failed prediction stays failed; the floor is context, never an eraser.**
+- **This is not AMLSim's kind of floor.** AMLSim/`stratified` catches **0 of 106** positives — inert. The
+  Handbook catches **1,422 of 3,177** (44.8 % recall) at 1.62 % precision: weak and swamped by false
+  positives, but not nothing.
+- Both defence failures are about **selection** — Krum picked the attacker; nobody was ever isolated — not
+  about accuracy, so they stand either way.
+- ⚠ **Hypothesis, not tested here:** weak models plausibly explain why neither defence separates the
+  attacker. The `customer` split runs next; if the defences recover when the models do, that is evidence
+  for it. **It is not evidence we have yet — do not write it as a cause.**
+
+*Also:* Krum − FedAvg = **+0.0081** here, the second condition where Krum helps in the ablation (after
+ULB's +0.3261) — excluded from the collator's "costs MCC in 4 of 5" count because the condition is at the
+floor. DP drops the model to +0.0090 with 230,437 FP (−40.35 pp accuracy), but with FedAvg already at the
+floor the DP claim is **untestable** here: the federated collator now reads **5 of 7 settings testable**.
+
+**Collators and figures re-run at 10:35:** the Handbook is the 7th column in
+`fig_cross_dataset_comparison.png` and `fig_score_index.png`, marked `*`, and the score-index table now has
+seven condition blocks.
+
+#### ▸ RESULT — Handbook federated ablation, `customer`, landed 2026-09-12 16:01:56 (suite step 8 of 11)
+
+Laptop, 4 threads, 1 h 52 m; pinned 32 filters / 30 epochs / 150 spe (search skipped), ordering `customer`
+— **identical to the `stratified` run in every field except `partition`.**
+
+| arm | MCC | Accuracy | Precision | Recall | TP | FP | FN |
+|---|---|---|---|---|---|---|---|
+| FedAvg | **+0.1500** | 96.39 | 8.57 | 31.38 | 997 | 10,636 | 2,180 |
+| FedAvg+Krum | +0.1089 | 95.41 | 5.81 | 27.10 | 861 | 13,961 | 2,316 |
+| FedAvg+DP | **−0.0048** | 97.03 | 0.59 | 1.38 | 44 | 7,412 | 3,133 |
+| DB-BOA-ADTCN | +0.0022 | 0.95 | 0.90 | **100.00** | 3,177 | 351,280 | 0 |
+
+**✅ This partition is ABOVE the floor: FedAvg +0.1500 against the 0.05 line** (`stratified` was +0.0439,
+below). The Handbook therefore contributes one testable condition after all. Collator totals are now
+**9 conditions, 7 testable**; the two untestable ones are Handbook/`stratified` and AMLSim/`stratified`.
+
+⛔ **CORRECTION — this falsifies wording written this morning.** The 10:27 ablation box says *"on the
+Handbook, unlike anywhere else, grouping by entity does not lift the models at all."* **That is too broad,
+and on the ablation it is wrong.** Holding `ordering` fixed at `customer` in both runs, moving the
+*partition* from `stratified` to `customer` lifts FedAvg from **+0.0439 to +0.1500 — 3.4×** — and carries
+it over the floor.
+- **What still stands:** the *sweeps'* no-attack references did not move (63.4 / 62.1 % against
+  63.4 / 60.8 % balanced accuracy), and the *window grid* loses MCC under every linked ordering.
+- **So the two factors point in opposite directions here, which is exactly the distinction OBJ-15 forced:**
+  entity **partitioning** lifts the federated ablation; entity **windowing** does not lift the sequence
+  models. **Do not quote either as "entity grouping on the Handbook".**
+- ⚠ **The comparison is not clean and must not be over-read:** the sweeps measure balanced accuracy on
+  *global* windows, the ablation measures MCC on *customer* windows. Metric and windowing both differ, so
+  "the partition lifts the model" is established **for the ablation**, not in general. **Why the two
+  disagree is not established — do not assert a cause.**
+
+**The DP claim is testable here, and it holds.** DP takes MCC from +0.1500 to **−0.0048**, below the floor.
+⚠ **And accuracy RISES 0.64 pp while it happens** (96.39 → 97.03) — the **second** condition where the
+collapse is invisible to accuracy, after PaySim's +1.16 pp. On `stratified` the DP claim was untestable;
+the federated collator now reads **7 of 9 settings testable**, with DP dropping the model below the floor
+in **all 7**.
+
+**Krum now costs MCC here: −0.0411** (`stratified` was +0.0081). So the "Krum helps in the ablation" list
+shrinks back to **ULB (+0.3261) and Handbook/`stratified` (+0.0081, at the floor)** — 7 of 9 conditions
+negative.
+
+⛔ **Our own architecture degenerates on this partition.** DB-BOA-ADTCN flags **everything**: recall
+100.00 %, all 3,177 positives caught, **351,280 false positives**, specificity 0.05 %, accuracy **0.95 %**,
+MCC +0.0022. It is not a weak detector here, it is a constant-positive one. Stated plainly rather than
+buried in a table.
+
+#### ▸ SCORECARD — Handbook (d), scored 2026-09-12 15:09 from `results/handbook_temporal_grid.json`
+
+**Provenance — and this one is NOT the laptop.** All 21 cells were computed on **Kaggle** (Linux, Python
+3.12.13, torch 2.12.0+cpu, 4 threads, Intel Xeon @ 2.20 GHz), as 7 per-architecture jobs merged here at
+15:09:30. `merged_from` records **one** distinct environment across all seven parts, so the merged file
+reports that environment rather than `mixed`. Metric: test MCC, mean of 3 seeds (42/7/123), 10 epochs,
+32 filters, batch 2048. **Every comparison below is within the Handbook, so the environment cannot touch
+the verdict** — but Handbook-vs-BankSim architecture comparisons become environment comparisons too, and
+must be marked as such wherever they are quoted.
+
+| arch | global | customer | terminal | gain (cust) | gain (term) | term > cust? |
+|---|---|---|---|---|---|---|
+| CNN | +0.0849 | +0.0631 | +0.0583 | −0.0219 | −0.0266 | no |
+| LSTM | +0.1007 | **+0.1498** | +0.0585 | **+0.0492** | −0.0422 | no |
+| DTCN | +0.0931 | +0.1104 | +0.0419 | **+0.0173** | −0.0511 | no |
+| **ADTCN** | +0.0962 | +0.0885 | +0.0488 | −0.0077 | −0.0474 | no |
+| ResNet-1D | +0.0833 | +0.0710 | **+0.0764** | −0.0123 | −0.0069 | **yes** |
+| DenseNet-1D | +0.0877 | +0.0856 | +0.0556 | −0.0021 | −0.0321 | no |
+| EfficientNet-1D | +0.0949 | **+0.1517** | +0.0522 | **+0.0568** | −0.0427 | no |
+
+**(d1) ❌ WRONG, decisively.** Predicted: 14 of 14 gains > 0. Measured: **3 of 14** — customer 3 of 7
+(LSTM, DTCN, EfficientNet), **terminal 0 of 7**. Gain ranges: customer [−0.0219, +0.0568], terminal
+[−0.0511, **−0.0069**] — the terminal column's *best* case is still a loss.
+
+**(d2) ❌ WRONG, and the sign is backwards.** Predicted: terminal gain > customer gain for ≥ 5 of 7.
+Measured: **1 of 7** (ResNet-1D only). The prediction was reasoned from the measured adjacency lift, and
+**the grid's own data confirms that lift** — the check the pre-registration asked for: P(fraud | previous
+fraud) / base rate = **1.01× global** (recon: 1.01×, ✅ confirmed), **13.39× customer** (recon 13.35×),
+**72.09× terminal** (recon 71.65×). So terminal windows really are ~5.4× more fraud-adjacent than
+customer windows, and they are the ones that **lose the most MCC, for all 7 architectures**.
+
+⛔ **FINDING — on this dataset, fraud-adjacency lift does not merely fail to predict gain, it inverts.**
+The ordering with 72× adjacency is worst for every architecture; the ordering with 13× is the only one
+that ever helps; and the global ordering, at 1.01× adjacency, beats terminal for **all 7**. This directly
+contradicts OBJ-1's BankSim result, where entity-linked windows helped **every** architecture.
+**Do not assert why.** What is measured: grouping by the entity that concentrates fraud most strongly
+produces the worst windows here. *(Consistent with the same suite's other two findings — the `customer`
+split did not strengthen the models either, and neither defence separates a poisoned org.)*
+
+**(d3a) ✅ HELD.** Predicted: ADTCN is not 1st of 7 under any ordering. Measured ranks: **2nd global,
+4th customer, 6th terminal** — never 1st, so the "dataset-dependent at fine resolution" escape clause is
+**not** triggered. Best per ordering: LSTM (global), EfficientNet-1D (customer), ResNet-1D (terminal).
+
+**(d3b) ❌ WRONG.** Predicted: ADTCN − DTCN ≤ 0 on **both** linked orderings. Measured: customer
+**−0.0219** (holds) but terminal **+0.0068** (fails). One of two, so the clause fails. *(Global, not part
+of the clause: +0.0031.)* Against its other ablation, ADTCN − CNN is +0.0112 global, +0.0254 customer,
+−0.0095 terminal.
+
+**(d) overall: 1 held, 3 wrong** (d1 ✗, d2 ✗, d3a ✓, d3b ✗). **Handbook pre-registration totals: (a)
+WRONG · (b) lone clause held vacuously / collusion clause WRONG · (c) WRONG · (d) 1 of 4.**
+
+*Not a rescue, and stated so it is not later mistaken for one:* ADTCN's **2nd of 7 under global windows**
+is its best placing anywhere in this project. It is 2nd on the ordering the pre-registration treats as the
+control, it falls to 4th and 6th on the linked orderings, and its own no-attention ablation (DTCN) beats
+it on terminal. The architecture verdict is unchanged.
+
+**Stated so they are not later reported as findings:** exact-Shapley cost is structural (same
+4,095 coalitions at n = 12); MC top-1 stays intermittent with no threshold; absolute MCC sits below
+the Handbook's published baselines **by design** (thinner features) and is never compared to them.
+
+<!-- HANDBOOK SCORING BELOW THIS LINE, AFTER APPROVAL. -->
+
+> ~~**Rule 8 still applies within this objective.**~~ *Suspended 2026-09-11 — see RULES.* Kept for
+> the record: adding AMLSim was to be justified by what it can overturn, not by the fact that three
+> datasets sound more thorough than two.
 
 ---
 
@@ -1956,6 +2669,214 @@ have each been tested on more than one dataset. Writing task, not code.
 
 ### ◈ OBJ-11 — Recon PaySim before committing
 
+> **▸ 2026-09-11 — RECON DONE** (`experiments/paysim_recon.py` → `results/paysim_recon.json`,
+> 357 s, no training). Rule 8 is suspended, so PaySim runs anyway; these numbers decide *how*.
+> - **6,362,620 tx · 8,213 fraud (0.129 %) · hourly steps 1–743.** Fraud occurs **only** in
+>   TRANSFER (4,097) and CASH_OUT (4,116); CASH_IN / DEBIT / PAYMENT carry **zero**.
+>   `isFlaggedFraud` = 16, all of them fraud.
+> - **Senders have no history: 99.7 % of rows' `nameOrig` appears once (max 3).** The old worry
+>   was right — sender-linked windows are impossible. Receivers repeat (42 % of rows' `nameDest`
+>   has ≥ 10 tx, max 113; merchants `M…` are 34 % of rows and 0 % of fraud), but the **receiver
+>   link is weak: lift 2.1×** (Handbook terminal 71.65×, BankSim customer 30×).
+> - ⛔ **The file-order trap fires, and a within-step shuffle does NOT disarm it.** Raw order:
+>   P(fraud | prev fraud) = **0.72** (558×; 4,075 raw TRANSFER→CASH_OUT fraud pairs with identical
+>   amounts — the simulator writes both legs of a fraud together). After the seeded within-hour
+>   shuffle it is still **0.44 (339×)**: fraud is dense in the sparse late hours, so time order
+>   itself carries the label. **On PaySim the global-window arm is not a no-signal control** —
+>   the opposite of ULB, BankSim and the Handbook.
+> - Balances: the sender is emptied in 98 % of fraud vs 57 % of legit. Logistic references
+>   (temporal split, train step < 355, test ≥ 355; subsample 1.5 M): row-only **0.126**, + raw
+>   balances **0.261**, + balance-error terms **0.355** — no ceiling in any. The 80 % row-mass cut
+>   falls at step 355, so test is the sparse tail (0.33 % fraud vs 0.08 % in train).
+> - Row scope, balance features and how the grid treats the time-order artifact are
+>   pre-registration choices for the operator.
+>
+> **▸ 2026-09-11 — DESIGN FIXED, before any model trained on PaySim.**
+>
+> | Choice | Taken | By / why |
+> |---|---|---|
+> | Row scope | **TRANSFER + CASH_OUT only** | operator delegated it ("do what's best for the research"); chosen because the three excluded types hold **zero** fraud across 3.59 M rows (measured), keeping them only adds negatives the `type` column alone classifies — the accuracy inflation this thesis argues against — it is the standard PaySim scope, and it keeps every Kaggle job inside 12 h. **Pre-registered sensitivity arm:** the federated ablation also runs on all rows (`--dataset paysim_all`, same split steps), so the scope's effect is measured, not argued |
+> | Features | **row fields + raw balances** (operator) | encode what the row has, engineer nothing: log1p(amount), amount, type, hour, day-of-week, log1p of the four balances. No balance-error terms, no `isFlaggedFraud` (label-derived), no IDs |
+> | Grid | **same protocol, artifact flagged in advance** (operator) | global vs receiver-linked windows; the pre-registration must say that "global beats linked" on PaySim is read as the time-clustering artifact |
+> | Partition | `stratified` only | no bank IDs, no sender history — stated as untestable here, not skipped |
+>
+> **Measured on the chosen scope** (scratch run, re-asserted by `check_paysim_loader.py`):
+> 2,770,409 rows, all 8,213 fraud (0.296 %). 70/80 % row-mass cuts: **train step < 323**
+> (1,938,484 rows, 3,633 fraud, 0.187 %), val 323–353 (260,469 · 310), **test ≥ 354** (571,456 ·
+> 4,270 · **0.747 %**). Global arm still **151.6×** after the within-step shuffle; receiver link
+> **1.30×**; 99.87 % of senders appear once. Fraud rate by step band: 0.26 / 0.18 / 0.16 / 0.14 %
+> across steps 1–399, then **0.86 / 1.24 / 3.71 %** across 400–743 — volume collapses, fraud does
+> not. More than half the fraud lands in test; that shift is the data and is reported as such.
+
+#### ▸ PRE-REGISTRATION — PaySim (OBJ-11) — ✅ APPROVED 2026-09-11 (drafted by Claude, approved as written by the operator)
+
+> **Nothing runs on PaySim until this header reads APPROVED.** Same rules as the Handbook's:
+> each item names the property, the metric (rule 11) and the result that would falsify it.
+
+**Protocol, fixed in advance.** Scope, features and split as in the design table above. Same code
+paths as BankSim and the Handbook: four sweeps at their defaults (11-point ε grid, `n_repeats=100`);
+federated ablation pinned (`--filters 32`, 30 epochs, 150 steps/epoch, search skipped); grid of 7
+architectures × {global, receiver}, 10 epochs, 32 filters, batch 2048, seeds 42/7/123. Partition
+`stratified` only. **Runs on Kaggle** with the laptop's torch / numpy / scikit-learn / pandas / scipy /
+matplotlib versions pinned and 4 threads (Python 3.12 against the laptop's 3.13): every PaySim
+comparison is within one environment, and any cross-dataset column involving PaySim is also an
+environment comparison, labelled as such.
+
+**(a) Krum's utility cost** — the Handbook's property and thresholds, so both datasets are scored on
+one rule. Krum − FedAvg, balanced-accuracy pp, `byzantine_robustness_sweep`, 8 cells: **negative in
+≥ 5 of 8 and in a majority of the clean subset. Falsified if |Δ| ≤ 1 pp in ≥ 6 of 8, or positive in
+≥ 5 of 8.** Krum rejects the attacker 8/8 — by construction, not a finding.
+
+**(b) Isolation fires-but-does-not-help.** Accuracy improves in **0 of 3** lone-attacker scenarios.
+No call on whether it fires.
+
+**(c) Channel ordering.** Inversion rate (not ρ): output < weight at **≥ 10 of 11 ε points**; a point
+where both channels fail near-totally counts as not held.
+
+**(d) The grid — predicted AGAINST linkage, because of the artifact.** Global windows beat
+receiver-linked windows for **≥ 4 of 7** architectures, and global-window MCC beats the
+per-transaction reference for **≥ 5 of 7**. **Both are read as the time-clustering artifact (global
+lift 151.6×), not as evidence that linkage fails** — the receiver link carries 1.30× and senders cannot
+link at all. ADTCN is not 1st under either ordering. **Named alternative:** if receiver-linked beats
+global for ≥ 4 of 7, a 1.30× link carries more usable signal than a 151.6× time cluster — reported as
+a finding about what windows can exploit.
+
+**(e) Row-scope sensitivity** (federated ablation, `paysim_all` against `paysim`, same split steps).
+Adding 3.59 M fraud-free rows raises FedAvg **accuracy** by ≥ 0.1 pp while its **MCC** moves by
+≤ 0.05; the FedAvg / Krum / DP ordering by MCC is identical in both scopes; DP sits at MCC ≈ 0 in
+both. **Named alternative:** if the ordering flips, the scope changes a conclusion, and both scopes
+are reported side by side.
+
+**Stated so they are not later reported as findings:** exact-Shapley cost is structural; MC top-1
+stays intermittent; entity-disjoint partitions are **untestable** on PaySim (no bank IDs, no sender
+history) — reported as not tested, never as tested-and-passed.
+
+<!-- PAYSIM SCORING BELOW THIS LINE, AFTER APPROVAL. -->
+
+#### ▸ SCORECARD — PaySim (a), scored 2026-09-11 20:30 from `results/byzantine_robustness_sweep_paysim_stratified.json`
+
+Provenance: Kaggle, torch 2.12.0+cpu, **4 threads**, Python 3.12.13; 12 epochs. Metric: the sweep's own —
+balanced accuracy (Sens+Spec)/2 of the global model on test (rule 11). Contamination rule: the
+collator's — attacked FedAvg more than 0.5 pp above its own no-attack reference.
+
+| cell | Krum | FedAvg | ref FedAvg | Krum − FedAvg | baseline |
+|---|---|---|---|---|---|
+| n=5 sign-flip | 76.85 | 84.40 | 80.61 | −7.55 | (!) contaminated |
+| n=5 scaled | 76.85 | 73.03 | 80.61 | **+3.83** | clean |
+| n=5 gaussian | 76.85 | 61.41 | 80.61 | **+15.44** | clean |
+| n=5 label-flip | 76.85 | 84.36 | 80.61 | −7.51 | (!) contaminated |
+| n=7 sign-flip | 80.59 | 80.59 | 76.78 | 0.00 | (!) contaminated |
+| n=7 scaled | 80.59 | 72.96 | 76.78 | **+7.63** | clean |
+| n=7 gaussian | 80.59 | 61.43 | 76.78 | **+19.16** | clean |
+| n=7 label-flip | 80.59 | 80.59 | 76.78 | 0.00 | (!) contaminated |
+
+**(a) ❌ WRONG.** Predicted: negative in ≥ 5 of 8 and in a majority of the clean subset. Measured:
+negative in **2 of 8**, both on contaminated baselines; on the **clean subset Krum is positive in 4 of
+4** (+3.83 to +19.16 pp). **Neither named falsifier threshold is reached either:** positive in 4 of 8
+(threshold ≥ 5); |Δ| ≤ 1 pp in 2 of 8 (threshold ≥ 6) — the two exact zeros are contaminated cells where
+the attacked FedAvg scored exactly Krum's accuracy. Honest reading: **the prediction failed, and the
+result leans toward the named alternative without meeting its threshold.** Wherever the baseline is
+clean, Krum *protects* utility on PaySim — the scaled and gaussian attacks cut FedAvg by 7.6–19.2 pp and
+Krum does not lose it — which is ULB's pattern, not BankSim's. So Krum's utility cost is **not a general
+property of non-ULB data**; whether it is BankSim-specific waits for the Handbook's (a).
+
+Krum rejects the attacker **8/8** — by construction. Contaminated baselines **4 of 8** (ULB 0/8 ·
+BankSim/strat 2/8 · BankSim/entity-disjoint 5/8).
+
+*Context, not pre-registered:* PaySim is well above the floor — ablation FedAvg MCC **0.4283**, Krum
+0.4139, DP **0.0118** (the DP collapse on a fourth condition), the proposed Krum+DP+Shapley arm −0.0041.
+
+#### ▸ SCORECARD — PaySim (b) and (c), scored 2026-09-11 from `results/economic_byzantine_sweep_paysim_stratified.json` and `results/private_incentive_sweep_paysim_stratified.json`
+
+Kaggle, 4 threads, Python 3.12.13 in both.
+
+**(b) ✅ HELD — isolation improves accuracy in 0 of 3 lone-attacker scenarios.** Metric: the sweep's own
+consensus balanced accuracy, with isolated attackers dropped minus without (`acc_gap`); 12 rounds, 12 epochs.
+
+| Lone attacker | Isolated? | with → without | gap |
+|---|---|---|---|
+| always-fraud | BankC @ r3 | 84.64 → 91.33 % | **−6.68 pp** |
+| label-flip | BankC @ r3 | 84.64 → 87.56 % | **−2.92 pp** |
+| free-rider | never | 84.64 → 84.64 % | 0.00 |
+
+It **fires 2 of 3** (no call was made on firing). The 2-of-3 collusion is caught: always-fraud ×2
+**+37.71 pp**, label-flip ×2 **+72.64 pp**, both isolated at r3; the free-rider pair is never isolated. The
+quorum-arithmetic caveat applies to the negative ×1 gaps, as on BankSim and AMLSim.
+
+**(c) ✅ HELD — under both readings.** Metric: inversion rate, 100 paired draws, 11-point grid. Output
+inverts **strictly less often than weight at 11 of 11** ε points, so it also inverts no more often at
+11 of 11 (`ordering_holds_at` = 11); no zero–zero ties, no point where both channels fail near-totally.
+The dual reporting rule gives one answer here.
+
+| ε | 1 | 5 | 10 | 30 | 50 | 100 | 300 | 1000 | 3000 | 10000 | 30000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| weight | 0.74 | 0.75 | 0.77 | 0.82 | 0.89 | 0.97 | 0.70 | 0.67 | 0.66 | 0.42 | 0.01 |
+| output | 0.65 | 0.59 | 0.48 | 0.40 | 0.40 | 0.27 | 0.06 | 0.00 | 0.00 | 0.00 | 0.00 |
+
+*Not pre-registered, recorded so it is not over-read:* the weight channel is still inverting at ε = 10000
+(0.42) and at 30000 on a single draw (0.01) — no budget factor is computed from it (retired, OBJ-17). The
+ground-truth Shapley split is **0.863 / 0.086 / 0.051**: far more skewed than the 50/30/20 org sizes,
+unlike AMLSim's native banks (0.550 / 0.316 / 0.135). Noted, not interpreted.
+
+#### ▸ SCORECARD — PaySim (e), scored 2026-09-11 23:30 from `results/baselines_paysim_{stratified,all_stratified}.json`
+
+Provenance: both Kaggle, 4 threads, Python 3.12.13, pinned 32 filters / 30 epochs / 150 spe, same split
+steps. Test sets: 571,456 rows (scoped) vs 1,334,219 (all rows) — the **same 4,270 frauds**; the extra
+762,763 rows are the fraud-free types. *(This job was the one the old queue misread as ERROR; it had
+been running all along and completed normally.)*
+
+| arm | scoped Acc | scoped MCC | all-rows Acc | all-rows MCC |
+|---|---|---|---|---|
+| FedAvg | 97.5393 | +0.4283 | 98.8851 | +0.4185 |
+| FedAvg+Krum | 97.5214 | +0.4139 | 98.6619 | +0.3933 |
+| FedAvg+DP | 98.6970 | +0.0118 | 28.2159 | +0.0014 |
+| DB-BOA-ADTCN | 10.6181 | −0.0041 | 98.2317 | +0.0067 |
+
+**(e) ✅ HELD — all four parts.** FedAvg accuracy **+1.35 pp** (≥ 0.1 ✓) while its MCC moves **−0.0098**
+(≤ 0.05 ✓); MCC ordering FedAvg > Krum > DP **identical** in both scopes ✓; DP at **+0.0118** and
+**+0.0014** ✓. "≈ 0" was not given a number in the text; it is read as this project already reads it
+(BankSim/stratified's DP arm at 0.018 is reported as "roughly 0"), and both values sit below that — the
+readings do not split, so the verdict stands. **The row scope changes no conclusion.**
+
+*Not pre-registered, and worth having:* with only the row scope changed, the **DP arm's accuracy swings
+98.70 % → 28.22 %** (the collapsed model goes from flagging almost nothing to flagging almost everything)
+and the proposed arm's **10.62 % → 98.23 %**, while both MCCs stay near 0 — the report's "accuracy misreads
+a collapsed model" point, replicated inside one dataset. Krum − FedAvg in the ablation: −0.0144 (scoped),
+−0.0252 (all rows) MCC; (a) is scored on the byzantine sweep, not here.
+
+#### ▸ SCORECARD — PaySim (d), scored 2026-09-12 from `results/paysim_temporal_grid.json` (7 parts, merged)
+
+Provenance: Kaggle, 4 threads, Python 3.12.13. The 7 parts ran as separate jobs on one code bundle
+(`1d3029e4…`), with 10 epochs, 32 filters and seeds 42/7/123. Metric: test MCC, mean of 3 seeds (± s.d.).
+
+The merge's adjacency diagnostic, P(fraud | previous row fraud), is 0.4493 under the global ordering
+(151.57×) and 0.5862 receiver-ordered (197.74×). The "1.30×" the pre-registration quoted is the ratio of
+the two, 197.74 / 151.57.
+
+| Model | global | receiver | receiver − global |
+|---|---|---|---|
+| CNN | 0.4199 ± 0.049 | 0.4781 ± 0.029 | +0.0582 |
+| LSTM | 0.4523 ± 0.110 | 0.4805 ± 0.021 | +0.0281 |
+| DTCN | 0.3818 ± 0.039 | 0.4309 ± 0.015 | +0.0491 |
+| ADTCN (ours) | 0.3536 ± 0.075 | 0.4729 ± 0.044 | **+0.1193** |
+| ResNet-1D | 0.4537 ± 0.009 | 0.4216 ± 0.019 | −0.0322 |
+| DenseNet-1D | 0.4411 ± 0.049 | 0.4524 ± 0.059 | +0.0113 |
+| EfficientNet-1D | 0.4563 ± 0.026 | 0.5056 ± 0.022 | +0.0493 |
+| per-transaction reference | 0.4185 ± 0.068 | — | — |
+
+| Part | Pre-registered | Measured | Verdict |
+|---|---|---|---|
+| (d-i) | global beats receiver for ≥ 4 of 7 | global wins for **1 of 7** (ResNet-1D only); receiver wins for **6 of 7** | ❌ **WRONG — and the named alternative holds.** A 1.30× link carries more usable signal than the 151.6× time cluster for 6 of 7 architectures. As pre-registered, this is reported as a finding about what windows can exploit. |
+| (d-ii) | global MCC beats the per-transaction reference (0.4185) for ≥ 5 of 7 | **5 of 7** (EfficientNet-1D, ResNet-1D, LSTM, DenseNet-1D, CNN). CNN's margin is **+0.0014**, far inside seed noise (s.d. 0.049 / 0.068) | ✅ **HELD, exactly at the threshold.** One of the five is a coin flip; quote the count with that caveat. |
+| (d-iii) | ADTCN not 1st under either ordering | global **7th of 7**, receiver **4th of 7** | ✅ **HELD** |
+
+Honest reading: the prediction that the time artifact would make global windows win was wrong. Linking by
+receiver helps six of seven architectures. ADTCN gains the most from the link (+0.1193), yet it still ranks
+4th, and under global windows it is last.
+
+*Not pre-registered on PaySim* (AMLSim has it): ADTCN − DTCN is −0.0281 under global windows and +0.0420
+receiver-ordered.
+
 `NOT STARTED` · **Ranked LAST under [OBJ-16] — recon only, and not before the 2026-09-19
 deadline.** Unaffected by the 2026-09-04 re-gate: it was weak on the old gate and it is weak on
 the new one, for the same reason (no bank IDs, probably no reusable per-customer histories).
@@ -1964,6 +2885,252 @@ histories, so it can test neither the federated/incentive story nor the entity-l
 Recon only — do not commit CPU-hours until OBJ-12 is ruled out. · 6.36M mobile-money transactions with sender/receiver/balances. **Check first:** origin accounts may appear only once or twice, which would make per-customer sequences useless. It is the multi-bank/network dataset, not the temporal one.
 
 ### ◈ OBJ-12 — IBM AMLSim for the real multi-bank story
+
+> **▸ 2026-09-11 — GENERATED, CORRECTED ONCE, MEASURED.** Rule 8 suspended; the operator chose the
+> real simulator over the pre-generated AMLworld data. Pipeline `data/generate_amlsim.py`
+> (IBM/AMLSim @ 7338a4bc, MASON 20 built from source) on the configuration
+> `data/make_amlsim_config.py` derives; acceptance `experiments/check_amlsim_loader.py` — **all
+> checks pass**; recon `experiments/amlsim_recon.py` → `results/amlsim_recon.json`.
+> - ⚠ **The first derivation was wrong, and the recon caught it before any model trained.** Contiguous
+>   per-bank blocks tied bank to account position, which the generator ties to activity: **94.6 / 5.1 /
+>   0.2 %** of transactions by sender bank, and **43 %** of bank_c's transactions laundering — bank had
+>   become a proxy for activity and label. Interleaving the banks every 10 positions fixed it:
+>   **50.1 / 30.0 / 19.9 %**, and bank columns no longer predict anything (logistic −0.001). The first
+>   dataset is discarded.
+> - **198,015 tx · 685 laundering (0.346 %) · 720 daily steps · 12,043 accounts.** The label is
+>   **laundering (`is_sar`), not fraud.** `alert_id` and the account table's `prior_sar_count` are the
+>   label under other names — never read.
+> - **Rows carry nothing:** logistic reference MCC **0.0001** on amount + day-of-week, the only row
+>   fields (`tx_type` is TRANSFER throughout). **Links carry a lot:** sender-linked **26.0×**,
+>   receiver-linked **41.5×**; global **2.95×** after the within-day shuffle (raw file order 27.9× — the
+>   trap fires, and the shuffle disarms it). Senders average 103 transactions each.
+> - Native heterogeneity, reported not corrected: laundering rate by sender bank **0.24 / 0.37 /
+>   0.57 %** (positives roughly equal per bank, normal volume at 50/30/20).
+> - Cuts (70/80 % row-mass): train day < 438 (138,514 · 542), val 438–521 (19,813 · 37), test ≥ 522
+>   (39,688 · **106**). Native bank orgs (train): 69,184 / 41,660 / 27,670 rows, 192 / 172 / 178
+>   positives, **0 senders shared**.
+
+#### ▸ PRE-REGISTRATION — AMLSim (OBJ-12) — ✅ APPROVED 2026-09-11 (drafted by Claude, approved as written by the operator)
+
+> **Nothing runs on AMLSim until this header reads APPROVED.** Same rules as the Handbook's and PaySim's.
+
+**Protocol, fixed in advance.** Label `is_sar` (laundering). Row features amount + day-of-week only (no
+bank columns, no label aliases). Partitions: `stratified` — all four sweeps and the ablation; `bank`
+(native) — `economic_byzantine_sweep`, `private_incentive_sweep` and the ablation only. The byzantine
+sweep builds 5- and 7-org federations and the scalability sweep up to 12, and there are **three** native
+banks, so those two **cannot run natively** — reported as such, never as skipped. Grid: 7 architectures ×
+{global, sender, receiver}. Defaults, pins and Kaggle placement as for PaySim.
+
+⚠ **Windowing, stated in advance.** No sweep passes window groups, so each org's model windows its rows in
+the order the partition leaves them: `stratified` shuffles them (random windows), `bank` keeps them
+grouped by sender (mostly one sender's own history). **`bank` against `stratified` therefore moves the
+partition AND the effective windowing together** — a two-factor contrast, never quoted as a partition
+effect. The same holds for BankSim/customer and Handbook/customer (windowing correction, 2026-09-11).
+
+**(f) The floor.** Under `stratified`, the ablation's FedAvg test MCC stays **< 0.05** — the rows carry
+nothing and the windows are random. If so, (a)–(c) on AMLSim/stratified are **untestable at the floor**
+and reported that way, never as held or failed; if FedAvg reaches ≥ 0.05, they are scored with the
+Handbook's rules.
+
+**(g) Linkage lifts it off the floor.** Under `bank`, the ablation's FedAvg test MCC is **≥ 0.05 and
+above its stratified value** — the sender-linked training windows carry what the rows do not. **Named
+alternative:** if `bank` is also at the floor, a 26× adjacency is not enough for these models at this
+sample size (106 test positives), and that is the finding.
+
+**(b), (c) on `bank`** — scored only if (g) holds: isolation improves accuracy in **0 of 3**; output <
+weight inversion at **≥ 10 of 11** ε. (a) is not testable on `bank` (it needs 5 and 7 orgs).
+
+**(d) Grid.** Linked windows beat global for **every** architecture under both linked orderings (14 of 14);
+the receiver gain exceeds the sender gain for **≥ 5 of 7** (41.5× vs 26.0×); global windows stay within
+±0.05 MCC of the per-transaction reference (both at the floor); ADTCN is not 1st under any ordering, and
+ADTCN − DTCN ≤ 0 on both linked orderings. **Named alternative:** if ADTCN ranks 1st under a linked
+ordering — on the one dataset whose rows carry nothing and whose links carry everything — the
+architecture verdict is dataset-dependent, reported as a finding.
+
+**Stated so they are not later reported as findings:** 106 test positives make every AMLSim MCC coarse;
+the label is laundering; the laundering rate differs 2.4× across native banks by the simulator's
+construction; exact-Shapley cost is structural; MC top-1 stays intermittent.
+
+<!-- AMLSIM SCORING BELOW THIS LINE, AFTER APPROVAL. -->
+
+#### ▸ SCORECARD — AMLSim (f) and (g), scored 2026-09-11 19:55 from `results/baselines_amlsim_{stratified,bank}.json`
+
+Provenance checked first: Kaggle, torch 2.12.0+cpu, **4 threads**, numpy 2.3.2, Python 3.12.13; pinned
+32 filters / 30 epochs / 150 steps (search skipped); ordering `sender`; test set 39,688 rows, 106 positives
+in both files. Metric: test MCC, the pre-registered one (rule 11).
+
+| # | Pre-registered | Measured | Verdict |
+|---|---|---|---|
+| (f) | `stratified` FedAvg MCC < 0.05 | **−0.0110** — TP 0 of 106, FP 1,711: it catches nothing. Krum −0.0136 · DP +0.0012 · DB-BOA-ADTCN −0.0048 | ✅ **HELD.** Consequence, as written: (a)–(c) on AMLSim/`stratified` are **untestable at the floor** — reported that way, never as held or failed |
+| (g) | `bank` FedAvg MCC ≥ 0.05 **and** above its stratified value | **+0.1576** — TP 82 of 106, FP 2,241 (against −0.0110) | ✅ **HELD.** (b), (c) on `bank` become scoreable when those two sweeps land |
+
+⚠ **Two-factor, exactly as pre-registered:** `bank` against `stratified` moves the partition AND the
+training windows. In the ablation, `bank` hands each org its sender groups, so every training window is
+one sender's own history, while `stratified` shuffles the rows (random windows). The lift −0.011 → +0.158
+belongs to the pair and is never quoted as a partition effect or as a windowing effect alone. 106 test
+positives make both numbers coarse.
+
+*Not pre-registered — recorded so it is not later over-read:* on `bank`, FedAvg+DP collapses to +0.0069
+(the DP collapse, on a third dataset) and the proposed Krum+DP+Shapley arm to −0.0023. Krum − FedAvg is
+−0.0087 MCC here, but (a) is scored on the byzantine sweep's balanced-accuracy cells, not on this
+ablation — and (a) cannot run on `bank` at all (three native banks).
+
+#### ▸ SCORECARD — AMLSim (b) on `bank`, scored 2026-09-11 from `results/economic_byzantine_sweep_amlsim_bank.json`
+
+Scoreable because (g) held. Metric: the sweep's own — consensus balanced accuracy (Sens+Spec)/2, with
+isolated attackers dropped minus without (`acc_gap`); 12 rounds, 12 epochs; Kaggle, 4 threads.
+
+| Lone attacker | Isolated? | with → without | gap |
+|---|---|---|---|
+| always-fraud | BankC @ r3 | 50.85 → 68.82 % | **−17.96 pp** |
+| label-flip | BankC @ r4 | 50.85 → 54.81 % | **−3.95 pp** |
+| free-rider | never | 50.85 → 50.85 % | 0.00 |
+
+**(b) ✅ HELD — isolation improves accuracy in 0 of 3 lone-attacker scenarios**, now on a fourth
+condition. It **fires 2 of 3** (no call was made on firing: ULB 0/3, both BankSim partitions 3/3). The
+2-of-3 collusion is still caught: always-fraud ×2 **+6.44 pp**, label-flip ×2 **+28.59 pp**, both
+isolated at r3; the free-rider pair is never isolated (gap 0). ⚠ As on BankSim, part of each negative
+×1 gap is quorum arithmetic — isolating one of three voters leaves two, where the same majority rule
+demands unanimity — so the gaps are not a pure defence-quality measurement.
+
+#### ▸ SCORECARD — AMLSim (c) on `bank`, scored 2026-09-11 from `results/private_incentive_sweep_amlsim_bank.json`
+
+Metric: inversion rate per ε, 100 paired draws, the 11-point grid; Kaggle, 4 threads.
+
+| ε | 1 | 5 | 10 | 30 | 50 | 100 | 300 | 1000 | 3000 | 10000 | 30000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| weight | 0.80 | 0.83 | 0.84 | 0.82 | 0.82 | 0.78 | 0.83 | 0.11 | 0.00 | 0.00 | 0.00 |
+| output | 0.67 | 0.63 | 0.53 | 0.17 | 0.05 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
+
+⛔ **Reported as two scores, with no "held" label — operator decision, 2026-09-11.** The verdict depends
+on how a tie is read, and the pre-registration wording is my drafting error.
+- **Strictly less often (the text's "output < weight"): 8 of 11** — below the pre-registered ≥ 10.
+- **No more often** (`ordering_holds_at`, output **≤** weight — the statistic that scored every earlier
+  condition): **11 of 11.**
+- The three non-strict points are **zero–zero ties at ε ≥ 3000**: both channels rank the banks perfectly,
+  so neither can be better. They are not the "both fail near-totally" case the text excludes. The output
+  channel is **never worse** at any ε here.
+- Why this is a drafting error and not a data question: under the strict reading **every earlier condition
+  also scores 9 of 11** (ULB 9 strict + 2 zero-ties; BankSim/strat 9 + 2; BankSim/entity-disjoint 9 + 1 +
+  one genuine counter-example at ε=1), i.e. the strict threshold would have "failed" results this project
+  has reported as holding since OBJ-15. The Handbook's and PaySim's (c) share the same wording.
+- **Reporting rule, fixed now for all three new datasets:** give both counts with the definition named —
+  "output inverts no more often than weight at k/11; strictly less often at j/11" — never one alone
+  (rule 11). **Operator, 2026-09-11: where the two counts disagree, give no held / not-held label at
+  all — only the two scores.** Where they agree (PaySim: 11/11 both ways), the verdict follows the text.
+  This binds the report, the brief and any slide, not just this file.
+
+*Not pre-registered, worth recording:* the ground-truth Shapley split under the native partition is
+**0.550 / 0.316 / 0.135** — tracking the banks' 50.1 / 30.0 / 19.9 % volumes — against ULB's near-uniform
+0.167 / 0.165 / 0.165. That bears on open question Q5 (Shapley under an entity-disjoint split) and is
+the first condition where the incentive layer has a non-trivial split to attribute.
+
+**AMLSim/`stratified` byzantine sweep landed 20:04** — (a) is **untestable at the floor** by (f); not scored.
+
+#### ▸ DEVIATION — AMLSim scalability, recorded 2026-09-11 before any AMLSim scalability number exists
+
+**What happened.** `amlsim-scalability-stratified` exited 1 after 5.5 s on Kaggle (23:35):
+`ValueError: The test_size = 1 should be greater or equal to the number of classes = 2`, in
+`split_for_orgs`. The equal-shard pool asks for 20 orgs × 8,000 = 160,000 training rows. AMLSim's temporal
+training pool has **138,514** (542 positives), which holds **17** full shards: org 18 got the 2,513-row
+remainder and the stratified split refused the one row left after it. That is a capacity limit of a
+198 k-row dataset, not a code bug and not a modelling result. The log is kept in
+`results/_kaggle/amlsim-scalability-stratified__failed_2335/`.
+
+**What changes: the smallest deviation that keeps the controlled variable.** `scalability_sweep.py
+--fit-pool` stops the MC range at the largest pre-registered n the pool holds:
+- `mc_ns` = 3–12, 14, 16, instead of running on to 18 and 20;
+- `exact_ns` = 3–12, unchanged. The pre-registration's "up to 12" is this exact arm; the MC arm runs to 20 elsewhere.
+- Unchanged: shard size (8,000 per org), seeds, noise tiers, `mc_samples`, epochs and `n_val`.
+
+Alternatives rejected:
+- Shrinking shards to about 6,900 so that 20 fit would change the controlled variable at every n and break
+  comparability with ULB and both BankSim runs.
+- Reporting the sweep as not run would throw away the two quantities the pre-registration names.
+
+**Why nothing pre-registered moves.** For scalability, the AMLSim pre-registration names two statements, both
+*"stated so they are not later reported as findings"*: exact-Shapley cost is structural, and MC top-1 stays
+intermittent. Both are read on `exact_ns` = 3–12, which is untouched.
+
+Shards are cut in org order with seed `random_state + i`, and org i's noise tier is `i % 4`. So every runtime
+row kept is the one the full protocol computes. Verified on the laptop: the first 16 shards are bitwise
+identical in 16- and 17-org AMLSim pools, and in 16- and 20-org ULB pools. What is lost: MC runtime at
+n = 18 and 20, on AMLSim only.
+
+**Guards.**
+- Without the flag, a pool that is too small now stops with a message naming the flag, instead of crashing
+  inside scikit-learn (checked on AMLSim).
+- Only the AMLSim job passes the flag (`kaggle_jobs.FIT_POOL`). ULB's pool holds 24 shards, and the three
+  finished runs (ULB, BankSim/strat, BankSim/customer) all reach n = 20 with no `pool_fit` field.
+- The output records `pool_fit`: pool rows, capacity, and both pre-registered ranges. The auto-draft states
+  the cut under its runtime table.
+
+#### ▸ RESULT — scalability on PaySim and AMLSim, landed 2026-09-12 (stated in advance, not scored)
+
+Both pre-registrations list two statements under *"stated so they are not later reported as findings"*:
+exact-Shapley cost is structural, and MC top-1 stays intermittent. Both came out as stated.
+
+| | PaySim/stratified | AMLSim/stratified (`--fit-pool`) | laptop: ULB · BankSim/strat · BankSim/entity |
+|---|---|---|---|
+| exact Shapley @ n=12 (4,095 coalitions) | 69.6 s | 62.0 s | 113.5 · 140.3 · 120.6 s |
+| MC Shapley @ n=12 | 21.5 s | 19.1 s | — |
+| MC speed-up @ n=12 | 3.24× | 3.24× | 3.27 · 4.13 · 3.24× |
+| MC top-1 agreement, n=3–12 | 3/10 | 3/10 | 5/10 · 5/10 · 3/10 |
+| ρ @ n=12 (rank fidelity) | +0.413 | +0.077 | — |
+| L1 @ n=12 (split fidelity) | 0.2467 | 0.2400 | 0.2572 · 0.2553 · 0.2262 |
+
+- **Provenance:**
+  - both jobs ran on Kaggle with 4 threads and exited 0;
+  - PaySim ran on bundle `1d3029e4…` (12,730 s);
+  - AMLSim ran on `162d5e66…` (1,378 s). Its log carries the `DEVIATION (--fit-pool)` line, so it ran the
+    new code. Its MC range is 3–12, 14, 16, as recorded under ▸ DEVIATION.
+- **The wall-clock columns compare environments** (Kaggle Xeon against the laptop), not datasets: the
+  coalition count is identical. Never quote the 62–70 s against 113–140 s as a dataset effect.
+- *Noted, not interpreted:* PaySim and AMLSim give the **same top-1 pattern** (yes at n = 3, 4 and 10, no
+  elsewhere), with different ρ and L1. The org noise ladder and the MC seed are shared across datasets, so
+  a shared pattern is possible without meaning anything.
+
+#### ▸ SCORECARD — AMLSim (d), scored 2026-09-12 from `results/amlsim_temporal_grid.json` (7 parts, merged)
+
+**Provenance.** Kaggle, 4 threads, Python 3.12.13; 10 epochs, 32 filters, seeds 42/7/123.
+- Six parts ran on bundle `1d3029e4…`.
+- The ADTCN part ran on `162d5e66…`: it was re-pushed at 02:58 after the phantom push, and that bundle's
+  changes touch nothing the grid imports.
+- The merge's protocol check accepted all seven parts.
+
+Metric: test MCC, mean of 3 seeds (± s.d.). The merge's adjacency diagnostic, P(positive | previous row
+positive), is 0.0102 global (2.95×), 0.6473 sender-ordered (187.12×) and 0.6148 receiver-ordered (177.72×).
+
+| Model | global | sender | receiver | sender gain | receiver gain |
+|---|---|---|---|---|---|
+| CNN | +0.0020 ± 0.001 | +0.2998 ± 0.136 | +0.1511 ± 0.036 | +0.2978 | +0.1491 |
+| LSTM | +0.0030 ± 0.002 | +0.2026 ± 0.023 | +0.1221 ± 0.018 | +0.1996 | +0.1190 |
+| DTCN | +0.0035 ± 0.003 | +0.2852 ± 0.037 | +0.1221 ± 0.030 | +0.2817 | +0.1186 |
+| ADTCN (ours) | +0.0037 ± 0.002 | +0.3332 ± 0.059 | +0.1374 ± 0.019 | +0.3295 | +0.1337 |
+| ResNet-1D | −0.0046 ± 0.005 | +0.3621 ± 0.115 | +0.2173 ± 0.011 | +0.3667 | +0.2219 |
+| DenseNet-1D | +0.0026 ± 0.003 | +0.1899 ± 0.077 | +0.1716 ± 0.002 | +0.1873 | +0.1690 |
+| EfficientNet-1D | −0.0045 ± 0.002 | +0.2822 ± 0.043 | +0.1522 ± 0.007 | +0.2867 | +0.1567 |
+| per-transaction reference | +0.0017 ± 0.004 | — | — | — | — |
+
+| Part | Pre-registered | Measured | Verdict |
+|---|---|---|---|
+| (d-i) | linked beats global for every architecture under both linked orderings (14 of 14) | sender 7/7, receiver 7/7 — **14 of 14** | ✅ **HELD** |
+| (d-ii) | receiver gain > sender gain for ≥ 5 of 7 (41.5× vs 26.0×) | **0 of 7**: the sender link gained more for every model | ❌ **WRONG** |
+| (d-iii) | global within ±0.05 MCC of the per-transaction reference (both at the floor) | **7 of 7**; largest gap 0.0063 (ResNet-1D) | ✅ **HELD** |
+| (d-iv) | ADTCN not 1st under any ordering | **1st under global** (0.0037 against DTCN's 0.0035; all seven at the floor, s.d. 0.001–0.005); 2nd sender, 5th receiver | ❌ **WRONG as written.** The global ranking ranks floor-level noise, but the text says *any* ordering, so that does not rescue it. The named alternative (ADTCN 1st under a **linked** ordering) did **not** occur. |
+| (d-v) | ADTCN − DTCN ≤ 0 on both linked orderings | **+0.0480** sender, **+0.0153** receiver — each inside one seed s.d. | ❌ **WRONG** |
+
+Honest reading:
+- **Links carry everything on AMLSim, as predicted.** Every model rises from the floor (≈ 0.003) to
+  0.12–0.36.
+- **The ranking of the two links was predicted the wrong way.** The prediction used the recon's
+  linked-adjacency lifts (receiver 41.5×, sender 26.0×), and all seven models went the other way. The
+  grid's own diagnostic, taken on the orderings the models actually saw, ranks them the opposite way
+  (sender 187.12×, receiver 177.72×). The two figures are computed differently (`amlsim_recon.py` against
+  the merge). Noted, and not used to rescue the prediction.
+- **Architecture.** ResNet-1D is 1st under both linked orderings; ADTCN is 2nd (sender) and 5th (receiver).
+  ADTCN's attention beats its no-attention ablation (DTCN) under both linked orderings, each time by less
+  than one seed s.d.
 
 `NOT STARTED` · **DEFERRED past the 2026-09-19 deadline — demoted from first to second
 2026-09-04.** Sequenced under [OBJ-16] behind the Handbook.

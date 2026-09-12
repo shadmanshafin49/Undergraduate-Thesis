@@ -1,0 +1,46 @@
+[{"stream_name":"stdout","time":17656.530651401,"data":"{\n"}
+,{"stream_name":"stdout","time":17656.530953988,"data":"  \"job\": \"paysim-all-baselines-stratified\",\n"}
+,{"stream_name":"stdout","time":17656.53096795,"data":"  \"cmd\": [\n"}
+,{"stream_name":"stdout","time":17656.53097168,"data":"    \"run_baselines.py\",\n"}
+,{"stream_name":"stdout","time":17656.530975122,"data":"    \"--dataset\",\n"}
+,{"stream_name":"stdout","time":17656.530978227,"data":"    \"paysim_all\",\n"}
+,{"stream_name":"stdout","time":17656.530981282,"data":"    \"--partition\",\n"}
+,{"stream_name":"stdout","time":17656.530984384,"data":"    \"stratified\",\n"}
+,{"stream_name":"stdout","time":17656.530987492,"data":"    \"--filters\",\n"}
+,{"stream_name":"stdout","time":17656.530990466,"data":"    \"32\",\n"}
+,{"stream_name":"stdout","time":17656.530993424,"data":"    \"--out\",\n"}
+,{"stream_name":"stdout","time":17656.530996495,"data":"    \"baselines_paysim_all_stratified.json\"\n"}
+,{"stream_name":"stdout","time":17656.530999882,"data":"  ],\n"}
+,{"stream_name":"stdout","time":17656.531002898,"data":"  \"started\": \"2026-09-11 12:29:46\",\n"}
+,{"stream_name":"stdout","time":17656.531006242,"data":"  \"bundle_sha256\": \"1d3029e4a01f77e2b8dd278425642495d3b04d834ea46bac796157da70d586cd\",\n"}
+,{"stream_name":"stdout","time":17656.531009678,"data":"  \"pip\": {\n"}
+,{"stream_name":"stdout","time":17656.531012835,"data":"    \"torch_rc\": 0,\n"}
+,{"stream_name":"stdout","time":17656.531015962,"data":"    \"others_rc\": 0,\n"}
+,{"stream_name":"stdout","time":17656.531019033,"data":"    \"stderr_tail\": \"\"\n"}
+,{"stream_name":"stdout","time":17656.5310221,"data":"  },\n"}
+,{"stream_name":"stdout","time":17656.531025048,"data":"  \"returncode\": 0,\n"}
+,{"stream_name":"stdout","time":17656.531028058,"data":"  \"job_seconds\": 17534.9,\n"}
+,{"stream_name":"stdout","time":17656.531031133,"data":"  \"job_torch_threads\": 4,\n"}
+,{"stream_name":"stdout","time":17656.531034452,"data":"  \"imported_versions\": \"{\\\"python\\\": \\\"3.12.13\\\", \\\"torch\\\": \\\"2.12.0+cpu\\\", \\\"threads\\\": 2, \\\"numpy\\\": \\\"2.3.2\\\", \\\"scikit-learn\\\": \\\"1.8.0\\\", \\\"pandas\\\": \\\"3.0.2\\\", \\\"scipy\\\": \\\"1.17.1\\\", \\\"matplotlib\\\": \\\"3.10.8\\\"}\",\n"}
+,{"stream_name":"stdout","time":17656.53104695,"data":"  \"laptop_versions\": {\n"}
+,{"stream_name":"stdout","time":17656.53105017,"data":"    \"python\": \"3.13.7\",\n"}
+,{"stream_name":"stdout","time":17656.531053339,"data":"    \"torch\": \"2.12.0\",\n"}
+,{"stream_name":"stdout","time":17656.531056368,"data":"    \"numpy\": \"2.3.2\",\n"}
+,{"stream_name":"stdout","time":17656.531059368,"data":"    \"scikit-learn\": \"1.8.0\",\n"}
+,{"stream_name":"stdout","time":17656.531062455,"data":"    \"pandas\": \"3.0.2\",\n"}
+,{"stream_name":"stdout","time":17656.531065501,"data":"    \"scipy\": \"1.17.1\",\n"}
+,{"stream_name":"stdout","time":17656.53106862,"data":"    \"matplotlib\": \"3.10.8\"\n"}
+,{"stream_name":"stdout","time":17656.531071697,"data":"  },\n"}
+,{"stream_name":"stdout","time":17656.531074655,"data":"  \"bundle_commit\": \"6d8e41e8b19213128b54ad653defec1129f29aaf\",\n"}
+,{"stream_name":"stdout","time":17656.531077938,"data":"  \"cpu_model\": \"Intel(R) Xeon(R) CPU @ 2.20GHz\",\n"}
+,{"stream_name":"stdout","time":17656.531081072,"data":"  \"platform\": \"Linux-6.12.90+-x86_64-with-glibc2.35\",\n"}
+,{"stream_name":"stdout","time":17656.531084277,"data":"  \"finished\": \"2026-09-11 17:24:02\",\n"}
+,{"stream_name":"stdout","time":17656.531087408,"data":"  \"total_seconds\": 17655.6\n"}
+,{"stream_name":"stdout","time":17656.531090612,"data":"}\n"}
+,{"stream_name":"stderr","time":17659.402184556,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":17659.402276082,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":17659.759104566,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":17659.759139286,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":17660.606952752,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":17662.465145515,"data":"[NbConvertApp] Writing 303424 bytes to __results__.html\n"}
+]

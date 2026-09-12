@@ -1,0 +1,83 @@
+[2026-09-11 18:28:58] queue started: 28 job(s), max 5 at once
+pushed paysim-byzantine-robustness-stratified   -> shadmansakib1566/fl-adtcn-paysim-byzantine-robustness-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-byzantine-robustness-stratified
+[2026-09-11 18:29:05] paysim-byzantine-robustness-stratified: pushed
+pushed paysim-economic-byzantine-stratified     -> shadmansakib1566/fl-adtcn-paysim-economic-byzantine-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-economic-byzantine-stratified
+[2026-09-11 18:29:14] paysim-economic-byzantine-stratified: pushed
+pushed paysim-private-incentive-stratified      -> shadmansakib1566/fl-adtcn-paysim-private-incentive-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-private-incentive-stratified
+[2026-09-11 18:29:23] paysim-private-incentive-stratified: pushed
+pushed paysim-baselines-stratified              -> shadmansakib1566/fl-adtcn-paysim-baselines-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-baselines-stratified
+[2026-09-11 18:29:33] paysim-baselines-stratified: pushed
+pushed paysim-all-baselines-stratified          -> shadmansakib1566/fl-adtcn-paysim-all-baselines-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-all-baselines-stratified
+[2026-09-11 18:29:42] paysim-all-baselines-stratified: pushed
+paysim-private-incentive-stratified: OK in 3150.6 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 3 file(s)
+[2026-09-11 19:26:41] paysim-private-incentive-stratified: fetched
+pushed amlsim-baselines-stratified              -> shadmansakib1566/fl-adtcn-amlsim-baselines-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-baselines-stratified
+[2026-09-11 19:27:14] amlsim-baselines-stratified: pushed
+amlsim-baselines-stratified: OK in 556.9 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 19:39:01] amlsim-baselines-stratified: fetched
+pushed amlsim-baselines-bank                    -> shadmansakib1566/fl-adtcn-amlsim-baselines-bank  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-baselines-bank
+[2026-09-11 19:39:15] amlsim-baselines-bank: pushed
+paysim-economic-byzantine-stratified: OK in 4053.1 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 4 file(s)
+[2026-09-11 19:44:52] paysim-economic-byzantine-stratified: fetched
+pushed amlsim-economic-byzantine-bank           -> shadmansakib1566/fl-adtcn-amlsim-economic-byzantine-bank  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-economic-byzantine-bank
+[2026-09-11 19:45:34] amlsim-economic-byzantine-bank: pushed
+amlsim-baselines-bank: OK in 506.5 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 19:51:27] amlsim-baselines-bank: fetched
+amlsim-economic-byzantine-bank: OK in 176.7 s on AMD EPYC 7B12; imported 4 file(s)
+[2026-09-11 19:52:03] amlsim-economic-byzantine-bank: fetched
+pushed amlsim-private-incentive-bank            -> shadmansakib1566/fl-adtcn-amlsim-private-incentive-bank  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-private-incentive-bank
+[2026-09-11 19:52:14] amlsim-private-incentive-bank: pushed
+pushed amlsim-byzantine-robustness-stratified   -> shadmansakib1566/fl-adtcn-amlsim-byzantine-robustness-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-byzantine-robustness-stratified
+[2026-09-11 19:52:29] amlsim-byzantine-robustness-stratified: pushed
+amlsim-private-incentive-bank: OK in 438.7 s on AMD EPYC 7B12; imported 3 file(s)
+[2026-09-11 20:04:12] amlsim-private-incentive-bank: fetched
+amlsim-byzantine-robustness-stratified: OK in 416.7 s on AMD EPYC 7B12; imported 3 file(s)
+[2026-09-11 20:04:41] amlsim-byzantine-robustness-stratified: fetched
+pushed amlsim-economic-byzantine-stratified     -> shadmansakib1566/fl-adtcn-amlsim-economic-byzantine-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-economic-byzantine-stratified
+[2026-09-11 20:04:55] amlsim-economic-byzantine-stratified: pushed
+pushed amlsim-private-incentive-stratified      -> shadmansakib1566/fl-adtcn-amlsim-private-incentive-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-private-incentive-stratified
+[2026-09-11 20:05:05] amlsim-private-incentive-stratified: pushed
+amlsim-economic-byzantine-stratified: OK in 257.0 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 4 file(s)
+[2026-09-11 20:16:46] amlsim-economic-byzantine-stratified: fetched
+amlsim-private-incentive-stratified: OK in 335.4 s on AMD EPYC 7B12; imported 3 file(s)
+[2026-09-11 20:17:18] amlsim-private-incentive-stratified: fetched
+pushed paysim-grid-cnn                          -> shadmansakib1566/fl-adtcn-paysim-grid-cnn  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-grid-cnn
+[2026-09-11 20:17:32] paysim-grid-cnn: pushed
+pushed paysim-grid-lstm                         -> shadmansakib1566/fl-adtcn-paysim-grid-lstm  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-grid-lstm
+[2026-09-11 20:17:42] paysim-grid-lstm: pushed
+paysim-byzantine-robustness-stratified: OK in 6679.7 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 3 file(s)
+[2026-09-11 20:23:10] paysim-byzantine-robustness-stratified: fetched
+paysim-baselines-stratified: OK in 6532.8 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 20:23:37] paysim-baselines-stratified: fetched
+pushed paysim-grid-dtcn                         -> shadmansakib1566/fl-adtcn-paysim-grid-dtcn  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-grid-dtcn
+[2026-09-11 20:24:21] paysim-grid-dtcn: pushed
+pushed paysim-grid-dilated-attn                 -> shadmansakib1566/fl-adtcn-paysim-grid-dilated-attn  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-grid-dilated-attn
+[2026-09-11 20:24:35] paysim-grid-dilated-attn: pushed
+paysim-grid-cnn: OK in 2003.0 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 20:57:37] paysim-grid-cnn: fetched
+pushed paysim-grid-resnet                       -> shadmansakib1566/fl-adtcn-paysim-grid-resnet  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-grid-resnet
+[2026-09-11 20:57:58] paysim-grid-resnet: pushed
+paysim-grid-lstm: OK in 5224.3 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 21:51:53] paysim-grid-lstm: fetched
+paysim-grid-resnet: OK in 3136.6 s on AMD EPYC 7B12; imported 1 file(s)
+[2026-09-11 21:52:20] paysim-grid-resnet: fetched
+pushed paysim-grid-densenet                     -> shadmansakib1566/fl-adtcn-paysim-grid-densenet  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-grid-densenet
+[2026-09-11 21:52:27] paysim-grid-densenet: pushed
+pushed paysim-grid-efficientnet                 -> shadmansakib1566/fl-adtcn-paysim-grid-efficientnet  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-grid-efficientnet
+[2026-09-11 21:52:34] paysim-grid-efficientnet: pushed
+paysim-grid-dilated-attn: OK in 5623.8 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 22:03:31] paysim-grid-dilated-attn: fetched
+pushed amlsim-grid-cnn                          -> shadmansakib1566/fl-adtcn-amlsim-grid-cnn  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-grid-cnn
+[2026-09-11 22:03:49] amlsim-grid-cnn: pushed
+amlsim-grid-cnn: OK in 191.8 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 22:09:26] amlsim-grid-cnn: fetched
+pushed amlsim-grid-lstm                         -> shadmansakib1566/fl-adtcn-amlsim-grid-lstm  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-grid-lstm
+[2026-09-11 22:09:32] amlsim-grid-lstm: pushed
+amlsim-grid-lstm: OK in 336.9 s on AMD EPYC 7B12; imported 1 file(s)
+[2026-09-11 22:20:52] amlsim-grid-lstm: fetched
+pushed amlsim-grid-dtcn                         -> shadmansakib1566/fl-adtcn-amlsim-grid-dtcn  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-grid-dtcn
+[2026-09-11 22:20:58] amlsim-grid-dtcn: pushed
+paysim-all-baselines-stratified: no kaggle_job.json (still running, or it died before the end)
+[2026-09-11 22:32:18] paysim-all-baselines-stratified: kernel ended in ERROR
+pushed amlsim-grid-dilated-attn                 -> shadmansakib1566/fl-adtcn-amlsim-grid-dilated-attn  Kernel push error: Maximum batch CPU session count of 5 reached.
+[2026-09-11 22:32:47] amlsim-grid-dilated-attn: pushed

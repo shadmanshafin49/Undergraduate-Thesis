@@ -24,6 +24,15 @@ datasets/bsNET140513_032310.csv
 datasets/handbook_raw/
 datasets/handbook_transactions.csv
 
+# PaySim (OBJ-11) — Kaggle ealaxi/paysim1, 6.36M rows, ~470 MB: never commit.
+#   kaggle datasets download -d ealaxi/paysim1 --unzip -p datasets/paysim
+datasets/paysim/
+
+# IBM AMLSim (OBJ-12) — simulator source, local build tools and generated
+# output. Regenerated from the pinned commit + the configuration recorded in
+# TASK.md, so none of it belongs in the history.
+datasets/amlsim/
+
 # Hyperledger Fabric binaries — re-download via the official install script
 fabric/fabric-samples/bin/
 
@@ -56,3 +65,6 @@ fabric/fabric-samples/bin/
 # `python experiments/detector_multiseed.py --build-cache`). The per-run
 # JSONs beside it are small and ARE tracked -- they are the provenance.
 db_boa_framework/results/_multiseed_runs/*.npz
+
+
+kaggle.md

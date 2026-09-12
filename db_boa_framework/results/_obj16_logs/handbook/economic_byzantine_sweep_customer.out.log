@@ -1,0 +1,19 @@
+======================================================================
+  TASK B — ECONOMIC BYZANTINE TOLERANCE (incentive-as-defense)
+  strategies=['always-fraud', 'label-flip', 'free-rider']  rounds=12  epochs=12
+======================================================================
+[B]  trained honest BankA  bal-acc=63.17%
+[B]  trained honest BankB  bal-acc=60.96%
+[B]  trained honest BankC  bal-acc=61.59%
+[B]  always-fraud atk=1  iso=(BankC:never)  w={'BankA': 0.41, 'BankB': 0.25, 'BankC': 0.33}  bal_with=63.51%  bal_without=63.51%  gap=+0.00%
+[B]  always-fraud atk=2  iso=(BankB:never; BankC:never)  w={'BankA': 0.45, 'BankB': 0.27, 'BankC': 0.27}  bal_with=50.00%  bal_without=50.00%  gap=+0.00%
+[B]  label-flip   atk=1  iso=(BankC:never)  w={'BankA': 0.41, 'BankB': 0.25, 'BankC': 0.34}  bal_with=61.77%  bal_without=61.77%  gap=+0.00%
+[B]  label-flip   atk=2  iso=(BankB:never; BankC:never)  w={'BankA': 0.44, 'BankB': 0.28, 'BankC': 0.28}  bal_with=39.81%  bal_without=39.81%  gap=+0.00%
+[B]  free-rider   atk=1  iso=(BankC:never)  w={'BankA': 0.39, 'BankB': 0.3, 'BankC': 0.31}  bal_with=60.63%  bal_without=60.63%  gap=+0.00%
+[B]  free-rider   atk=2  iso=(BankB:never; BankC:never)  w={'BankA': 0.39, 'BankB': 0.3, 'BankC': 0.3}  bal_with=50.00%  bal_without=50.00%  gap=+0.00%
+
+[B]  done in 3226.1s
+[B]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\economic_byzantine_sweep_handbook_customer.json
+[B]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\economic_isolation_trajectory_handbook_customer.png
+[B]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\economic_accuracy_protection_handbook_customer.png
+[B]  wrote draft → D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\final_report_data\TASKB_economic_byzantine_results_handbook_customer.md

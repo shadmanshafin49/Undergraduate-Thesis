@@ -1,0 +1,42 @@
+[{"stream_name":"stdout","time":2318.588015895,"data":"{\n"}
+,{"stream_name":"stdout","time":2318.58812971,"data":"  \"job\": \"handbook-grid-cnn\",\n"}
+,{"stream_name":"stdout","time":2318.58813636,"data":"  \"cmd\": [\n"}
+,{"stream_name":"stdout","time":2318.588141142,"data":"    \"experiments/handbook_temporal_grid.py\",\n"}
+,{"stream_name":"stdout","time":2318.588145358,"data":"    \"--archs\",\n"}
+,{"stream_name":"stdout","time":2318.588149191,"data":"    \"cnn\",\n"}
+,{"stream_name":"stdout","time":2318.588152993,"data":"    \"--out\",\n"}
+,{"stream_name":"stdout","time":2318.588157222,"data":"    \"handbook_temporal_grid_cnn.json\"\n"}
+,{"stream_name":"stdout","time":2318.588162902,"data":"  ],\n"}
+,{"stream_name":"stdout","time":2318.588167156,"data":"  \"started\": \"2026-09-12 06:17:39\",\n"}
+,{"stream_name":"stdout","time":2318.588171878,"data":"  \"bundle_sha256\": \"53e62e9bb69a65e5f6fa181753085e95acdaca89035d79180fac60555a1f2ed6\",\n"}
+,{"stream_name":"stdout","time":2318.588176345,"data":"  \"pip\": {\n"}
+,{"stream_name":"stdout","time":2318.588180634,"data":"    \"torch_rc\": 0,\n"}
+,{"stream_name":"stdout","time":2318.588185048,"data":"    \"others_rc\": 0,\n"}
+,{"stream_name":"stdout","time":2318.588189225,"data":"    \"stderr_tail\": \"\"\n"}
+,{"stream_name":"stdout","time":2318.588193867,"data":"  },\n"}
+,{"stream_name":"stdout","time":2318.588197906,"data":"  \"returncode\": 0,\n"}
+,{"stream_name":"stdout","time":2318.588202184,"data":"  \"job_seconds\": 2178.4,\n"}
+,{"stream_name":"stdout","time":2318.588206103,"data":"  \"job_torch_threads\": 4,\n"}
+,{"stream_name":"stdout","time":2318.588210439,"data":"  \"imported_versions\": \"{\\\"python\\\": \\\"3.12.13\\\", \\\"torch\\\": \\\"2.12.0+cpu\\\", \\\"threads\\\": 2, \\\"numpy\\\": \\\"2.3.2\\\", \\\"scikit-learn\\\": \\\"1.8.0\\\", \\\"pandas\\\": \\\"3.0.2\\\", \\\"scipy\\\": \\\"1.17.1\\\", \\\"matplotlib\\\": \\\"3.10.8\\\"}\",\n"}
+,{"stream_name":"stdout","time":2318.588219025,"data":"  \"laptop_versions\": {\n"}
+,{"stream_name":"stdout","time":2318.588223423,"data":"    \"python\": \"3.13.7\",\n"}
+,{"stream_name":"stdout","time":2318.588227723,"data":"    \"torch\": \"2.12.0\",\n"}
+,{"stream_name":"stdout","time":2318.588232379,"data":"    \"numpy\": \"2.3.2\",\n"}
+,{"stream_name":"stdout","time":2318.588237083,"data":"    \"scikit-learn\": \"1.8.0\",\n"}
+,{"stream_name":"stdout","time":2318.588241698,"data":"    \"pandas\": \"3.0.2\",\n"}
+,{"stream_name":"stdout","time":2318.588246151,"data":"    \"scipy\": \"1.17.1\",\n"}
+,{"stream_name":"stdout","time":2318.588250842,"data":"    \"matplotlib\": \"3.10.8\"\n"}
+,{"stream_name":"stdout","time":2318.588254696,"data":"  },\n"}
+,{"stream_name":"stdout","time":2318.588259116,"data":"  \"bundle_commit\": \"6d8e41e8b19213128b54ad653defec1129f29aaf\",\n"}
+,{"stream_name":"stdout","time":2318.588263974,"data":"  \"cpu_model\": \"Intel(R) Xeon(R) CPU @ 2.20GHz\",\n"}
+,{"stream_name":"stdout","time":2318.588268652,"data":"  \"platform\": \"Linux-6.12.90+-x86_64-with-glibc2.35\",\n"}
+,{"stream_name":"stdout","time":2318.588273257,"data":"  \"finished\": \"2026-09-12 06:56:17\",\n"}
+,{"stream_name":"stdout","time":2318.588278674,"data":"  \"total_seconds\": 2317.3\n"}
+,{"stream_name":"stdout","time":2318.588282903,"data":"}\n"}
+,{"stream_name":"stderr","time":2321.576459642,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":2321.576541201,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":2321.998763339,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":2321.998822615,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":2322.952082402,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":2324.894924914,"data":"[NbConvertApp] Writing 303112 bytes to __results__.html\n"}
+]

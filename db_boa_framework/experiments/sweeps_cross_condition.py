@@ -2,7 +2,10 @@
 experiments/sweeps_cross_condition.py
 =====================================
 Two-factor decomposition of the four system sweeps across ULB, BankSim/stratified
-and BankSim/entity-disjoint.
+and BankSim/entity-disjoint -- extended on 2026-09-11 to the Handbook (stratified,
+customer), PaySim (stratified) and AMLSim (stratified, native banks).  Blocks
+that reproduce an OBJ-15 reading still use exactly the OBJ-15 three (`OBJ15`),
+so no already-reported number can move; every other table is per condition.
 
 Why this exists
 ---------------
@@ -23,6 +26,8 @@ cell missing (ULB has no entity IDs, so ULB/entity-disjoint cannot exist):
 
     dataset effect    = ULB/stratified      -> BankSim/stratified
     partition effect  = BankSim/stratified  -> BankSim/customer
+                        (partition + training windows: an entity split keeps each
+                        org's rows grouped by entity -- correction of 2026-09-11)
 
 Doing that arithmetic by hand across four sweeps, three files each, is precisely
 where the reporting mistakes have happened before: OBJ-14 was a retracted number
@@ -61,13 +66,46 @@ ROOT        = os.path.dirname(HERE)
 RESULTS_DIR = os.path.join(ROOT, "results")
 DRAFT_DIR   = os.path.join(os.path.dirname(ROOT), "final_report_data")
 
-# (key, filename suffix, column label).  Order is the reading order of the
-# decomposition: dataset moves first, then partition.
+# (key, filename suffix, column label).  Order is the reading order: the OBJ-15
+# decomposition first (dataset moves, then partition), then the three datasets
+# added on 2026-09-11 (OBJ-16 Handbook, OBJ-11 PaySim, OBJ-12 AMLSim).
 CONDITIONS = [
-    ("ulb",      "",                    "ULB / stratified"),
-    ("bs_strat", "_banksim_stratified", "BankSim / stratified"),
-    ("bs_cust",  "_banksim_customer",   "BankSim / entity-disjoint"),
+    ("ulb",      "",                     "ULB / stratified"),
+    ("bs_strat", "_banksim_stratified",  "BankSim / stratified"),
+    ("bs_cust",  "_banksim_customer",    "BankSim / entity-disjoint"),
+    ("hb_strat", "_handbook_stratified", "Handbook / stratified"),
+    ("hb_cust",  "_handbook_customer",   "Handbook / entity-disjoint"),
+    ("ps_strat", "_paysim_stratified",   "PaySim / stratified"),
+    ("am_strat", "_amlsim_stratified",   "AMLSim / stratified"),
+    ("am_bank",  "_amlsim_bank",         "AMLSim / native banks"),
 ]
+SHORT = {"ulb": "ULB/strat", "bs_strat": "BankSim/strat", "bs_cust": "BankSim/entity",
+         "hb_strat": "Handbook/strat", "hb_cust": "Handbook/entity",
+         "ps_strat": "PaySim/strat", "am_strat": "AMLSim/strat", "am_bank": "AMLSim/banks"}
+
+# The OBJ-15 control: the three conditions its decomposition was defined on.
+# Blocks that reproduce an OBJ-15 reading use exactly these, so adding datasets
+# can never move a number that has already been reported.
+OBJ15 = ("ulb", "bs_strat", "bs_cust")
+
+# (column label, from, to).  Every effect but the first stays inside one dataset
+# and one machine.  None of them isolates the partition: an entity split also
+# keeps each org's rows grouped by entity, so its training windows are mostly
+# one entity's own history (windowing correction, 2026-09-11,
+# results/partition_windowing.json) -- hence "partition+windows".
+EFFECTS = [
+    ("dataset effect ULB->BankSim (strat)",        "ulb",      "bs_strat"),
+    ("BankSim strat->entity (partition+windows)",  "bs_strat", "bs_cust"),
+    ("Handbook strat->entity (partition+windows)", "hb_strat", "hb_cust"),
+    ("AMLSim strat->banks (partition+windows)",    "am_strat", "am_bank"),
+]
+
+# Sweeps a condition cannot run by construction -- reported as such, never as
+# missing (AMLSim pre-registration, TASK.md OBJ-12).
+NOT_RUNNABLE = {
+    ("am_bank", "byzantine_robustness_sweep"): "builds 5- and 7-org federations; 3 native banks",
+    ("am_bank", "scalability_sweep"): "builds up to 20 orgs; 3 native banks",
+}
 
 SWEEPS = ["economic_byzantine_sweep",
           "byzantine_robustness_sweep",
@@ -78,6 +116,13 @@ SWEEPS = ["economic_byzantine_sweep",
 # constant: this script must not report a "paradox" that the sweep's own draft
 # denies, or the repo contradicts itself the way OBJ-14 found it doing.
 PARADOX_PP = 0.5
+
+# A condition whose federated-ablation FedAvg MCC is below this has models that
+# carry nothing to attack, reward or protect; its rows are shown and marked,
+# never scored.  Not tuned here: it is the floor the AMLSim pre-registration
+# fixed as (f) before any AMLSim result existed.
+FLOOR_MCC = 0.05
+AT_FLOOR = set()        # filled by main() from results/baselines*.json
 
 
 def load(sweep):
@@ -102,27 +147,48 @@ def _delta(a, b, spec="{:+.2f}"):
     return spec.format(b - a)
 
 
-def _row(label, vals, spec="{:+.2f}", mark=None):
-    """One markdown row: the three conditions, then the two effects.
+def _env(d):
+    """'Kaggle' or 'laptop', read off the run's own `environment` block.  A run
+    with no block predates OBJ-17 (2026-09-04); every run before Kaggle came into
+    use (2026-09-11) was a laptop run, and every Kaggle job records the block."""
+    plat = str((d.get("environment") or {}).get("platform", ""))
+    return "Kaggle" if plat.startswith("Linux") else "laptop"
+
+
+def _cols(data):
+    return [k for k, _, _ in CONDITIONS if k in data]
+
+
+def _effects(data):
+    return [(lbl, a, b) for lbl, a, b in EFFECTS if a in data and b in data]
+
+
+def _header(data):
+    """Columns for every condition in `data`, then every effect whose two ends
+    are both there.  A Kaggle column says so in its name."""
+    names = [SHORT[k] + (" [Kaggle]" if _env(data[k]) == "Kaggle" else "")
+             + (" [floor]" if k in AT_FLOOR else "") for k in _cols(data)]
+    names += [lbl for lbl, _, _ in _effects(data)]
+    return ("| Quantity (metric named) | " + " | ".join(names) + " |\n"
+            + "|---" * (len(names) + 1) + "|")
+
+
+def _row(label, vals, data, spec="{:+.2f}", mark=None):
+    """One markdown row, laid out as `_header(data)`: the conditions, then the
+    effects.
 
     `mark` optionally flags individual condition cells as untrustworthy (see the
     baseline-contamination note in `byzantine`); a flagged cell gets a "(!)" and
     so does any effect computed across one, because an effect inherits the
     contamination of either end.
     """
-    v = [vals.get(k) for k, _, _ in CONDITIONS]
     mark = mark or {}
-    bad = [bool(mark.get(k)) for k, _, _ in CONDITIONS]
-    cells = [_fmt(x, spec) + (" (!)" if b else "") for x, b in zip(v, bad)]
-    dataset_eff   = _delta(v[0], v[1], spec) + (" (!)" if bad[0] or bad[1] else "")
-    partition_eff = _delta(v[1], v[2], spec) + (" (!)" if bad[1] or bad[2] else "")
-    return ("| " + label + " | " + " | ".join(cells)
-            + " | " + dataset_eff + " | " + partition_eff + " |")
-
-
-HEADER = ("| Quantity (metric named) | ULB / strat | BankSim / strat "
-          "| BankSim / entity-disj | dataset effect | partition effect |\n"
-          "|---|---|---|---|---|---|")
+    cells = [_fmt(vals.get(k), spec) + (" (!)" if mark.get(k) else "")
+             for k in _cols(data)]
+    for _, a, b in _effects(data):
+        cells.append(_delta(vals.get(a), vals.get(b), spec)
+                     + (" (!)" if mark.get(a) or mark.get(b) else ""))
+    return "| " + label + " | " + " | ".join(cells) + " |"
 
 
 # --- per-sweep extractors ----------------------------------------------------
@@ -144,14 +210,14 @@ def economic(data):
     L.append("**Accuracy gap = balanced accuracy WITH the incentive layer minus WITHOUT "
              "it (percentage points). Positive means the economic defence helped.**")
     L.append("")
-    L.append(HEADER)
+    L.append(_header(data))
     for strat, n in keys:
         vals = {}
         for ck, d in data.items():
             for s in d["scenarios"]:
                 if (s["strategy"], s["n_attackers"]) == (strat, n):
                     vals[ck] = s["acc_gap"]
-        L.append(_row("`" + strat + "` x" + str(n) + " acc gap (pp)", vals))
+        L.append(_row("`" + strat + "` x" + str(n) + " acc gap (pp)", vals, data))
     L.append("")
 
     L.append("**Isolation: did the layer fire, and did firing help?** These are different "
@@ -222,7 +288,7 @@ def byzantine(data):
              "attack cannot genuinely do. Do not quote a marked cell, or an effect computed "
              "across one. The counts are tabulated further down; this marks *which*.")
     L.append("")
-    L.append(HEADER)
+    L.append(_header(data))
     combos = []
     for d in data.values():
         for r in d["regimes"]:
@@ -241,37 +307,41 @@ def byzantine(data):
                         vals[ck] = a["krum_advantage"]
         marks = {ck: (n_orgs, attack) in pdx.get(ck, ()) for ck in vals}
         L.append(_row("n=" + str(n_orgs) + " `" + attack + "` Krum-FedAvg (pp)",
-                      vals, mark=marks))
+                      vals, data, mark=marks))
     L.append("")
 
     # ---- the clean subset: cells whose baseline is uncontaminated EVERYWHERE ---
     # This is the only subset on which a dataset/partition effect can be read at
     # all, so it is the real test of whether the OBJ-15 withdrawal survives the
     # artefact or was merely produced by it.
-    live = [ck for ck, _, _ in CONDITIONS if ck in data]
+    sub = {k: data[k] for k in OBJ15 if k in data}
+    live = list(sub)
     clean = [(n, atk) for (n, atk) in combos
              if not any((n, atk) in pdx.get(ck, ()) for ck in live)]
     L.append(f"**The clean subset ({len(clean)} of {len(combos)} cells).** These are the "
-             "cells whose FedAvg baseline is uncontaminated in *every* condition on disk, "
-             "so they are the only ones on which a dataset or partition effect can be read "
-             "without the artefact in the way.")
+             "cells whose FedAvg baseline is uncontaminated in *every* OBJ-15 condition "
+             "(ULB and both BankSim partitions -- the conditions this reading was defined "
+             "on; later datasets are counted per condition below), so they are the only "
+             "ones on which the dataset or partition effect can be read without the "
+             "artefact in the way.")
     L.append("")
     if not clean:
         L.append("_No cell is clean in every condition -- no effect here is quotable._")
     else:
-        L.append(HEADER)
+        L.append(_header(sub))
         d_eff, p_eff = [], []
         for n_orgs, attack in clean:
             vals = {}
-            for ck, d in data.items():
+            for ck, d in sub.items():
                 for r in d["regimes"]:
                     if r["n_orgs"] != n_orgs:
                         continue
                     for a in r["attacks"]:
                         if a["attack"] == attack:
                             vals[ck] = a["krum_advantage"]
-            L.append(_row("n=" + str(n_orgs) + " `" + attack + "` Krum-FedAvg (pp)", vals))
-            v = [vals.get(k) for k, _, _ in CONDITIONS]
+            L.append(_row("n=" + str(n_orgs) + " `" + attack + "` Krum-FedAvg (pp)",
+                          vals, sub))
+            v = [vals.get(k) for k in OBJ15]
             if v[0] is not None and v[1] is not None:
                 d_eff.append(v[1] - v[0])
             if v[1] is not None and v[2] is not None:
@@ -281,11 +351,67 @@ def byzantine(data):
             L.append(f"On these {len(clean)} clean cells the **dataset effect is negative in "
                      f"{sum(1 for x in d_eff if x < 0)} of {len(d_eff)}** "
                      f"({min(d_eff):+.2f} to {max(d_eff):+.2f} pp) while the **partition "
-                     f"effect is positive in {sum(1 for x in p_eff if x > 0)} of "
+                     f"(+ windows) effect is positive in {sum(1 for x in p_eff if x > 0)} of "
                      f"{len(p_eff)}** ({min(p_eff):+.2f} to {max(p_eff):+.2f} pp). The "
                      "OBJ-15 withdrawal therefore does **not** rest on the artefact: "
                      "filtering every contaminated cell out leaves the same reading.")
     L.append("")
+
+    # ---- the property pre-registered as (a), per condition ---------------------
+    # Counted, not judged: each dataset's thresholds live in its TASK.md
+    # scorecard.  Contamination here is each condition's OWN (its attacked FedAvg
+    # beat its own no-attack reference), not "clean everywhere" as above.
+    L.append("**Krum's utility cost, per condition** -- the property the Handbook and "
+             "PaySim pre-registrations score as (a). Krum-FedAvg balanced accuracy (pp) "
+             "over all cells, and over the cells whose *own* FedAvg baseline is clean. "
+             "Counts only; each dataset's thresholds are applied in its TASK.md scorecard.")
+    L.append("")
+    L.append("| Condition | Krum-FedAvg < 0, all cells | own contaminated cells "
+             "| Krum-FedAvg < 0, own clean cells | range, all cells (pp) |")
+    L.append("|---|---|---|---|---|")
+    for ck, _, label in CONDITIONS:
+        if ck not in data:
+            continue
+        cells = [((r["n_orgs"], a["attack"]), a["krum_advantage"])
+                 for r in data[ck]["regimes"] for a in r["attacks"]]
+        own = pdx.get(ck, set())
+        allv = [v for _, v in cells]
+        cleanv = [v for k, v in cells if k not in own]
+        L.append("| " + label + " | " + f"{sum(1 for v in allv if v < 0)}/{len(allv)}"
+                 + " | " + f"{len(own)}/{len(allv)}" + " | "
+                 + f"{sum(1 for v in cleanv if v < 0)}/{len(cleanv)}" + " | "
+                 + f"{min(allv):+.2f} to {max(allv):+.2f}" + " |")
+        flags.setdefault(ck, {})["krum_cost"] = {
+            "neg_all": sum(1 for v in allv if v < 0), "n_all": len(allv),
+            "neg_clean": sum(1 for v in cleanv if v < 0), "n_clean": len(cleanv)}
+    L.append("")
+
+    # Effects outside the OBJ-15 trio, each read on the cells clean at BOTH ends.
+    def _adv(d, n_orgs, attack):
+        for r in d["regimes"]:
+            if r["n_orgs"] == n_orgs:
+                for a in r["attacks"]:
+                    if a["attack"] == attack:
+                        return a["krum_advantage"]
+        return None
+    for lbl, a, b in _effects(data):
+        if a in OBJ15 and b in OBJ15:
+            continue
+        diffs = []
+        for n_orgs, attack in combos:
+            if (n_orgs, attack) in pdx.get(a, ()) or (n_orgs, attack) in pdx.get(b, ()):
+                continue
+            va, vb = _adv(data[a], n_orgs, attack), _adv(data[b], n_orgs, attack)
+            if va is not None and vb is not None:
+                diffs.append(vb - va)
+        if not diffs:
+            L.append(f"**{lbl}:** no cell is clean at both ends -- not readable.")
+        else:
+            L.append(f"**{lbl}**, on the {len(diffs)} cells clean at both ends: positive "
+                     f"in {sum(1 for x in diffs if x > 0)}, negative in "
+                     f"{sum(1 for x in diffs if x < 0)} ({min(diffs):+.2f} to "
+                     f"{max(diffs):+.2f} pp).")
+        L.append("")
 
     L.append("**The artefact that blocks reading any of this as \"FedAvg wins\":** how many "
              "attacked FedAvg runs score *above* their own no-attack reference by more than "
@@ -391,15 +517,15 @@ def private_incentive(data):
              "(higher is worse). The claim under test is the ordering -- output channel "
              "beats weight channel -- not the constants.**")
     L.append("")
-    L.append(HEADER)
+    L.append(_header(data))
     for field, lbl in [("epsilon_star_weight", "eps* weight channel"),
                        ("epsilon_star_output", "eps* output channel")]:
-        L.append(_row(lbl, {ck: d.get(field) for ck, d in data.items()}, "{:.0f}"))
+        L.append(_row(lbl, {ck: d.get(field) for ck, d in data.items()}, data, "{:.0f}"))
     ratios = {}
     for ck, d in data.items():
         w, o = d.get("epsilon_star_weight"), d.get("epsilon_star_output")
         ratios[ck] = (w / o) if (w and o) else None
-    L.append(_row("budget factor (weight / output)", ratios, "{:.1f}"))
+    L.append(_row("budget factor (weight / output)", ratios, data, "{:.1f}"))
     L.append("")
     L.append("> A factor above is a LOWER BOUND wherever the next table says "
              "RIGHT-CENSORED, and it is not quotable at all wherever the fragility "
@@ -484,28 +610,42 @@ def private_incentive(data):
              "often than the weight channel, at every budget?** (Falsifier as written: "
              "any budget where the weight channel inverts LESS than the output channel.)")
     L.append("")
-    L.append("| Condition | budgets where output inversions <= weight inversions | "
-             "any counter-example |")
-    L.append("|---|---|---|")
+    L.append("> **Both counts, always (operator rule, 2026-09-11).** *No more often* (<=) is "
+             "the statistic that scored every condition since OBJ-15; *strictly less often* "
+             "(<) is what the Handbook, PaySim and AMLSim pre-registrations wrote. They "
+             "differ only at ties, and at a zero-zero tie both channels rank perfectly. "
+             "Where the two counts disagree, no held / not-held label is given anywhere -- "
+             "only the two scores.")
+    L.append("")
+    L.append("| Condition | output <= weight (no more often) | output < weight (strictly "
+             "less often) | ties | of which zero-zero | any counter-example |")
+    L.append("|---|---|---|---|---|---|")
     for ck, _, label in CONDITIONS:
         if ck not in data:
             continue
-        sw   = data[ck]["sweep"]
-        ok   = [r for r in sw
-                if r["output_inversion_rate"] <= r["weight_inversion_rate"]]
-        bad  = [r for r in sw
-                if r["output_inversion_rate"] > r["weight_inversion_rate"]]
+        sw     = data[ck]["sweep"]
+        ok     = [r for r in sw
+                  if r["output_inversion_rate"] <= r["weight_inversion_rate"]]
+        strict = [r for r in sw
+                  if r["output_inversion_rate"] < r["weight_inversion_rate"]]
+        zeros  = [r for r in sw
+                  if r["output_inversion_rate"] == 0 == r["weight_inversion_rate"]]
+        bad    = [r for r in sw
+                  if r["output_inversion_rate"] > r["weight_inversion_rate"]]
         note = ("none" if not bad
                 else ", ".join(f"eps={r['epsilon']:g}" for r in bad))
-        L.append("| " + label + " | " + f"{len(ok)}/{len(sw)}" + " | " + note + " |")
+        L.append("| " + label + " | " + f"{len(ok)}/{len(sw)}" + " | "
+                 + f"{len(strict)}/{len(sw)}" + " | " + str(len(ok) - len(strict))
+                 + " | " + str(len(zeros)) + " | " + note + " |")
         flags.setdefault(ck, {})["inv_ordering"] = (len(ok), len(sw))
+        flags[ck]["inv_ordering_strict"] = (len(strict), len(sw))
     L.append("")
 
     L.append("**Rank fidelity (Spearman rho of paid tokens against ground truth) at every "
              "swept budget.** The ordering claim is that the output channel beats the "
              "weight channel at every eps.")
     L.append("")
-    L.append(HEADER)
+    L.append(_header(data))
     eps_all = sorted({r["epsilon"] for d in data.values() for r in d["sweep"]})
     for eps in eps_all:
         for chan in ("weight", "output"):
@@ -514,7 +654,7 @@ def private_incentive(data):
                 for r in d["sweep"]:
                     if r["epsilon"] == eps:
                         vals[ck] = r[chan + "_spearman"]
-            L.append(_row(f"rho @ eps={eps:g}, {chan} channel", vals, "{:+.3f}"))
+            L.append(_row(f"rho @ eps={eps:g}, {chan} channel", vals, data, "{:+.3f}"))
     L.append("")
     L.append("| Condition | budgets where output rho > weight rho |")
     L.append("|---|---|")
@@ -538,7 +678,7 @@ def scalability(data):
              "O(2^n) is a property of the coalition lattice, not of the data -- this row is "
              "expected to be flat and is reported so it is not mistaken for a finding.**")
     L.append("")
-    L.append(HEADER)
+    L.append(_header(data))
     for field, lbl, spec in [("exact_time_sec", "exact Shapley @ n=12 (s)", "{:.1f}"),
                              ("mc_time_sec",    "MC Shapley @ n=12 (s)",    "{:.1f}"),
                              ("speedup",        "MC speed-up @ n=12 (x)",   "{:.2f}")]:
@@ -547,7 +687,7 @@ def scalability(data):
             for r in d["runtime"]:
                 if r["n_orgs"] == 12 and r.get(field) is not None:
                     vals[ck] = r[field]
-        L.append(_row(lbl, vals, spec))
+        L.append(_row(lbl, vals, data, spec))
     L.append("")
 
     L.append("**MC fidelity. Rule 11 applies hard here: rho and L1 measure whether the token "
@@ -555,7 +695,7 @@ def scalability(data):
              "OBJ-15's two conditions the two metrics ranked the datasets oppositely. Quote "
              "the metric with the number.**")
     L.append("")
-    L.append(HEADER)
+    L.append(_header(data))
     for field, lbl, spec in [("spearman", "rho @ n=12 (rank fidelity)", "{:+.3f}"),
                              ("l1_error", "L1 error @ n=12 (split fidelity)", "{:.4f}")]:
         vals = {}
@@ -563,7 +703,7 @@ def scalability(data):
             for r in d["runtime"]:
                 if r["n_orgs"] == 12:
                     vals[ck] = r["fidelity"][field]
-        L.append(_row(lbl, vals, spec))
+        L.append(_row(lbl, vals, data, spec))
     L.append("")
 
     L.append("**Top-1 agreement per n, over the ns where exact Shapley is computable.** "
@@ -590,6 +730,20 @@ def scalability(data):
                 marks.append("no")
         L.append("| " + label + " | " + " | ".join(marks) + " | " + f"{hits}/{len(ns)}" + " |")
         flags[ck] = {"top1": (hits, len(ns))}
+    # A run whose training pool could not hold every equal shard stopped its MC
+    # range early (`--fit-pool`); say where, so no row reads as a missing n.
+    for ck, _, label in CONDITIONS:
+        pf = data.get(ck, {}).get("pool_fit")
+        if pf:
+            L.append("")
+            L.append(f"> **{label}: MC range cut by `--fit-pool`, recorded before the run.** "
+                     f"The training pool ({pf['train_pool_rows']:,} rows) holds "
+                     f"{pf['pool_capacity_orgs']} shards of "
+                     f"{data[ck].get('samples_per_org', 0):,}, so the MC range stops at "
+                     f"n={max(data[ck]['mc_ns'])} instead of "
+                     f"n={max(pf['mc_ns_preregistered'])}; the exact range "
+                     f"(n={min(data[ck]['exact_ns'])}-{max(data[ck]['exact_ns'])}) and every "
+                     "row above are as pre-registered.")
     return L, flags
 
 
@@ -613,43 +767,101 @@ def main():
     args = ap.parse_args()
 
     L = []
-    L.append("# OBJ-15 two-factor decomposition -- dataset vs partition")
+    L.append("# Cross-condition decomposition of the four sweeps -- the OBJ-15 control "
+             "plus the 2026-09-11 datasets")
     L.append("")
     L.append("Generated by `experiments/sweeps_cross_condition.py`. Every number is read "
              "from `results/*.json`; nothing here is estimated, and no significance is "
              "claimed -- each condition is a single run, so these are differences between "
              "point estimates, not tests.")
     L.append("")
-    L.append("**Why the two effect columns exist.** OBJ-15 moved dataset and partition "
+    L.append("**Why the effect columns exist.** OBJ-15 moved dataset and partition "
              "together (ULB had only ever run stratified; BankSim ran entity-disjoint), so "
              "none of its divergences could be attributed to either alone. Splitting the "
              "change into `ULB/strat -> BankSim/strat` (dataset) and `BankSim/strat -> "
-             "BankSim/entity-disjoint` (partition) is the whole point of the control run.")
+             "BankSim/entity-disjoint` is the whole point of the control run. The datasets "
+             "added on 2026-09-11 bring their own within-dataset pair where they have one "
+             "(Handbook: customer; AMLSim: its three native banks; PaySim: none), and every "
+             "other column is read per condition, not as an effect.")
     L.append("")
-    L.append("**A property that makes this cleaner than the federated ablation:** none of "
-             "the four sweeps passes `groups=` to `ADTCN.fit()`, and `fit(groups=None)` "
-             "builds global windows, so *both* BankSim partitions window identically. The "
-             "partition column moves the partition and nothing else. (The corollary is that "
-             "the entity-disjoint sweeps measure orgs holding disjoint customers but "
-             "*global* windows -- do not describe them as using customer-linked sequences.)")
+    L.append("**Correction, 2026-09-11 -- an entity split moves the partition AND the "
+             "training windows.** None of the four sweeps passes `groups=` to "
+             "`ADTCN.fit()`, and `fit(groups=None)` windows each org's rows in the order the "
+             "partition leaves them. A stratified split shuffles them; an entity split "
+             "keeps them grouped by entity, so most of its training windows are one "
+             "entity's own history. An earlier version of this paragraph said both "
+             "partitions window identically and that the partition column moved nothing "
+             "else -- **that was wrong**, and every strat -> entity column here is a "
+             "partition + windowing effect.")
+    L.append("")
+    try:
+        with open(os.path.join(RESULTS_DIR, "partition_windowing.json"), encoding="utf-8") as f:
+            pw = json.load(f)
+        L.append("Share of sweep training windows that are single-entity "
+                 f"(`results/partition_windowing.json`, seq_len {pw['seq_len']}):")
+        L.append("")
+        for key, c in pw["conditions"].items():
+            L.append(f"- `{key}` (entity = {c['entity']}): "
+                     f"{100 * c['single_entity_window_share']:.2f} %")
+    except FileNotFoundError:
+        L.append("_`results/partition_windowing.json` is not on disk -- run "
+                 "`experiments/check_partition_windowing.py` for the measured shares._")
     L.append("")
 
     L.append("## Conditions available")
     L.append("")
     incomplete = False
+    # Mark every condition whose ablation FedAvg sits below the floor, on every
+    # row it appears in (in place, so the extractors pick the label up).
+    abl = {}
+    for ck, suf, _ in CONDITIONS:
+        p = os.path.join(RESULTS_DIR, "baselines" + suf + ".json")
+        if os.path.exists(p):
+            with open(p, encoding="utf-8") as f:
+                abl[ck] = json.load(f)["results"]["FedAvg"]["MCC"]
+    AT_FLOOR.update(ck for ck, m in abl.items() if m < FLOOR_MCC)
+    CONDITIONS[:] = [(k, s, lbl + (" (FedAvg at floor)" if k in AT_FLOOR else ""))
+                     for k, s, lbl in CONDITIONS]
+    kaggle = []
     for ck, suf, label in CONDITIONS:
-        have = [s for s in SWEEPS
+        runnable = [s for s in SWEEPS if (ck, s) not in NOT_RUNNABLE]
+        have = [s for s in runnable
                 if os.path.exists(os.path.join(RESULTS_DIR, s + suf + ".json"))]
-        line = "- **" + label + "** -- " + f"{len(have)}/{len(SWEEPS)}" + " sweeps on disk"
-        if len(have) != len(SWEEPS):
+        line = ("- **" + label + "** -- " + f"{len(have)}/{len(runnable)}"
+                + " runnable sweeps on disk")
+        if len(have) != len(runnable):
             incomplete = True
-            line += " (missing: " + ", ".join(sorted(set(SWEEPS) - set(have))) + ")"
+            line += " (missing: " + ", ".join(sorted(set(runnable) - set(have))) + ")"
+        for s in SWEEPS:
+            if (ck, s) in NOT_RUNNABLE:
+                line += f"; `{s}` cannot run here ({NOT_RUNNABLE[(ck, s)]})"
+        if ck in abl:
+            line += f"; ablation FedAvg MCC {abl[ck]:+.4f}"
         L.append(line)
+        for s in have:
+            with open(os.path.join(RESULTS_DIR, s + suf + ".json"), encoding="utf-8") as f:
+                if _env(json.load(f)) == "Kaggle":
+                    kaggle.append(label)
+                    break
     L.append("")
+    if kaggle:
+        L.append("> **[Kaggle]** marks a column run on Kaggle (Linux, Python 3.12, the "
+                 "laptop's library pins, 4 threads): " + ", ".join(kaggle) + ". A "
+                 "comparison across a [Kaggle] and an unmarked column is also an "
+                 "environment comparison.")
+        L.append("")
+    if AT_FLOOR:
+        L.append(f"> **(FedAvg at floor) / [floor]** marks a condition whose federated "
+                 f"ablation leaves FedAvg below MCC {FLOOR_MCC} -- the floor the AMLSim "
+                 "pre-registration fixed as (f). Its models carry nothing to attack, "
+                 "reward or protect, so its rows are shown and never scored: the "
+                 "properties are **untestable** there, neither held nor failed.")
+        L.append("")
     if incomplete:
-        L.append("> **Incomplete.** Rows for a missing condition read `--`, and both effect "
-                 "columns that depend on it are blank. Re-run this script when the "
-                 "outstanding sweeps land; it costs seconds and reads only JSON.")
+        L.append("> **Incomplete.** A condition with no run of a sweep has no column in "
+                 "that sweep's tables, and an effect column appears only when both its "
+                 "ends are on disk. Re-run this script when the outstanding sweeps land; "
+                 "it costs seconds and reads only JSON.")
         L.append("")
 
     for sweep in SWEEPS:
@@ -668,14 +880,16 @@ def main():
 
     L.append("---")
     L.append("")
-    L.append("## How to read the two effect columns")
+    L.append("## How to read the effect columns")
     L.append("")
-    L.append("- A quantity that moves in the **dataset** column and not the **partition** "
-             "column is a property of BankSim, and any claim about federation structure "
-             "built on it in OBJ-15 must be withdrawn.")
-    L.append("- A quantity that moves in the **partition** column is a property of "
-             "entity-disjointness, and it generalises past this dataset only as far as the "
-             "mechanism does -- state the mechanism, not just the sign.")
+    L.append("- A quantity that moves in the **dataset** column and not the BankSim "
+             "**strat -> entity** column is a property of BankSim, and any claim about "
+             "federation structure built on it in OBJ-15 must be withdrawn.")
+    L.append("- A quantity that moves in a **strat -> entity** column is a property of the "
+             "entity split *together with* its entity-grouped training windows (see the "
+             "correction at the top). It generalises past that dataset only as far as the "
+             "mechanism does -- state the mechanism, not just the sign, and never call it "
+             "a partition effect alone.")
     L.append("- A quantity that moves in **both** is not decomposable from three runs. Say "
              "so; do not attribute it.")
     L.append("- A quantity that moves in **neither** replicates, and that is a result worth "

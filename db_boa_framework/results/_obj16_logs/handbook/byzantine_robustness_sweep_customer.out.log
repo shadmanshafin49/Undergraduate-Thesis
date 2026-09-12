@@ -1,0 +1,33 @@
+======================================================================
+  TASK D — STATISTICAL BYZANTINE FAULT TOLERANCE (Krum at f ≥ 1)
+  regimes=[(5, 1, 1), (7, 2, 2)]  attacks=['sign-flip', 'scaled', 'gaussian', 'label-flip']  epochs=12
+======================================================================
+
+[D]  ── regime n=5, f=1, attackers=1 (n≥2f+3 ⇒ 5 ≥ 5) ──
+[D]  n=5 trained honest Bank01  bal-acc=62.75%
+[D]  n=5 trained honest Bank02  bal-acc=62.44%
+[D]  n=5 trained honest Bank03  bal-acc=60.46%
+[D]  n=5 trained honest Bank04  bal-acc=60.67%
+[D]  n=5 trained honest Bank05  bal-acc=58.88%
+[D]  n=5 f=1  sign-flip  Krum→Bank04  attacker REJECTED ✓  krum=59.1%  fedavg=67.1%  Δ=-8.0%
+[D]  n=5 f=1  scaled     Krum→Bank04  attacker REJECTED ✓  krum=59.1%  fedavg=57.9%  Δ=+1.2%
+[D]  n=5 f=1  gaussian   Krum→Bank04  attacker REJECTED ✓  krum=59.1%  fedavg=60.8%  Δ=-1.7%
+[D]  n=5 f=1  label-flip Krum→Bank04  attacker REJECTED ✓  krum=59.1%  fedavg=65.9%  Δ=-6.9%
+
+[D]  ── regime n=7, f=2, attackers=2 (n≥2f+3 ⇒ 7 ≥ 7) ──
+[D]  n=7 trained honest Bank01  bal-acc=60.36%
+[D]  n=7 trained honest Bank02  bal-acc=60.63%
+[D]  n=7 trained honest Bank03  bal-acc=62.19%
+[D]  n=7 trained honest Bank04  bal-acc=59.02%
+[D]  n=7 trained honest Bank05  bal-acc=60.88%
+[D]  n=7 trained honest Bank06  bal-acc=60.10%
+[D]  n=7 trained honest Bank07  bal-acc=57.76%
+[D]  n=7 f=2  sign-flip  Krum→Bank05  attacker REJECTED ✓  krum=58.6%  fedavg=65.8%  Δ=-7.2%
+[D]  n=7 f=2  scaled     Krum→Bank05  attacker REJECTED ✓  krum=58.6%  fedavg=55.4%  Δ=+3.2%
+[D]  n=7 f=2  gaussian   Krum→Bank05  attacker REJECTED ✓  krum=58.6%  fedavg=54.1%  Δ=+4.5%
+[D]  n=7 f=2  label-flip Krum→Bank07  attacker SELECTED ✗ (attack won)  krum=43.3%  fedavg=64.6%  Δ=-21.3%
+
+[D]  done in 6938.7s
+[D]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\byzantine_robustness_sweep_handbook_customer.json
+[D]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\byzantine_robustness_krum_vs_fedavg_handbook_customer.png
+[D]  wrote draft → D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\final_report_data\TASKD_byzantine_robustness_results_handbook_customer.md

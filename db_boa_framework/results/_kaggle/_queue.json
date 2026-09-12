@@ -1,0 +1,183 @@
+{
+  "paysim-smoke": {
+    "status": "fetched",
+    "pushed": "2026-09-11 18:18:41",
+    "finished": "2026-09-11 18:23:33"
+  },
+  "paysim-byzantine-robustness-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 18:29:05",
+    "finished": "2026-09-11 20:23:10"
+  },
+  "paysim-economic-byzantine-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 18:29:14",
+    "finished": "2026-09-11 19:44:52"
+  },
+  "paysim-private-incentive-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 18:29:23",
+    "finished": "2026-09-11 19:26:41"
+  },
+  "paysim-baselines-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 18:29:33",
+    "finished": "2026-09-11 20:23:37"
+  },
+  "paysim-all-baselines-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 18:29:42",
+    "note": "reset 2026-09-11: the old substring status test misread a CLI/API error as ERROR; Kaggle still reported RUNNING",
+    "finished": "2026-09-11 23:29:30"
+  },
+  "amlsim-baselines-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 19:27:14",
+    "finished": "2026-09-11 19:39:01"
+  },
+  "amlsim-baselines-bank": {
+    "status": "fetched",
+    "pushed": "2026-09-11 19:39:15",
+    "finished": "2026-09-11 19:51:27"
+  },
+  "amlsim-economic-byzantine-bank": {
+    "status": "fetched",
+    "pushed": "2026-09-11 19:45:34",
+    "finished": "2026-09-11 19:52:03"
+  },
+  "amlsim-private-incentive-bank": {
+    "status": "fetched",
+    "pushed": "2026-09-11 19:52:14",
+    "finished": "2026-09-11 20:04:12"
+  },
+  "amlsim-byzantine-robustness-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 19:52:29",
+    "finished": "2026-09-11 20:04:41"
+  },
+  "amlsim-economic-byzantine-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 20:04:55",
+    "finished": "2026-09-11 20:16:46"
+  },
+  "amlsim-private-incentive-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 20:05:05",
+    "finished": "2026-09-11 20:17:18"
+  },
+  "paysim-grid-cnn": {
+    "status": "fetched",
+    "pushed": "2026-09-11 20:17:32",
+    "finished": "2026-09-11 20:57:37"
+  },
+  "paysim-grid-lstm": {
+    "status": "fetched",
+    "pushed": "2026-09-11 20:17:42",
+    "finished": "2026-09-11 21:51:53"
+  },
+  "paysim-grid-dtcn": {
+    "status": "fetched",
+    "pushed": "2026-09-11 20:24:21",
+    "finished": "2026-09-11 22:47:06"
+  },
+  "paysim-grid-dilated-attn": {
+    "status": "fetched",
+    "pushed": "2026-09-11 20:24:35",
+    "finished": "2026-09-11 22:03:31"
+  },
+  "paysim-grid-resnet": {
+    "status": "fetched",
+    "pushed": "2026-09-11 20:57:58",
+    "finished": "2026-09-11 21:52:20"
+  },
+  "paysim-grid-densenet": {
+    "status": "fetched",
+    "pushed": "2026-09-11 21:52:27",
+    "finished": "2026-09-11 23:01:13"
+  },
+  "paysim-grid-efficientnet": {
+    "status": "fetched",
+    "pushed": "2026-09-11 21:52:34",
+    "finished": "2026-09-12 01:37:53"
+  },
+  "amlsim-grid-cnn": {
+    "status": "fetched",
+    "pushed": "2026-09-11 22:03:49",
+    "finished": "2026-09-11 22:09:26"
+  },
+  "amlsim-grid-lstm": {
+    "status": "fetched",
+    "pushed": "2026-09-11 22:09:32",
+    "finished": "2026-09-11 22:20:52"
+  },
+  "amlsim-grid-dtcn": {
+    "status": "fetched",
+    "pushed": "2026-09-11 22:20:58",
+    "finished": "2026-09-11 22:41:39"
+  },
+  "amlsim-grid-dilated-attn": {
+    "status": "fetched",
+    "pushed": "2026-09-11 22:32:47",
+    "finished": "2026-09-12 03:12:34"
+  },
+  "amlsim-grid-resnet": {
+    "status": "fetched",
+    "pushed": "2026-09-11 22:47:33",
+    "finished": "2026-09-11 23:01:42"
+  },
+  "amlsim-grid-densenet": {
+    "status": "fetched",
+    "pushed": "2026-09-11 23:01:50",
+    "finished": "2026-09-11 23:12:56"
+  },
+  "amlsim-grid-efficientnet": {
+    "status": "fetched",
+    "pushed": "2026-09-11 23:01:57",
+    "finished": "2026-09-11 23:30:06"
+  },
+  "paysim-scalability-stratified": {
+    "status": "fetched",
+    "pushed": "2026-09-11 23:13:09",
+    "finished": "2026-09-12 02:51:57"
+  },
+  "amlsim-scalability-stratified": {
+    "status": "failed",
+    "pushed": "2026-09-11 23:30:20",
+    "finished": "2026-09-11 23:35:57"
+  },
+  "handbook-grid-efficientnet": {
+    "status": "fetched",
+    "pushed": "2026-09-12 10:55:12",
+    "finished": "2026-09-12 15:08:38"
+  },
+  "handbook-grid-dtcn": {
+    "status": "fetched",
+    "pushed": "2026-09-12 10:55:19",
+    "finished": "2026-09-12 12:55:12"
+  },
+  "handbook-grid-dilated-attn": {
+    "status": "fetched",
+    "pushed": "2026-09-12 10:55:25",
+    "finished": "2026-09-12 12:17:18"
+  },
+  "handbook-grid-lstm": {
+    "status": "fetched",
+    "pushed": "2026-09-12 10:55:32",
+    "finished": "2026-09-12 12:28:24"
+  },
+  "handbook-grid-densenet": {
+    "status": "fetched",
+    "pushed": "2026-09-12 10:55:38",
+    "finished": "2026-09-12 12:00:56"
+  },
+  "handbook-grid-resnet": {
+    "status": "fetched",
+    "pushed": "2026-09-12 12:01:03",
+    "finished": "2026-09-12 13:26:54"
+  },
+  "handbook-grid-cnn": {
+    "status": "fetched",
+    "pushed": "2026-09-12 12:17:37",
+    "finished": "2026-09-12 13:00:49"
+  }
+}

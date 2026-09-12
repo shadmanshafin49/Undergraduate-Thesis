@@ -1,0 +1,33 @@
+{
+  "config": "dbboa_repaired_averaged",
+  "seed": 42,
+  "threads": 2,
+  "epochs": 30,
+  "hidden_neurons": 137,
+  "steps_per_epoch": 109,
+  "architecture": "cnn",
+  "n_raw_features": 33,
+  "split_random_state": 42,
+  "test_n": 56962,
+  "test_fraud": 98,
+  "metrics": {
+    "Accuracy": 99.91573329588128,
+    "Precision": 71.92982456134041,
+    "Sensitivity": 83.67346938766973,
+    "Specificity": 99.9437253798535,
+    "NPV": 99.9718547706162,
+    "FPR": 0.05627462014631391,
+    "FNR": 16.32653061222824,
+    "FDR": 28.07017543857187,
+    "F1_Score": 77.35849056600125,
+    "MCC": 0.7753848544318918,
+    "TP": 82.0,
+    "TN": 56832.0,
+    "FP": 32.0,
+    "FN": 16.0
+  },
+  "weight_sha256_16": "98be0068f7c77d85",
+  "torch_version": "2.12.0+cpu",
+  "secs": 6287.4,
+  "finished": "2026-09-11T18:05:50"
+}

@@ -1,0 +1,25 @@
+[kaggle_job] torch threads = 4
+==============================================================================
+  OBJ-16 (d) — HANDBOOK ENTITY-LINKED TEMPORAL GRID
+  ordering x architecture   |  epochs=10  filters=32  seeds=[42, 7, 123]  batch=2048  threads=4
+==============================================================================
+[HANDBOOK] 1,754,155 transactions | 4,990 customers | 10,000 terminals | days 0-182
+[HANDBOOK] fraud 14,681 (0.837 %)
+  [  global] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.0084  base=0.0084
+  [customer] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.1121  base=0.0084
+  [terminal] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.6034  base=0.0084
+  integrity OK: all three arms train on 1,226,990 rows (9,991 fraud) and test on 354,643 rows (3,177 fraud)
+
+      reference: skipped (--skip-reference; another part carries it)
+
+   EfficientNet-1D |   global-window  MCC=+0.0949 +/- 0.019  Prec=  4.4  Rec= 31.3  FP=23645  (1625s/seed)
+   EfficientNet-1D | customer-window  MCC=+0.1517 +/- 0.025  Prec=  7.8  Rec= 36.7  FP=14829  (1623s/seed)
+   EfficientNet-1D | terminal-window  MCC=+0.0522 +/- 0.001  Prec=  2.0  Rec= 35.5  FP=54201  (1641s/seed)
+
+------------------------------------------------------------------------------
+  customer-linked beats global for 1 of 1 architectures  (gain +0.0568 to +0.0568)
+  terminal-linked beats global for 0 of 1 architectures  (gain -0.0427 to -0.0427)
+  terminal gain > customer gain for 0 of 1
+------------------------------------------------------------------------------
+
+  wrote /tmp/repo/db_boa_framework/results/handbook_temporal_grid_efficientnet.json

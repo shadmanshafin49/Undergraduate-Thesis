@@ -1,0 +1,25 @@
+[kaggle_job] torch threads = 4
+==============================================================================
+  OBJ-16 (d) — HANDBOOK ENTITY-LINKED TEMPORAL GRID
+  ordering x architecture   |  epochs=10  filters=32  seeds=[42, 7, 123]  batch=2048  threads=4
+==============================================================================
+[HANDBOOK] 1,754,155 transactions | 4,990 customers | 10,000 terminals | days 0-182
+[HANDBOOK] fraud 14,681 (0.837 %)
+  [  global] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.0084  base=0.0084
+  [customer] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.1121  base=0.0084
+  [terminal] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.6034  base=0.0084
+  integrity OK: all three arms train on 1,226,990 rows (9,991 fraud) and test on 354,643 rows (3,177 fraud)
+
+      reference: skipped (--skip-reference; another part carries it)
+
+              DTCN |   global-window  MCC=+0.0931 +/- 0.009  Prec=  4.2  Rec= 31.6  FP=23646  (779s/seed)
+              DTCN | customer-window  MCC=+0.1104 +/- 0.008  Prec=  4.5  Rec= 38.6  FP=26270  (777s/seed)
+              DTCN | terminal-window  MCC=+0.0419 +/- 0.007  Prec=  1.6  Rec= 42.0  FP=82199  (778s/seed)
+
+------------------------------------------------------------------------------
+  customer-linked beats global for 1 of 1 architectures  (gain +0.0173 to +0.0173)
+  terminal-linked beats global for 0 of 1 architectures  (gain -0.0511 to -0.0511)
+  terminal gain > customer gain for 0 of 1
+------------------------------------------------------------------------------
+
+  wrote /tmp/repo/db_boa_framework/results/handbook_temporal_grid_dtcn.json

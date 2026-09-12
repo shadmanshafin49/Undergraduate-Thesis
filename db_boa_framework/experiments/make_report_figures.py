@@ -258,76 +258,147 @@ def figure_memorisation():
 
 
 # ============================================================ FIGURE 2
-CONDITIONS = ["ULB / stratified", "BankSim / stratified", "BankSim / entity-disjoint"]
-COND_SHORT = ["ULB\nstratified", "BankSim\nstratified", "BankSim\nentity-disj."]
+# Every condition the federated ablation can run on, in reading order.  A
+# condition gets a column only once its result file exists (Rule 2): nothing is
+# drawn for a run that has not happened.  PaySim's all-rows arm is a sensitivity
+# variant of PaySim, reported in the text -- not a condition, so not a column.
+ALL_CONDITIONS = [
+    ("ULB / stratified", "ULB\nstratified", "baselines.json"),
+    ("BankSim / stratified", "BankSim\nstratified", "baselines_banksim_stratified.json"),
+    ("BankSim / entity-disjoint", "BankSim\nentity-disj.", "baselines_banksim_customer.json"),
+    ("Handbook / stratified", "Handbook\nstratified", "baselines_handbook_stratified.json"),
+    ("Handbook / entity-disjoint", "Handbook\nentity-disj.",
+     "baselines_handbook_customer.json"),
+    ("PaySim / stratified", "PaySim\nstratified", "baselines_paysim_stratified.json"),
+    ("AMLSim / stratified", "AMLSim\nstratified", "baselines_amlsim_stratified.json"),
+    ("AMLSim / native banks", "AMLSim\nnative banks", "baselines_amlsim_bank.json"),
+]
+CONDITIONS = [c for c, _, f in ALL_CONDITIONS if (RESULTS / f).exists()]
+BASELINE_FILES = {c: f for c, _, f in ALL_CONDITIONS if c in CONDITIONS}
+_SHORT = {c: s for c, s, _ in ALL_CONDITIONS}
 METHODS = ["FedAvg", "FedAvg+Krum", "FedAvg+DP", "DB-BOA-ADTCN"]
 METHOD_COLOURS = [C1, C2, C3, C4]
+# FedAvg MCC below this leaves nothing to attack, reward or protect -- the floor
+# the AMLSim pre-registration fixed as (f).  A condition there is drawn, marked,
+# and never read as a result.
+FLOOR_MCC = 0.05
+MARK_NOTE = ("† run on Kaggle (Python 3.12, the laptop's library pins, 4 threads)     "
+             "* FedAvg below the MCC 0.05 floor: untestable there, shown not scored")
+
+
+def cond_flags():
+    """{condition: (ran on Kaggle, FedAvg below the floor)}, read off each
+    condition's own baselines file -- never assumed from its name."""
+    out = {}
+    for c in CONDITIONS:
+        d = load(BASELINE_FILES[c])
+        plat = str((d.get("environment") or {}).get("platform", ""))
+        out[c] = (plat.startswith("Linux"), d["results"]["FedAvg"]["MCC"] < FLOOR_MCC)
+    return out
+
+
+# Tick labels for panels too narrow for the full names (8 columns once the
+# Handbook lands).
+_TINY = {"ULB / stratified": "ULB\nstrat", "BankSim / stratified": "BankSim\nstrat",
+         "BankSim / entity-disjoint": "BankSim\nentity", "Handbook / stratified": "Handbook\nstrat",
+         "Handbook / entity-disjoint": "Handbook\nentity", "PaySim / stratified": "PaySim\nstrat",
+         "AMLSim / stratified": "AMLSim\nstrat", "AMLSim / native banks": "AMLSim\nbanks"}
+
+
+def cond_labels(tiny=False):
+    flags = cond_flags()
+    names = _TINY if tiny else _SHORT
+    return [names[c] + ("†" if flags[c][0] else "") + ("*" if flags[c][1] else "")
+            for c in CONDITIONS]
 
 
 def figure_cross_dataset():
     fx = load("federated_cross_dataset.json")
-    fig, axes = plt.subplots(1, 3, figsize=(10.0, 4.0),
-                             gridspec_kw={"width_ratios": [1.55, 1.0, 1.0]})
+    conds = [c for c in CONDITIONS if c in fx["mcc"]]
+    lab = dict(zip(CONDITIONS, cond_labels()))
+    labels = [lab[c] for c in conds]
+    tiny = dict(zip(CONDITIONS, cond_labels(tiny=True)))
+    tlabels = [tiny[c] for c in conds]
+    dpc = fx["dp_cost"]
+    test = [dpc[c]["testable"] for c in conds]
+    n = len(conds)
+    x = np.arange(n)
 
-    # (a) MCC by method across the three conditions
-    ax = axes[0]
-    x = np.arange(3)
-    w = 0.2
+    fig = plt.figure(figsize=(10.0, 7.8))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.2, 1.0], hspace=0.62, wspace=0.24)
+
+    # (a) MCC by method across every condition on record
+    ax = fig.add_subplot(gs[0, :])
+    w = 0.19
     for i, (m, colour) in enumerate(zip(METHODS, METHOD_COLOURS)):
-        vals = [fx["mcc"][c][m] for c in CONDITIONS]
-        bars = ax.bar(x + (i - 1.5) * (w + 0.015), vals, w, color=colour, label=m)
+        vals = [fx["mcc"][c][m] for c in conds]
+        bars = ax.bar(x + (i - 1.5) * (w + 0.012), vals, w, color=colour, label=m)
         for b in bars:
-            ax.annotate(f"{b.get_height():.3f}",
-                        (b.get_x() + b.get_width() / 2, max(b.get_height(), 0) + 0.015),
-                        ha="center", va="bottom", fontsize=7.6, color=INK2, rotation=90)
-    ax.set_xticks(x, COND_SHORT)
-    ax.set_ylim(-0.02, 1.12)
+            h = b.get_height()
+            ax.annotate(f"{h:.2f}", (b.get_x() + b.get_width() / 2, max(h, 0) + 0.015),
+                        ha="center", va="bottom", fontsize=6.8, color=INK2, rotation=90)
+    ax.axhline(FLOOR_MCC, color=MUTED, lw=0.8, ls="--")
+    ax.set_xticks(x, labels)
+    ax.set_xlim(-0.6, n - 0.4)
+    ax.set_ylim(-0.06, 1.12)
     ax.set_ylabel("MCC on the held-out test set")
-    ax.set_title("(a) Four federated methods,\nthree conditions")
-    ax.legend(ncol=2, loc="upper left")
+    ax.set_title(f"(a) Four federated methods, {n} conditions")
+    # The floor goes in the legend: a label on the line collides with the bar values.
+    handles, names = ax.get_legend_handles_labels()
+    handles.append(Line2D([0], [0], color=MUTED, lw=0.8, ls="--"))
+    names.append(f"floor (MCC {FLOOR_MCC})")
+    ax.legend(handles, names, ncol=5, loc="upper right", fontsize=8.2)
     style(ax)
 
-    # (b) what DP does to accuracy -- the metric that hides the failure
-    ax = axes[1]
-    d = [fx["dp_cost"][c]["delta_acc"] for c in CONDITIONS]
-    fp = [fx["dp_cost"][c]["dp_fp"] for c in CONDITIONS]
-    bars = ax.bar(x, d, 0.55, color=[C1 if v < 0 else CRITICAL for v in d])
+    # (b) what DP does to accuracy -- the metric that hides the failure.  Plotted
+    # as DP minus FedAvg, so a rise reads as a rise.
+    ax = fig.add_subplot(gs[1, 0])
+    d = [-dpc[c]["delta_acc"] for c in conds]
+    cols = [MUTED if not t else (CRITICAL if v >= 0 else C1) for v, t in zip(d, test)]
+    bars = ax.bar(x, d, 0.6, color=cols)
     ax.axhline(0, color=AXIS, lw=0.9)
-    for b, v, f in zip(bars, d, fp):
-        ax.annotate(f"{v:+.2f} pp", (b.get_x() + b.get_width() / 2, v + (3 if v >= 0 else -3)),
-                    ha="center", va="bottom" if v >= 0 else "top", fontsize=8.2, color=INK2)
-        ax.annotate(f"{int(f):,} false positives",
-                    (b.get_x() + b.get_width() / 2, v + (14 if v >= 0 else -13)),
-                    ha="center", va="bottom" if v >= 0 else "top", fontsize=7.6, color=MUTED)
-    ax.set_xticks(x, COND_SHORT)
-    ax.set_ylim(-32, 128)
-    ax.set_ylabel("accuracy change under DP (pp)")
-    ax.set_title("(b) DP collapses in all three —\naccuracy reports it differently")
-    ax.annotate("MCC is ≈ 0 in all three.\nAccuracy is not.", (-0.35, 52),
-                ha="left", fontsize=8.2, color=INK2)
+    for b, v in zip(bars, d):
+        ax.annotate(f"{v:+.2f}", (b.get_x() + b.get_width() / 2, v + (1.5 if v >= 0 else -1.5)),
+                    ha="center", va="bottom" if v >= 0 else "top", fontsize=7.0, color=INK2)
+    ax.set_xticks(x, tlabels, fontsize=7.0)
+    lo, hi = min(d + [0.0]), max(d + [0.0])
+    ax.set_ylim(lo - 0.12 * (hi - lo) - 4, hi + 0.5 * (hi - lo))
+    ax.set_ylabel("accuracy under DP minus FedAvg (pp)")
+    ax.set_title("(b) The DP collapse, as accuracy reports it")
+    k_col = sum(1 for c in conds if dpc[c]["testable"] and dpc[c]["collapsed"])
+    n_test = sum(test)
+    ax.annotate(f"MCC falls below the floor in {k_col} of {n_test} testable\n"
+                "conditions. Red: accuracy did not fall at all.\nGrey: FedAvg at the floor.",
+                (0.02, 0.97), xycoords="axes fraction", ha="left", va="top",
+                fontsize=7.4, color=INK2)
     style(ax)
 
-    # (c) what Krum costs, per condition
-    ax = axes[2]
-    k = [fx["krum_delta"][c] for c in CONDITIONS]
-    bars = ax.bar(x, k, 0.55, color=[C1 if v >= 0 else CRITICAL for v in k])
+    # (c) what Krum costs with no attacker, per condition
+    ax = fig.add_subplot(gs[1, 1])
+    kd = [fx["krum_delta"][c] for c in conds]
+    cols = [MUTED if not t else (C1 if v >= 0 else CRITICAL) for v, t in zip(kd, test)]
+    bars = ax.bar(x, kd, 0.6, color=cols)
     ax.axhline(0, color=AXIS, lw=0.9)
-    for b, v in zip(bars, k):
-        ax.annotate(f"{v:+.3f}", (b.get_x() + b.get_width() / 2, v + (0.008 if v >= 0 else -0.008)),
-                    ha="center", va="bottom" if v >= 0 else "top", fontsize=8.2, color=INK2)
-    ax.set_xticks(x, COND_SHORT)
-    ax.set_ylim(-0.09, 0.26)
+    for b, v in zip(bars, kd):
+        ax.annotate(f"{v:+.3f}", (b.get_x() + b.get_width() / 2, v + (0.005 if v >= 0 else -0.005)),
+                    ha="center", va="bottom" if v >= 0 else "top", fontsize=7.0, color=INK2)
+    ax.set_xticks(x, tlabels, fontsize=7.0)
+    lo, hi = min(kd + [0.0]), max(kd + [0.0])
+    ax.set_ylim(lo - 0.2 * (hi - lo), hi + 0.25 * (hi - lo))
     ax.set_ylabel("MCC(Krum) − MCC(FedAvg)")
-    ax.set_title("(c) Krum helps on one dataset\nand costs on the other")
+    ax.set_title("(c) Krum without an attacker")
+    k_neg = sum(1 for v, t in zip(kd, test) if t and v < 0)
+    ax.annotate(f"Costs MCC in {k_neg} of {n_test} conditions above\nthe floor. "
+                "Grey: FedAvg at the floor.", (0.98, 0.97), xycoords="axes fraction",
+                ha="right", va="top", fontsize=7.4, color=INK2)
     style(ax)
 
-    fig.tight_layout(w_pad=2.8)
-    fig.suptitle(
-        "What the second dataset changed  —  every headline is condition-dependent",
-        fontsize=12.0, color=INK, fontweight="bold", y=1.05,
-    )
+    fig.suptitle("The federated ablation in every condition measured so far",
+                 fontsize=12.0, color=INK, fontweight="bold", y=0.975)
+    fig.text(0.5, 0.005, MARK_NOTE, ha="center", fontsize=7.8, color=MUTED)
     save(fig, "fig_cross_dataset_comparison.png",
-         ["federated_cross_dataset.json (collated from baselines*.json)"])
+         ["federated_cross_dataset.json (collated from baselines*.json)"]
+         + [f"{BASELINE_FILES[c]} ({c})" for c in conds])
 
 
 # ============================================================ FIGURE 3
@@ -435,43 +506,43 @@ SCORE_METRICS = [
     ("Specificity", "Specificity (%)", "{:.2f}", 100.0),
     ("F1_Score", "F1 score (%)", "{:.2f}", 100.0),
 ]
-BASELINE_FILES = {
-    "ULB / stratified": "baselines.json",
-    "BankSim / stratified": "baselines_banksim_stratified.json",
-    "BankSim / entity-disjoint": "baselines_banksim_customer.json",
-}
+# BASELINE_FILES is built with the condition list (FIGURE 2), from the files on disk.
 
 
 def figure_score_index():
     data = {c: load(f)["results"] for c, f in BASELINE_FILES.items()}
+    labels = cond_labels(tiny=True)
+    n = len(CONDITIONS)
 
     # 3 rows x 2 columns: at \linewidth on A4 this scales down far less than a
     # 2x3 strip, which is what makes the tick labels survive the page.
     # Values are deliberately NOT printed on the bars -- the score-index table
     # sits directly under this figure and is the table view for every number.
-    fig, axes = plt.subplots(3, 2, figsize=(9.0, 8.4))
-    x = np.arange(3)
-    w = 0.2
+    fig, axes = plt.subplots(3, 2, figsize=(10.0, 9.4))
+    x = np.arange(n)
+    w = 0.19
     for ax, (key, label, fmt, top) in zip(axes.ravel(), SCORE_METRICS):
         for i, (m, colour) in enumerate(zip(METHODS, METHOD_COLOURS)):
             vals = [data[c][m][key] for c in CONDITIONS]
-            ax.bar(x + (i - 1.5) * (w + 0.015), vals, w, color=colour, label=m)
-        ax.set_xticks(x, COND_SHORT)
+            ax.bar(x + (i - 1.5) * (w + 0.012), vals, w, color=colour, label=m)
+        ax.set_xticks(x, labels, fontsize=7.4)
         ax.set_ylim(-top * 0.03, top * 1.06)
         ax.set_title(label)
         style(ax)
     handles, labels_ = axes[0][0].get_legend_handles_labels()
-    fig.tight_layout(rect=(0, 0.035, 1, 0.945), h_pad=2.2)
+    fig.tight_layout(rect=(0, 0.06, 1, 0.945), h_pad=2.2)
     fig.legend(handles, labels_, loc="upper center", bbox_to_anchor=(0.5, 0.972),
                ncol=4, fontsize=9.5)
     fig.suptitle(
-        "Score index — every metric, four federated methods, all three conditions on record",
+        f"Score index — every metric, four federated methods, all {n} conditions on record",
         fontsize=12.0, color=INK, fontweight="bold", y=0.995,
     )
-    fig.text(0.5, 0.008,
-             "Two datasets, three conditions — not five. A fourth and fifth column are a loader\n"
-             "plus a re-run of the same sweeps; no such run exists yet, so none is drawn.",
-             ha="center", fontsize=9.0, color=MUTED)
+    n_ds = len({c.split(" / ")[0] for c in CONDITIONS})
+    missing = [c for c, _, _ in ALL_CONDITIONS if c not in CONDITIONS]
+    note = (f"{n_ds} datasets in {n} conditions."
+            + (f" Not on disk yet, so not drawn: {', '.join(missing)}." if missing else "")
+            + "\n" + MARK_NOTE)
+    fig.text(0.5, 0.008, note, ha="center", fontsize=8.4, color=MUTED)
     save(fig, "fig_score_index.png", [f"{f} ({c})" for c, f in BASELINE_FILES.items()])
     return data
 
@@ -500,10 +571,13 @@ def write_score_tables(data):
         "\\toprule",
         "Method & " + " & ".join(TEX_NAME.get(k, k) for k in TABLE_METRICS) + " \\\\",
     ]
+    flags = cond_flags()
     for ci, c in enumerate(CONDITIONS):
+        mark = (("\\textsuperscript{\\dag}" if flags[c][0] else "")
+                + ("\\textsuperscript{*}" if flags[c][1] else ""))
         lines.append("\\midrule")
         lines.append(f"\\multicolumn{{{ncol}}}{{@{{}}l}}"
-                     f"{{\\itshape {c}}} \\\\[1pt]")
+                     f"{{\\itshape {c}{mark}}} \\\\[1pt]")
         for m in METHODS:
             row = data[c][m]
             cells = []

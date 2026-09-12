@@ -1,0 +1,31 @@
+======================================================================
+  TASK C — SCALABILITY OF CONTRIBUTION ATTRIBUTION (exact vs MC Shapley)
+  exact n=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  mc    n=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20]  (mc_samples=200, truncation=off)
+  equal-shard=8000/org  epochs=10  n_val=400
+======================================================================
+[C]  shared val set: 400 samples, 200 fraud (50.0%) — fraud-stratified for meaningful Shapley
+[C]  training equal-shard pool of 20 orgs (8000 samples each) …
+[C]    trained Bank01  (8000 samples, 65 fraud, σ=0.00)  bal-acc=54.62%
+[C]    trained Bank03  (8000 samples, 65 fraud, σ=1.00)  bal-acc=52.68%
+[C]    trained Bank06  (8000 samples, 65 fraud, σ=0.50)  bal-acc=52.09%
+[C]    trained Bank09  (8000 samples, 65 fraud, σ=0.00)  bal-acc=54.50%
+[C]    trained Bank12  (8000 samples, 65 fraud, σ=1.50)  bal-acc=51.78%
+[C]    trained Bank15  (8000 samples, 65 fraud, σ=1.00)  bal-acc=53.60%
+[C]    trained Bank18  (8000 samples, 65 fraud, σ=0.50)  bal-acc=54.32%
+[C]  n= 3  exact=   0.224s (    7 cval)  mc=  0.328s (   7 cval)  speedup=   0.7x  L1=0.025  ρ=+0.50  top1=OK
+[C]  n= 4  exact=   0.372s (   15 cval)  mc=  0.396s (  15 cval)  speedup=   0.9x  L1=0.146  ρ=+0.20  top1=x
+[C]  n= 5  exact=   1.017s (   31 cval)  mc=  0.741s (  31 cval)  speedup=   1.4x  L1=0.226  ρ=+0.90  top1=OK
+[C]  n= 6  exact=   1.542s (   63 cval)  mc=  1.732s (  63 cval)  speedup=   0.9x  L1=0.224  ρ=-0.03  top1=x
+[C]  n= 7  exact=   3.925s (  127 cval)  mc=  3.589s ( 127 cval)  speedup=   1.1x  L1=0.217  ρ=+0.50  top1=x
+[C]  n= 8  exact=   7.581s (  255 cval)  mc=  6.871s ( 249 cval)  speedup=   1.1x  L1=0.183  ρ=+0.31  top1=OK
+[C]  n= 9  exact=  14.035s (  511 cval)  mc= 12.918s ( 451 cval)  speedup=   1.1x  L1=0.250  ρ=+0.60  top1=x
+[C]  n=10  exact=  28.448s ( 1023 cval)  mc= 18.804s ( 697 cval)  speedup=   1.5x  L1=0.211  ρ=+0.38  top1=x
+[C]  n=11  exact=  60.101s ( 2047 cval)  mc= 27.681s ( 965 cval)  speedup=   2.2x  L1=0.114  ρ=+0.55  top1=x
+[C]  n=12  exact= 123.616s ( 4095 cval)  mc= 37.423s (1265 cval)  speedup=   3.3x  L1=0.257  ρ=+0.47  top1=x
+[C]  n=14  exact=SKIPPED (2^n=16383 coalitions)        mc= 57.068s (1820 cval)
+[C]  n=16  exact=SKIPPED (2^n=65535 coalitions)        mc= 70.733s (2321 cval)
+[C]  n=18  exact=SKIPPED (2^n=262143 coalitions)        mc= 74.738s (2778 cval)
+[C]  n=20  exact=SKIPPED (2^n=1048575 coalitions)        mc= 94.671s (3247 cval)
+[C]  dilution regime — splitting full train pool across n=[3, 5, 8, 12] …
+[C]  dilution n= 3  ~408996 samples/org  global bal-acc=60.72%
