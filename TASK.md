@@ -2628,6 +2628,48 @@ full pool holds **61.62 → 61.06 → 59.60 → 58.44 %** for n = 3, 5, 8, 12, s
 60.72 → 59.74 — the same shape, so **per-org data volume, not federation size, remains the binding
 constraint**.
 
+#### ▸ CROSS-CONDITION FINDING — 2026-09-13, from a coverage audit of all seven byzantine sweeps
+
+Not pre-registered. Found while auditing whether the five datasets are uniformly covered; it qualifies a
+claim this project has made in every draft, so it is recorded before anything else is written.
+
+**Krum's separation of a label-flipping attacker fails on THREE of seven conditions, not two.** The sweep
+records `score_margin` = (lowest attacker Krum score) − (highest honest Krum score). Negative means the
+attacker sits *inside* the honest range, i.e. the defence cannot tell it apart. Krum then selects whichever
+org has the lowest score overall.
+
+| condition | ref FedAvg bal-acc | margin n=5 | margin n=7 | attacker selected? |
+|---|---|---|---|---|
+| ULB | 99.95 | +8.10 | +6.87 | no |
+| BankSim / `stratified` | 96.07–99.17 | +139.81 | +66.83 | no |
+| BankSim / `customer` | 90.10–93.35 | +145.82 | +149.21 | no |
+| PaySim / `stratified` | 76.78–80.61 | +133.78 | +47.69 | no |
+| **AMLSim / `stratified`** | **50.00** | **−19.96** | **−60.28** | **no — but not separated either** |
+| **Handbook / `customer`** | 62.14–63.37 | **−35.66** | **−163.79** | **yes, at n=7** |
+| **Handbook / `stratified`** | 60.80–63.40 | **−100.52** | **−223.98** | **yes, at both sizes** |
+
+⛔ **So "the attacker is caught 8/8 on AMLSim" does not show the defence working there.** The label-flipped
+model is **not separated** at either federation size — the margin is negative, exactly as on the Handbook.
+It escaped selection only because it was not the *lowest* score; Krum picked the same org (**Bank02**) in
+all 8 cells. **A pass by ordering, not by separation.** The 8/8 count stands as a count and must stop being
+quoted as evidence that Krum distinguishes a poisoned model on AMLSim.
+
+⚠ **And AMLSim/`stratified` is inert anyway:** every arm of that sweep sits at chance — `ref_fedavg` 50.00,
+`ref_krum` 49.70, and all four attacks land at 49.92–50.00. Nothing there is informative about any defence.
+This is the **third** place the same problem has appeared today, and they should be written up as one
+issue, not three coincidences:
+1. isolation "held" on the Handbook **vacuously** — it never fired, so `acc_with == acc_without`;
+2. Shapley **fidelity** metrics on PaySim, AMLSim and Handbook/`stratified` — shard models at chance;
+3. Krum **8/8 on AMLSim** — models at chance and the attacker not separated.
+
+**The Handbook is not a one-off; it is the extreme of a gradient.** Ordering the conditions by margin gives
+BankSim (+67…+149) > PaySim (+48…+134) > ULB (+7…+8) > AMLSim (−20…−60) > Handbook (−36…−224). The three
+non-separating conditions are the three weakest-modelled ones. **Do not assert that weak models *cause* the
+non-separation** — that is the untested hypothesis already recorded under the floor box — but the
+association across seven conditions is now measured and should be reported as such.
+
+*Note ULB's margin is only +7 to +8 despite 99.95 % accuracy, so margin does not track accuracy simply.*
+
 **Stated so they are not later reported as findings:** exact-Shapley cost is structural (same
 4,095 coalitions at n = 12); MC top-1 stays intermittent with no threshold; absolute MCC sits below
 the Handbook's published baselines **by design** (thinner features) and is never compared to them.
