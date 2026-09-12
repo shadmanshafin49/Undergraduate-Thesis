@@ -283,6 +283,22 @@ and WORK_REPORT now separate the two factors. Plus: DP collapses below the floor
 
 **Report re-sent 16:07 — 57 pp**, clean build (no undefined refs; the same 17 pre-existing overfull boxes).
 
+**✅ 2026-09-13 — WORK_REPORT gained § "The five datasets, one at a time" (65 pp).** Written as the
+source the final thesis chapter can be drafted from: one entry per dataset, each answering the same five
+questions — why we brought it in, what it can and cannot test, predicted vs found, what broke, what it
+contributed on net — plus two closing subsections, a **coverage matrix** (`\label{sec:coverage}`: which of
+the four experiment families each dataset can actually host, and why the blanks are properties of the data)
+and a **cross-dataset synthesis** ending on the methodological lesson.
+- Every number in it was pulled from the result JSONs in this session, not from memory or from earlier prose.
+- It carries the traps as first-class content: PaySim's 151.6× time-order artefact, AMLSim's discarded
+  first derivation (94.6/5.1/0.2 %), the ULB sign error, the BankSim windowing confound, the Handbook's
+  struck "entity grouping does not lift" sentence.
+- ⚠ **The long-standing overfull `box` on p. 40 is FIXED, and it was never a mystery:** the six-claims
+  scoreboard is an unbreakable `tabularx` inside `center`, and it had outgrown a page. Converted to
+  `xltabular` (added to the preamble) with a repeating header. **The report now builds with zero overfull
+  vboxes and zero undefined references**; the worst remaining item is a 15.3 pt hbox at line 599, which
+  predates this work.
+
 **✅ THE HANDBOOK SUITE IS COMPLETE — finished 2026-09-12 23:53:13, 11 of 11 steps OK, no FAIL,
 19 h 50 m end to end** (started 04:03:37). Both scalability runs are recorded below the Handbook
 scorecards. **Nothing is left to score. No process of this project is running.**
