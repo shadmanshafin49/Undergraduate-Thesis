@@ -1,0 +1,179 @@
+{
+  "task": "OBJ-11 PaySim reconnaissance \u2014 measured before any loader decision; no result here is compared with anything",
+  "file": "PS_20174392719_1491204439457_log.csv",
+  "file_bytes": 493534783,
+  "columns": [
+    "step",
+    "type",
+    "amount",
+    "nameOrig",
+    "oldbalanceOrg",
+    "newbalanceOrig",
+    "nameDest",
+    "oldbalanceDest",
+    "newbalanceDest",
+    "isFraud",
+    "isFlaggedFraud"
+  ],
+  "shape": {
+    "rows": 6362620,
+    "fraud": 8213,
+    "fraud_rate": 0.001290820448180152,
+    "isFlaggedFraud": 16,
+    "flagged_and_fraud": 16,
+    "step_min": 1,
+    "step_max": 743,
+    "distinct_steps": 743,
+    "rows_per_step_min_median_max": [
+      2,
+      529.0,
+      51352
+    ],
+    "by_type": {
+      "CASH_IN": {
+        "rows": 1399284,
+        "fraud": 0,
+        "fraud_rate": 0.0
+      },
+      "CASH_OUT": {
+        "rows": 2237500,
+        "fraud": 4116,
+        "fraud_rate": 0.0018395530726256983
+      },
+      "DEBIT": {
+        "rows": 41432,
+        "fraud": 0,
+        "fraud_rate": 0.0
+      },
+      "PAYMENT": {
+        "rows": 2151495,
+        "fraud": 0,
+        "fraud_rate": 0.0
+      },
+      "TRANSFER": {
+        "rows": 532909,
+        "fraud": 4097,
+        "fraud_rate": 0.007687991758442811
+      }
+    }
+  },
+  "repeat_structure": {
+    "sender_nameOrig": {
+      "unique_accounts": 6353307,
+      "share_rows_account_appears_once": 0.9970749471129817,
+      "share_rows_account_has_ge10": 0.0,
+      "median_tx_per_account": 1.0,
+      "max_tx_per_account": 3,
+      "share_fraud_rows_account_appears_once": 0.9965907707293316
+    },
+    "receiver_nameDest": {
+      "unique_accounts": 2722362,
+      "share_rows_account_appears_once": 0.35562456975271195,
+      "share_rows_account_has_ge10": 0.42488597464566485,
+      "median_tx_per_account": 1.0,
+      "max_tx_per_account": 113,
+      "share_fraud_rows_account_appears_once": 0.32545963716059906
+    },
+    "share_rows_receiver_is_merchant_M": 0.3381460781879163,
+    "share_fraud_rows_receiver_is_merchant_M": 0.0
+  },
+  "file_order_trap": {
+    "raw_file_order": {
+      "conditioning_rows": 8212,
+      "adjacent_fraud_pairs": 5919,
+      "p_fraud_given_prev_fraud": 0.7207744763760351,
+      "lift_over_base": 558.3847679142443
+    },
+    "within_step_seeded_shuffle": {
+      "conditioning_rows": 8212,
+      "adjacent_fraud_pairs": 3596,
+      "p_fraud_given_prev_fraud": 0.4378957622990745,
+      "lift_over_base": 339.2383215779055
+    },
+    "raw_adjacent_fraud_TRANSFER_then_CASH_OUT_same_amount": 4075
+  },
+  "entity_links": {
+    "global": {
+      "conditioning_rows": 8212,
+      "adjacent_fraud_pairs": 3596,
+      "p_fraud_given_prev_fraud": 0.4378957622990745,
+      "lift_over_base": 339.2383215779055
+    },
+    "sender_linked": {
+      "conditioning_rows": 10,
+      "adjacent_fraud_pairs": 0,
+      "p_fraud_given_prev_fraud": 0.0,
+      "lift_over_base": 0.0
+    },
+    "receiver_linked": {
+      "conditioning_rows": 4330,
+      "adjacent_fraud_pairs": 12,
+      "p_fraud_given_prev_fraud": 0.002771362586605081,
+      "lift_over_base": 2.146977599024135
+    }
+  },
+  "balances": {
+    "fraud": {
+      "share_sender_balance_error_gt_0.01": 0.005479118470717156,
+      "share_receiver_balance_error_gt_0.01": 0.5649579934250578,
+      "share_sender_emptied_newbalance_0": 0.9805186898818946
+    },
+    "legit": {
+      "share_sender_balance_error_gt_0.01": 0.7990747208984254,
+      "share_receiver_balance_error_gt_0.01": 0.6584417711991064,
+      "share_sender_emptied_newbalance_0": 0.566774051457516
+    }
+  },
+  "logistic_references": {
+    "split": "temporal: train step<355, test step>=355; train subsampled to 1,500,000 rows (seed 0); class_weight=balanced; threshold 0.5",
+    "runs": [
+      {
+        "features": "row_only",
+        "n_features": 31,
+        "train_rows": 1500000,
+        "train_fraud": 1141,
+        "test_rows": 1293523,
+        "test_fraud": 4258,
+        "MCC": 0.1260960860747172,
+        "TP": 3626,
+        "FP": 158406,
+        "FN": 632,
+        "fit_seconds": 34.1
+      },
+      {
+        "features": "balances",
+        "n_features": 35,
+        "train_rows": 1500000,
+        "train_fraud": 1141,
+        "test_rows": 1293523,
+        "test_fraud": 4258,
+        "MCC": 0.2613415061690286,
+        "TP": 4230,
+        "FP": 54652,
+        "FN": 28,
+        "fit_seconds": 44.3
+      },
+      {
+        "features": "balances+errors",
+        "n_features": 37,
+        "train_rows": 1500000,
+        "train_fraud": 1141,
+        "test_rows": 1293523,
+        "test_fraud": 4258,
+        "MCC": 0.35531070547544685,
+        "TP": 4215,
+        "FP": 28099,
+        "FN": 43,
+        "fit_seconds": 44.1
+      }
+    ]
+  },
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.13.7",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "wall_clock_seconds": 357.4
+}

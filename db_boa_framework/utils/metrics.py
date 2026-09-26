@@ -89,17 +89,28 @@ def compute_all_metrics(y_true: np.ndarray,
 
 def obf2_value(metrics: dict) -> float:
     """
-    Compute the DB-BOA objective Obf2 from a metrics dict.
+    The DB-BOA hyperparameter objective Obf2, in the bounded form actually used.
 
-    Obf2 = Acc + Pre + NPV + MCC + 1/FPR   (Eq.11)
-    (Values are normalised to [0,1] range before summing.)
+        Obf2 = 2·MCC + Spec + Pre + NPV        (all terms in [0,1])
+
+    This is the single definition of the objective; `_ADTCNObjective` in
+    models/adtcn.py calls it, and DB-BOA minimises the negation.
+
+    Superseded form (do not reinstate)
+    ----------------------------------
+    The base paper's Eq.11 reads ``Acc + Pre + NPV + MCC + 1/FPR``.  The
+    unbounded ``1/FPR`` term explodes to ~1e8 the moment a candidate reaches
+    FPR=0, so on a 0.17 %-fraud dataset every such candidate tied at the same
+    astronomical score and the search went degenerate: it could not rank
+    configurations and returned an arbitrary one, frequently worse than the
+    hand-set default.  The low-FPR reward is therefore carried by the bounded
+    Specificity term (= 1 − FPR), and MCC — the imbalance-robust metric — is
+    weighted ×2 so it dominates the ranking.
     """
-    eps = 1e-8
-    return (metrics["Accuracy"]   / 100.0 +
-            metrics["Precision"]  / 100.0 +
-            metrics["NPV"]        / 100.0 +
-            metrics["MCC"]              +
-            1.0 / (metrics["FPR"] / 100.0 + eps))
+    return (2.0 * metrics["MCC"]            +
+            metrics["Specificity"] / 100.0  +
+            metrics["Precision"]   / 100.0  +
+            metrics["NPV"]         / 100.0)
 
 
 def coalition_score(metrics: dict) -> float:
@@ -110,9 +121,12 @@ def coalition_score(metrics: dict) -> float:
 
     Why not obf2_value() here?
     -------------------------
-    obf2_value() (Eq.11) contains an unbounded 1/FPR term that explodes to ~1e8
-    whenever a coalition reaches FPR=0.  Using it as a Shapley coalition value
-    makes marginal contributions numerically degenerate and the resulting
+    Obf2 is a *search* objective, tuned to rank detector configurations, and it
+    sums four correlated terms.  A Shapley coalition value wants one
+    interpretable quantity instead: marginal contributions computed on a
+    composite score are hard to read, and the paper's original unbounded Eq.11
+    form (1/FPR, see obf2_value) made them numerically degenerate outright,
+    exploding to ~1e8 whenever a coalition reached FPR=0 and rendering the
     aggregation weights meaningless.  Balanced accuracy is bounded, robust to the
     0.17% class imbalance, and gives interpretable contribution attribution:
     a model that catches fraud (high sensitivity) without over-flagging normal

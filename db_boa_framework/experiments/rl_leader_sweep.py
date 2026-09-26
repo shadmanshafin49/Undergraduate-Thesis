@@ -222,7 +222,7 @@ def main():
     }
 
     json_path = os.path.join(RESULTS_DIR, "rl_leader_sweep.json")
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     print(f"\n[RL-SWEEP] saved {json_path}", flush=True)
 

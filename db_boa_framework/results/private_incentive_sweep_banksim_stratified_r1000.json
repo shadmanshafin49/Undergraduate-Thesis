@@ -1,0 +1,112 @@
+{
+  "task": "B1 \u2014 private incentive mechanism (weight vs output channel)",
+  "dataset": "banksim",
+  "dataset_label": "BankSim (594,643 tx, 1.21 % fraud, 4,112 customer IDs)",
+  "partition": "stratified",
+  "raw_features": 79,
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.13.7",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "tag": "r1000",
+  "org_names": [
+    "BankA",
+    "BankB",
+    "BankC"
+  ],
+  "n_orgs": 3,
+  "d_weights": 129538,
+  "n_repeats": 1000,
+  "epoch_count": 12,
+  "eps_grid": [
+    100.0,
+    300.0,
+    3000.0,
+    10000.0
+  ],
+  "federation_pool": 20,
+  "ground_truth": {
+    "weights": [
+      0.5729595015579336,
+      0.2666043613694491,
+      0.16043613707261725
+    ],
+    "tokens": [
+      11.459190031158673,
+      5.332087227388982,
+      3.208722741452345
+    ]
+  },
+  "theory_budget_gain": 207.79637468765748,
+  "epsilon_star_weight": 3000.0,
+  "epsilon_star_output": 100.0,
+  "epsilon_star_weight_censored": false,
+  "epsilon_star_output_censored": false,
+  "budget_factor_is_lower_bound": false,
+  "top_epsilon": 10000.0,
+  "top_weight_inversions": 0,
+  "top_output_inversions": 0,
+  "epsilon_star_weight_draws": 16,
+  "epsilon_star_output_draws": 10,
+  "fragile_draws_threshold": 5,
+  "ordering_holds_at": 4,
+  "ordering_budgets": 4,
+  "sweep": [
+    {
+      "epsilon": 100.0,
+      "n_repeats": 1000,
+      "weight_inversions": 778,
+      "output_inversions": 10,
+      "weight_inversion_rate": 0.778,
+      "output_inversion_rate": 0.01,
+      "weight_token_err": 9.761446048373816,
+      "output_token_err": 1.3113212938779197,
+      "weight_spearman": 0.1800166604983954,
+      "output_spearman": 0.995,
+      "elapsed_sec": 661.8
+    },
+    {
+      "epsilon": 300.0,
+      "n_repeats": 1000,
+      "weight_inversions": 740,
+      "output_inversions": 0,
+      "weight_inversion_rate": 0.74,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 9.951838877415614,
+      "output_token_err": 0.43601497058011207,
+      "weight_spearman": 0.21171281292110206,
+      "output_spearman": 1.0,
+      "elapsed_sec": 688.3
+    },
+    {
+      "epsilon": 3000.0,
+      "n_repeats": 1000,
+      "weight_inversions": 16,
+      "output_inversions": 0,
+      "weight_inversion_rate": 0.016,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 3.124412730909864,
+      "output_token_err": 0.043593209142008815,
+      "weight_spearman": 0.992,
+      "output_spearman": 1.0,
+      "elapsed_sec": 666.7
+    },
+    {
+      "epsilon": 10000.0,
+      "n_repeats": 1000,
+      "weight_inversions": 0,
+      "output_inversions": 0,
+      "weight_inversion_rate": 0.0,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 1.6372701492450341,
+      "output_token_err": 0.01307808587114523,
+      "weight_spearman": 1.0,
+      "output_spearman": 1.0,
+      "elapsed_sec": 677.0
+    }
+  ],
+  "elapsed_sec": 3946.5
+}

@@ -1,0 +1,33 @@
+{
+  "config": "hand_set_default",
+  "seed": 44,
+  "threads": 2,
+  "epochs": 30,
+  "hidden_neurons": 128,
+  "steps_per_epoch": 150,
+  "architecture": "cnn",
+  "n_raw_features": 33,
+  "split_random_state": 42,
+  "test_n": 56962,
+  "test_fraud": 98,
+  "metrics": {
+    "Accuracy": 99.89642217618746,
+    "Precision": 65.35433070860995,
+    "Sensitivity": 84.69387755093399,
+    "Specificity": 99.92262239729864,
+    "NPV": 99.97360781208744,
+    "FPR": 0.07737760270118163,
+    "FNR": 15.306122448963974,
+    "FDR": 34.6456692913113,
+    "F1_Score": 73.77777777774499,
+    "MCC": 0.7434932082046724,
+    "TP": 83.0,
+    "TN": 56820.0,
+    "FP": 44.0,
+    "FN": 15.0
+  },
+  "weight_sha256_16": "38e7d95956337877",
+  "torch_version": "2.12.0+cpu",
+  "secs": 4204.3,
+  "finished": "2026-08-31T12:05:12"
+}

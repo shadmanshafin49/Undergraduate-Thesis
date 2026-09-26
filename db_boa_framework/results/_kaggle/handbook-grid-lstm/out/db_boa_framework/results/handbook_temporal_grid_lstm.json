@@ -1,0 +1,179 @@
+{
+  "objective": "OBJ-16 (d) \u2014 Fraud Detection Handbook entity-linked temporal grid",
+  "dataset": "Fraud Detection Handbook (1,754,155 tx, 0.84 % fraud, 4,990 customer IDs, 10,000 terminal IDs, 1 s resolution)",
+  "protocol": {
+    "split": "temporal past->future; train day<128, test day>=146",
+    "seq_len": 10,
+    "epochs": 10,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "n_features": 35,
+    "orderings": [
+      "global",
+      "customer",
+      "terminal"
+    ],
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "within_second_tie_break": "seeded shuffle (never raw file order)",
+    "entity_derived_row_features": false,
+    "quick": false
+  },
+  "archs": [
+    "lstm"
+  ],
+  "complete": true,
+  "written": "2026-09-12 06:24:32",
+  "wall_clock_seconds_so_far": 5218.476915597916,
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "conditional_fraud_probability": {
+    "global": 0.008446291124582794,
+    "customer": 0.11210547889055882,
+    "terminal": 0.6033821717102561,
+    "base_rate": 0.008369271814634397
+  },
+  "reference_per_transaction_no_window": null,
+  "cells": {
+    "lstm|global": {
+      "MCC": 0.10068588557162624,
+      "MCC_std": 0.006488975312957489,
+      "Precision": 4.77349480780142,
+      "Precision_std": 0.5233580915683663,
+      "Sensitivity": 30.248662259992752,
+      "Sensitivity_std": 0.8773912410932277,
+      "Accuracy": 93.90786415258908,
+      "Accuracy_std": 0.8269910079442775,
+      "Specificity": 94.48329757833376,
+      "Specificity_std": 0.8422768044218719,
+      "FPR": 5.5167024216662,
+      "FPR_std": 0.8422768044218726,
+      "TP": 961.0,
+      "FP": 19389.333333333332,
+      "FN": 2216.0,
+      "TN": 332076.6666666667,
+      "train_seconds": 572.3741255601248,
+      "n_params": 17346,
+      "seeds": 3,
+      "MCC_runs": [
+        0.10428663008037883,
+        0.1045761002684517,
+        0.09319492636604818
+      ]
+    },
+    "lstm|customer": {
+      "MCC": 0.14983670814517447,
+      "MCC_std": 0.0186299046433455,
+      "Precision": 7.610281520242753,
+      "Precision_std": 1.6278782286559546,
+      "Sensitivity": 36.428496485152564,
+      "Sensitivity_std": 0.6869707915169563,
+      "Accuracy": 95.31510091368875,
+      "Accuracy_std": 1.0732385259461221,
+      "Specificity": 95.8473934889861,
+      "Specificity_std": 1.089147090655973,
+      "FPR": 4.152606511013866,
+      "FPR_std": 1.089147090655976,
+      "TP": 1157.3333333333333,
+      "FP": 14595.0,
+      "FN": 2019.6666666666667,
+      "TN": 336871.0,
+      "train_seconds": 575.0052837530772,
+      "n_params": 17346,
+      "seeds": 3,
+      "MCC_runs": [
+        0.16711806438115887,
+        0.15229059590439883,
+        0.13010146414996568
+      ]
+    },
+    "lstm|terminal": {
+      "MCC": 0.05847233900612538,
+      "MCC_std": 0.004857910617767004,
+      "Precision": 2.335742898928221,
+      "Precision_std": 0.19080944197449576,
+      "Sensitivity": 33.438254118139746,
+      "Sensitivity_std": 1.6910483602340853,
+      "Accuracy": 86.81265385190174,
+      "Accuracy_std": 1.3757145587840698,
+      "Specificity": 87.29512005902892,
+      "Specificity_std": 1.3986643569702482,
+      "FPR": 12.704879940971052,
+      "FPR_std": 1.3986643569702506,
+      "TP": 1062.3333333333333,
+      "FP": 44653.333333333336,
+      "FN": 2114.6666666666665,
+      "TN": 306812.6666666667,
+      "train_seconds": 576.4579784870148,
+      "n_params": 17346,
+      "seeds": 3,
+      "MCC_runs": [
+        0.055548209581328827,
+        0.06408005154491854,
+        0.05578875589212877
+      ]
+    }
+  },
+  "verdict": {
+    "gains_mcc": {
+      "customer": {
+        "lstm": 0.049150822573548233
+      },
+      "terminal": {
+        "lstm": -0.04221354656550085
+      }
+    },
+    "n_architectures": 1,
+    "n_positive_gains": {
+      "customer": 1,
+      "terminal": 0
+    },
+    "gain_range": {
+      "customer": [
+        0.049150822573548233,
+        0.049150822573548233
+      ],
+      "terminal": [
+        -0.04221354656550085,
+        -0.04221354656550085
+      ]
+    },
+    "terminal_gain_exceeds_customer_gain": [],
+    "ranking": {
+      "global": [
+        [
+          "lstm",
+          0.10068588557162624
+        ]
+      ],
+      "customer": [
+        [
+          "lstm",
+          0.14983670814517447
+        ]
+      ],
+      "terminal": [
+        [
+          "lstm",
+          0.05847233900612538
+        ]
+      ]
+    },
+    "best": {
+      "global": "lstm",
+      "customer": "lstm",
+      "terminal": "lstm"
+    }
+  },
+  "wall_clock_seconds": 5218.47690486908
+}

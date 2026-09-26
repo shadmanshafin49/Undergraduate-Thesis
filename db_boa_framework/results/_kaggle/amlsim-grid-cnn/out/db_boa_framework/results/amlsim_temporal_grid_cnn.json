@@ -1,0 +1,152 @@
+{
+  "objective": "entity temporal grid \u2014 IBM AMLSim 10K, 3 native banks (198,015 tx, 0.35 % laundering \u2014 NOT fraud)",
+  "protocol": {
+    "dataset": "amlsim",
+    "orderings": [
+      "global",
+      "sender",
+      "receiver"
+    ],
+    "split": "temporal; train val_day<438, test split_day>=522",
+    "seq_len": 10,
+    "epochs": 10,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "n_features": 9,
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "entity_derived_row_features": false,
+    "quick": false
+  },
+  "archs": [
+    "cnn"
+  ],
+  "complete": true,
+  "caveat": "the label is laundering (is_sar), not fraud; per-row features sit at the floor, so any signal is relational",
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "written": "2026-09-11 16:08:41",
+  "seconds_this_process": 185.5,
+  "conditional_fraud_probability": {
+    "global": 0.010218978102189781,
+    "sender": 0.6473149492017417,
+    "receiver": 0.6147757255936676,
+    "base_rate": 0.0034593338888468045
+  },
+  "reference_per_transaction_no_window": {
+    "MCC": 0.0016528971346693115,
+    "MCC_std": 0.004120163396221465,
+    "Precision": 0.27636761019302397,
+    "Precision_std": 0.024351465248872755,
+    "Sensitivity": 40.56603773581079,
+    "Sensitivity_std": 11.122477474094785,
+    "Accuracy": 60.98232883155262,
+    "Accuracy_std": 8.802110220018132,
+    "Specificity": 61.03700335169169,
+    "Specificity_std": 8.853880802090416,
+    "FPR": 38.96299664830806,
+    "FPR_std": 8.853880802090412,
+    "TP": 43.0,
+    "FP": 15422.333333333334,
+    "FN": 63.0,
+    "TN": 24159.666666666668,
+    "train_seconds": 6.738845984141032,
+    "n_params": 7234,
+    "seeds": 3,
+    "MCC_runs": [
+      0.006403689865365801,
+      -0.0005029024774373651,
+      -0.0009420959839205021
+    ]
+  },
+  "cells": {
+    "cnn|global": {
+      "MCC": 0.0019733143103926377,
+      "MCC_std": 0.0008761597795178063,
+      "Precision": 0.28187452548379177,
+      "Precision_std": 0.007084804046149783,
+      "Sensitivity": 34.90566037732556,
+      "Sensitivity_std": 5.891507545653306,
+      "Accuracy": 66.7901296781561,
+      "Accuracy_std": 5.896229007324524,
+      "Specificity": 66.87551580684806,
+      "Specificity_std": 5.927654374288451,
+      "FPR": 33.12448419315168,
+      "FPR_std": 5.927654374288448,
+      "TP": 37.0,
+      "FP": 13111.333333333334,
+      "FN": 69.0,
+      "TN": 26470.666666666668,
+      "train_seconds": 17.73345669110616,
+      "n_params": 7234,
+      "seeds": 3,
+      "MCC_runs": [
+        0.0009763931883165451,
+        0.002620996741522166,
+        0.0023225530013392015
+      ]
+    },
+    "cnn|sender": {
+      "MCC": 0.29979704973019744,
+      "MCC_std": 0.13594120176206972,
+      "Precision": 11.862988064949008,
+      "Precision_std": 10.748919095542158,
+      "Sensitivity": 89.6226415093494,
+      "Sensitivity_std": 2.4959918028887706,
+      "Accuracy": 97.02764899549796,
+      "Accuracy_std": 1.9178026756200925,
+      "Specificity": 97.04747949404587,
+      "Specificity_std": 1.929472968224701,
+      "FPR": 2.9525205059538773,
+      "FPR_std": 1.9294729682246992,
+      "TP": 95.0,
+      "FP": 1168.6666666666667,
+      "FN": 11.0,
+      "TN": 38413.333333333336,
+      "train_seconds": 17.75683029492696,
+      "n_params": 7234,
+      "seeds": 3,
+      "MCC_runs": [
+        0.22362021754131683,
+        0.4567460060167725,
+        0.2190249256325029
+      ]
+    },
+    "cnn|receiver": {
+      "MCC": 0.15110992572228832,
+      "MCC_std": 0.03586808733040564,
+      "Precision": 3.1284487909851353,
+      "Precision_std": 1.2797546708409555,
+      "Sensitivity": 83.96226415086419,
+      "Sensitivity_std": 0.9433962264142082,
+      "Accuracy": 92.0068198615868,
+      "Accuracy_std": 3.798492738581381,
+      "Specificity": 92.02836306065024,
+      "Specificity_std": 3.8104770315266467,
+      "FPR": 7.971636939349516,
+      "FPR_std": 3.810477031526642,
+      "TP": 89.0,
+      "FP": 3155.3333333333335,
+      "FN": 17.0,
+      "TN": 36426.666666666664,
+      "train_seconds": 17.72762131690979,
+      "n_params": 7234,
+      "seeds": 3,
+      "MCC_runs": [
+        0.11366890819247559,
+        0.18516494926565433,
+        0.15449591970873505
+      ]
+    }
+  }
+}

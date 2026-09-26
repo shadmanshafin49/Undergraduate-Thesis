@@ -1,0 +1,179 @@
+{
+  "objective": "OBJ-16 (d) \u2014 Fraud Detection Handbook entity-linked temporal grid",
+  "dataset": "Fraud Detection Handbook (1,754,155 tx, 0.84 % fraud, 4,990 customer IDs, 10,000 terminal IDs, 1 s resolution)",
+  "protocol": {
+    "split": "temporal past->future; train day<128, test day>=146",
+    "seq_len": 10,
+    "epochs": 10,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "n_features": 35,
+    "orderings": [
+      "global",
+      "customer",
+      "terminal"
+    ],
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "within_second_tie_break": "seeded shuffle (never raw file order)",
+    "entity_derived_row_features": false,
+    "quick": false
+  },
+  "archs": [
+    "densenet"
+  ],
+  "complete": true,
+  "written": "2026-09-12 05:56:48",
+  "wall_clock_seconds_so_far": 3544.3349471092224,
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "conditional_fraud_probability": {
+    "global": 0.008446291124582794,
+    "customer": 0.11210547889055882,
+    "terminal": 0.6033821717102561,
+    "base_rate": 0.008369271814634397
+  },
+  "reference_per_transaction_no_window": null,
+  "cells": {
+    "densenet|global": {
+      "MCC": 0.08772609093266082,
+      "MCC_std": 0.010581691957264147,
+      "Precision": 3.8366070670875403,
+      "Precision_std": 0.7350287115239524,
+      "Sensitivity": 31.864442346027744,
+      "Sensitivity_std": 1.4356522274466141,
+      "Accuracy": 92.01638455197666,
+      "Accuracy_std": 1.698142289907398,
+      "Specificity": 92.56011487123455,
+      "Specificity_std": 1.7264689647314717,
+      "FPR": 7.4398851287654155,
+      "FPR_std": 1.7264689647314666,
+      "TP": 1012.3333333333334,
+      "FP": 26148.666666666668,
+      "FN": 2164.6666666666665,
+      "TN": 325317.3333333333,
+      "train_seconds": 391.6034303506215,
+      "n_params": 3830,
+      "seeds": 3,
+      "MCC_runs": [
+        0.08559021133765189,
+        0.09921279833699609,
+        0.07837526312333445
+      ]
+    },
+    "densenet|customer": {
+      "MCC": 0.08560625531878358,
+      "MCC_std": 0.016897904554835332,
+      "Precision": 3.152345387188525,
+      "Precision_std": 0.9823020963867223,
+      "Sensitivity": 41.85290105969861,
+      "Sensitivity_std": 4.052537300260704,
+      "Accuracy": 87.02620193640739,
+      "Accuracy_std": 4.4350003086659,
+      "Specificity": 87.43453610496222,
+      "Specificity_std": 4.510371030444314,
+      "FPR": 12.565463895037732,
+      "FPR_std": 4.510371030444315,
+      "TP": 1329.6666666666667,
+      "FP": 44163.333333333336,
+      "FN": 1847.3333333333333,
+      "TN": 307302.6666666667,
+      "train_seconds": 390.07704822222394,
+      "n_params": 3830,
+      "seeds": 3,
+      "MCC_runs": [
+        0.10401051458866568,
+        0.08201675509344579,
+        0.07079149627423925
+      ]
+    },
+    "densenet|terminal": {
+      "MCC": 0.055617151262423635,
+      "MCC_std": 0.009147700073314433,
+      "Precision": 2.2399944263010414,
+      "Precision_std": 0.41811509892911847,
+      "Sensitivity": 34.06777882698455,
+      "Sensitivity_std": 3.2150988240570926,
+      "Accuracy": 85.5685858736814,
+      "Accuracy_std": 4.1757313949430825,
+      "Specificity": 86.03411614968918,
+      "Specificity_std": 4.242497882427389,
+      "FPR": 13.965883850310789,
+      "FPR_std": 4.242497882427384,
+      "TP": 1082.3333333333333,
+      "FP": 49085.333333333336,
+      "FN": 2094.6666666666665,
+      "TN": 302380.6666666667,
+      "train_seconds": 390.2028341293335,
+      "n_params": 3830,
+      "seeds": 3,
+      "MCC_runs": [
+        0.04562921547751728,
+        0.06358790781024978,
+        0.05763433049950383
+      ]
+    }
+  },
+  "verdict": {
+    "gains_mcc": {
+      "customer": {
+        "densenet": -0.002119835613877241
+      },
+      "terminal": {
+        "densenet": -0.03210893967023718
+      }
+    },
+    "n_architectures": 1,
+    "n_positive_gains": {
+      "customer": 0,
+      "terminal": 0
+    },
+    "gain_range": {
+      "customer": [
+        -0.002119835613877241,
+        -0.002119835613877241
+      ],
+      "terminal": [
+        -0.03210893967023718,
+        -0.03210893967023718
+      ]
+    },
+    "terminal_gain_exceeds_customer_gain": [],
+    "ranking": {
+      "global": [
+        [
+          "densenet",
+          0.08772609093266082
+        ]
+      ],
+      "customer": [
+        [
+          "densenet",
+          0.08560625531878358
+        ]
+      ],
+      "terminal": [
+        [
+          "densenet",
+          0.055617151262423635
+        ]
+      ]
+    },
+    "best": {
+      "global": "densenet",
+      "customer": "densenet",
+      "terminal": "densenet"
+    }
+  },
+  "wall_clock_seconds": 3544.3349244594574
+}

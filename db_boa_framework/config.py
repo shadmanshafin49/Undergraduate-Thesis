@@ -28,7 +28,25 @@ DATA_CONFIG = {
     "test_size"         : 0.20,     # 80/20 train-test split
     "val_size"          : 0.10,     # 10 % of training set for validation
     "random_state"      : 42,
-    "eval_subset"       : 3_000,    # samples used for fast DB-BOA fitness eval
+    # Pool the DB-BOA surrogate subsamples its 2,000 training rows FROM.
+    #
+    # ⛔ Was 3_000, and that silently broke the ULB search (OBJ-13, 2026-09-04).
+    # At ULB's 0.167 % fraud a 3,000-row stratified pool holds only **5 unique
+    # fraud transactions**, which is below `_ADTCNObjective._MIN_FRAUD_ROWS = 30`.
+    # The objective then takes the `replace=True` branch and builds its 30 "fraud
+    # rows" by repeating those 5 about six times each; the 70/30 split scatters
+    # the copies, and **9 of 9 validation positives end up being copies of rows
+    # in the training half** (measured — see obj13_shipped_path_check.json).
+    # The surrogate was scoring itself on rows it had memorised, which is why
+    # Obf2 pinned at its 5.0000 ceiling and why all five optimisers "found" it.
+    #
+    # Enlarging the pool costs **no training time at all** — the surrogate still
+    # draws 2,000 rows; only the stratified draw it draws them from changes.
+    # 36,000 rows yields ~60 unique fraud, i.e. 2x _MIN_FRAUD_ROWS, so the
+    # replacement branch has headroom rather than sitting one row from firing.
+    # BankSim never needed this (3,000 rows already held 38 unique fraud) but
+    # gets the same treatment so the two datasets share one code path.
+    "eval_subset"       : 36_000,   # samples used for fast DB-BOA fitness eval
     # Temporal-amount recurrence features (inspired by Liu et al., WWW 2021)
     # NOTE: ULB has no account IDs, so these are sliding-window frequency
     # features (amount_recurrence_before, amount_recurrence_after, degree_ratio),
@@ -37,6 +55,248 @@ DATA_CONFIG = {
     "graph_n_bins"      : 50,       # Amount discretisation buckets
     "graph_window"      : 100,      # rolling window size for edge construction
 }
+
+# ─── BankSim Dataset Configuration (OBJ-1) ───────────────────────────────────
+# BankSim (Lopez-Rojas & Axelsson, 2014; Kaggle `ealaxi/banksim1`)
+#   594,643 tx | 4,112 customers | 50 merchants | 180 daily steps | 1.211 % fraud
+# The point of this dataset is the `customer` column: ULB has no account IDs, so
+# its 10-step "sequences" stitch together unrelated cardholders.  BankSim lets a
+# window be one customer's own history — see data/banksim_loader.py.
+BANKSIM_PATH = os.path.join(os.path.dirname(BASE_DIR), "datasets",
+                            "bs140513_032310.csv")
+
+BANKSIM_CONFIG = {
+    "dataset_path"   : BANKSIM_PATH,
+    "label_col"      : "fraud",
+    "group_col"      : "customer",
+    "time_col"       : "step",
+
+    # Row-level feature switches (see encode_banksim).  Both default on: the
+    # per-transaction logistic reference reaches only MCC 0.574 with them, so
+    # there is no ceiling effect hiding the temporal comparison.
+    "use_category"   : True,
+    "use_merchant"   : True,
+
+    # Split.  "temporal" is the honest default: train on the past, test on the
+    # future, no look-ahead.  Steps run 0-179; the 80 % row mass falls at 147.
+    "split"          : "temporal",
+    "split_step"     : 147,   # test  = steps >= 147   (122,278 rows, 1.080 % fraud)
+    "val_step"       : 132,   # val   = 132 <= step < 147  (future-of-train)
+    "test_size"      : 0.20,  # used only by split="stratified"
+    "val_size"       : 0.10,
+    "random_state"   : 42,
+    # See the DATA_CONFIG note: 3,000 rows put ULB below _MIN_FRAUD_ROWS and made
+    # its surrogate validate on memorised rows. BankSim was never affected (its
+    # 3,000-row pool held 38 unique fraud against a floor of 30) but is raised
+    # with it so both datasets run the same code path — and so the margin is not
+    # 8 rows on a dataset whose fraud rate could change with a re-split.
+    "eval_subset"    : 36_000,
+
+    # Windowing arm: "customer" (entity-linked) or "global" (bank-wide stream).
+    "ordering"       : "customer",
+    # Tie-break seed for rows sharing a step.  BankSim's file order clusters
+    # fraud rows adjacently (3,635 adjacent fraud pairs vs 84 after shuffling);
+    # never window the raw file order.
+    "order_seed"     : 0,
+
+    # Federated partitioning: "stratified" (ULB-equivalent volume split) or
+    # "customer" (entity-disjoint — no customer's history at two banks).
+    "partition"      : "stratified",
+}
+
+# ─── Fraud Detection Handbook Configuration (OBJ-5, under OBJ-16) ────────────
+# Le Borgne, Siblini, Lebichot & Bontempi, *Reproducible Machine Learning for
+# Credit Card Fraud Detection* (ULB);  simulated-data-raw, 183 daily pickles.
+#   1,754,155 tx | 4,990 customers | 10,000 terminals | 183 days | 0.837 % fraud
+# The point of this dataset is `TERMINAL_ID` plus a one-second timestamp: BankSim
+# resolves to one day and has no terminal, so this is the only place the "does
+# any architecture exploit time?" question can be asked at fine resolution.
+# See data/handbook_loader.py for the reconnaissance behind every value here.
+HANDBOOK_PATH = os.path.join(os.path.dirname(BASE_DIR), "datasets",
+                             "handbook_transactions.csv")
+HANDBOOK_RAW_DIR = os.path.join(os.path.dirname(BASE_DIR), "datasets",
+                                "handbook_raw", "data")
+
+HANDBOOK_CONFIG = {
+    "dataset_path"   : HANDBOOK_PATH,
+    # Consolidated from here on first use if `dataset_path` is missing.
+    "raw_dir"        : HANDBOOK_RAW_DIR,
+    "label_col"      : "TX_FRAUD",
+    "group_col"      : "CUSTOMER_ID",
+    "time_col"       : "TX_TIME_SECONDS",
+
+    # Row-level feature switches (see encode_handbook).  There is no category or
+    # merchant analogue to switch here: 10,000 terminals and 4,990 customers
+    # cannot be one-hot encoded, and doing so would be an entity-derived feature
+    # anyway — so the entity signal is reachable only through the windowing arm.
+    "use_hour"       : True,    # 24-column hour-of-day one-hot
+    "use_dow"        : True,    #  7-column day-of-week one-hot
+
+    # Split.  "temporal" is the honest default: train on the past, test on the
+    # future, no look-ahead.  Days run 0-182; the 70 % and 80 % row-mass
+    # quantiles fall at day 128 and day 146 (measured, not assumed).
+    "split"          : "temporal",
+    "split_day"      : 146,   # test = day >= 146   (354,643 rows, 0.896 % fraud)
+    "val_day"        : 128,   # val  = 128 <= day < 146  (172,522 rows, 0.877 %)
+    "test_size"      : 0.20,  # used only by split="stratified"
+    "val_size"       : 0.10,
+    "random_state"   : 42,
+
+    # See the DATA_CONFIG note on the OBJ-13 memorised-rows leak.  36,000 rows at
+    # this dataset's 0.814 % train fraud rate holds ~293 unique fraud against the
+    # objective's floor of 30.  The inherited value is load-bearing here too, not
+    # merely copied: at the old 3,000 the pool would hold ~24, *below* the floor.
+    "eval_subset"    : 36_000,
+
+    # Windowing arm: "customer", "terminal" (entity-linked) or "global"
+    # (bank-wide stream).  Reconnaissance fraud-adjacency lift over base rate:
+    # global 1.01x, customer 13.35x, terminal 71.65x — terminal is strongest
+    # because scenario 2 compromises a terminal for 28 days and is 62 % of fraud.
+    "ordering"       : "customer",
+    # Tie-break seed for rows sharing a timestamp.  6.788 % of rows share one to
+    # the second.  Unlike BankSim, raw file order carries **no** fraud adjacency
+    # here (125 adjacent pairs, lift 1.02x, vs 124 after the shuffle) — the trap
+    # was checked and does not fire, but the shuffle stays so that is a measured
+    # property rather than an assumption.
+    "order_seed"     : 0,
+
+    # Federated partitioning: "stratified" (ULB-equivalent volume split),
+    # "customer" or "terminal" (entity-disjoint — no entity at two banks).
+    "partition"      : "stratified",
+}
+
+# ─── PaySim Configuration (OBJ-11; rule 8 suspended 2026-09-11) ───────────────
+# Lopez-Rojas, Elmir & Axelsson (2016); Kaggle `ealaxi/paysim1`.
+#   6,362,620 tx | 743 hourly steps | 8,213 fraud (0.129 %), all in TRANSFER + CASH_OUT
+# Every value here was measured before any model trained (experiments/paysim_recon.py,
+# experiments/check_paysim_loader.py) — design decisions in data/paysim_loader.py.
+PAYSIM_PATH = os.path.join(os.path.dirname(BASE_DIR), "datasets", "paysim",
+                           "PS_20174392719_1491204439457_log.csv")
+
+PAYSIM_CONFIG = {
+    "dataset_path"   : PAYSIM_PATH,
+    "label_col"      : "isFraud",
+    "time_col"       : "step",
+    # Scope: the two types that contain fraud — 2,770,409 rows, all 8,213 fraud.
+    "types"          : ("TRANSFER", "CASH_OUT"),
+    # Split: temporal, 70 % / 80 % row-mass quantiles of the in-scope rows (measured):
+    #   train step < 323 (1,938,484 rows, 0.187 % fraud) · val 323-353 (260,469, 0.119 %)
+    #   test step >= 354 (571,456, 0.747 %) — the sparse late tail lands in test.
+    "split"          : "temporal",
+    "val_step"       : 323,
+    "split_step"     : 354,
+    "test_size"      : 0.20,  # used only by split="stratified"
+    "val_size"       : 0.10,
+    "random_state"   : 42,
+    # 36,000 rows at 0.187 % train fraud hold ~67 unique fraud (objective floor 30).
+    "eval_subset"    : 36_000,
+    # Windowing arm: "receiver" (nameDest) or "global".  Sender-linking is impossible
+    # (99.87 % of in-scope senders appear once).  Measured lift: receiver 1.30x; global
+    # 151.6x — a time-clustering artefact, so global is NOT a no-signal control here.
+    "ordering"       : "receiver",
+    "order_seed"     : 0,
+    # No bank IDs and no sender history: stratified is the only partition.
+    "partition"      : "stratified",
+}
+
+# Pre-registered sensitivity arm: every transaction type, SAME split steps, so the
+# row scope is the only factor that moves.  Loaded by PaySimAllDataLoader.
+PAYSIM_ALL_CONFIG = dict(PAYSIM_CONFIG, types=None)
+
+# ─── IBM AMLSim Configuration (OBJ-12; rule 8 suspended 2026-09-11) ────────────
+# Generated, not downloaded: data/generate_amlsim.py runs IBM/AMLSim @ 7338a4bc on
+# the configuration data/make_amlsim_config.py derives (shipped 10K set, three
+# native banks interleaved at 50/30/20).  SHA-256 of every file: 10K_3banks/GENERATION.json.
+#   198,015 tx | 12,043 accounts | 720 daily steps | 685 laundering (is_sar, 0.346 %)
+# THE LABEL IS LAUNDERING, NOT FRAUD.  Every value below was measured before any
+# model trained (experiments/amlsim_recon.py, experiments/check_amlsim_loader.py).
+AMLSIM_DIR = os.path.join(os.path.dirname(BASE_DIR), "datasets", "amlsim", "10K_3banks")
+
+AMLSIM_CONFIG = {
+    "transactions_path": os.path.join(AMLSIM_DIR, "transactions.csv"),
+    "accounts_path"    : os.path.join(AMLSIM_DIR, "accounts.csv"),
+    "base_date"        : "2017-01-01",   # conf.json general.base_date = day 0
+    "label_col"        : "is_sar",
+    "time_col"         : "day",
+    # Split: temporal, 70 % / 80 % row-mass day quantiles (measured):
+    #   train day < 438 (138,514 tx, 542 laundering) · val 438-521 (19,813, 37)
+    #   test day >= 522 (39,688, 106).
+    "split"            : "temporal",
+    "val_day"          : 438,
+    "split_day"        : 522,
+    "test_size"        : 0.20,  # used only by split="stratified"
+    "val_size"         : 0.10,
+    "random_state"     : 42,
+    # 36,000 rows at 0.39 % train laundering hold ~141 unique positives (floor 30).
+    "eval_subset"      : 36_000,
+    # Windowing arm: "sender" (orig_acct), "receiver" (bene_acct) or "global".
+    # Measured lift: sender 25.98x, receiver 41.54x, global 2.95x — a genuine
+    # no-signal control once ties inside a day are shuffled (raw file order: 27.85x).
+    "ordering"         : "sender",
+    "order_seed"       : 0,
+    # "stratified", or "bank" — native: org k holds what bank k's accounts send
+    # (measured 99,192 / 59,359 / 39,464 tx = 50.1 / 30.0 / 19.9 %).
+    "partition"        : "stratified",
+}
+
+# Dataset registry — lets experiments and main.py take `--dataset <name>` without
+# importing loader modules by hand.  NB: `get_loader` instantiates the class with
+# no arguments, so each loader applies its own config; the "config" key documents
+# which one.
+DATASETS = {
+    "ulb"      : {"loader": "data.data_loader:FinancialDataLoader",
+                  "config": "DATA_CONFIG",
+                  "label" : "ULB Credit Card (284,807 tx, 0.17 % fraud, no customer IDs)"},
+    "banksim"  : {"loader": "data.banksim_loader:BankSimDataLoader",
+                  "config": "BANKSIM_CONFIG",
+                  "label" : "BankSim (594,643 tx, 1.21 % fraud, 4,112 customer IDs)"},
+    "handbook" : {"loader": "data.handbook_loader:HandbookDataLoader",
+                  "config": "HANDBOOK_CONFIG",
+                  "label" : "Fraud Detection Handbook (1,754,155 tx, 0.84 % fraud, "
+                            "4,990 customer IDs, 10,000 terminal IDs, 1 s resolution)"},
+    "paysim"   : {"loader": "data.paysim_loader:PaySimDataLoader",
+                  "config": "PAYSIM_CONFIG",
+                  "label" : "PaySim TRANSFER+CASH_OUT (2,770,409 tx, 0.30 % fraud, "
+                            "no bank IDs, senders do not repeat)"},
+    "paysim_all": {"loader": "data.paysim_loader:PaySimAllDataLoader",
+                  "config": "PAYSIM_ALL_CONFIG",
+                  "label" : "PaySim, all types (6,362,620 tx, 0.13 % fraud) — "
+                            "sensitivity arm for the row scope"},
+    "amlsim"   : {"loader": "data.amlsim_loader:AMLSimDataLoader",
+                  "config": "AMLSIM_CONFIG",
+                  "label" : "IBM AMLSim 10K, 3 native banks (198,015 tx, 0.35 % "
+                            "laundering — NOT fraud)"},
+}
+
+#: Which entity-disjoint federated partitions each dataset can support.  ULB has
+#: no entity IDs at all — that is a property of the data, not a missing feature,
+#: so `_dataset.resolve` fails loudly rather than falling back to stratified.
+#: AMLSim's `bank` is native: the simulator assigns every account to one bank.
+ENTITY_PARTITIONS = {
+    "ulb"      : (),
+    "banksim"  : ("customer",),
+    "handbook" : ("customer", "terminal"),
+    "paysim"   : (),
+    "paysim_all": (),
+    "amlsim"   : ("bank",),
+}
+
+
+def get_loader(dataset: str = "ulb", cfg: dict = None):
+    """
+    Return an instantiated loader for `dataset` ("ulb" or "banksim").
+
+    Both loaders expose the same surface (`load`, `get_eval_subset`,
+    `split_for_orgs`, `n_engineered_features`), so callers do not branch.
+    The BankSim loader additionally exposes `groups_train/val/test`.
+    """
+    if dataset not in DATASETS:
+        raise ValueError(f"unknown dataset {dataset!r}; expected one of {list(DATASETS)}")
+    mod_path, cls_name = DATASETS[dataset]["loader"].split(":")
+    import importlib
+    mod = importlib.import_module(mod_path)
+    return getattr(mod, cls_name)(cfg) if cfg else getattr(mod, cls_name)()
+
 
 # ─── DB-BOA Optimizer Configuration ──────────────────────────────────────────
 DB_BOA_CONFIG = {
@@ -144,6 +404,23 @@ ADTCN_CONFIG = {
     "hidden_neurons"     : 128,
     "epoch_count"        : 30,
     "steps_per_epoch"    : 150,
+
+    # --- DB-BOA surrogate evaluation protocol (OBJ-13) -----------------------
+    # Before the repair the surrogate redrew its 70/30 split and its torch seed
+    # on every call, so fitness was a random function of its input: a fixed
+    # config re-evaluated 25x on ULB spanned Obf2 3.4497-5.0000 and hit the
+    # 5.0000 ceiling once with no search involved.  That is why all five
+    # optimisers "found" exactly 5.0000.
+    #   "deterministic" - split + seed fixed at construction; fitness is a pure
+    #                     function of the candidate.  1x cost.  Default.
+    #   "averaged"      - surrogate_k pre-drawn draws shared by every candidate
+    #                     (common random numbers), fitness is their mean.  Kills
+    #                     the best-of-N ceiling artefact.  k x cost.
+    #   "legacy"        - the pre-repair behaviour, kept so the old numbers stay
+    #                     reproducible.  Do not use for new results.
+    "surrogate_eval_mode": "deterministic",
+    "surrogate_k"        : 3,
+    "surrogate_rows"     : None,   # None -> _ADTCNObjective._SURROGATE_ROWS (2000)
 
     # Architecture flags
     # activation: ReLU is used (hardcoded in _Conv1dClassifier); TanH was the

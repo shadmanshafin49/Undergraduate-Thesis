@@ -1,0 +1,40 @@
+[kaggle_job] torch threads = 4
+======================================================================
+  TASK C — SCALABILITY OF CONTRIBUTION ATTRIBUTION (exact vs MC Shapley)
+  exact n=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  mc    n=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20]  (mc_samples=200, truncation=off)
+  equal-shard=8000/org  epochs=10  n_val=400
+======================================================================
+[C]  shared val set: 400 samples, 37 fraud (9.2%) — fraud-stratified for meaningful Shapley
+[C]  training equal-shard pool of 20 orgs (8000 samples each) …
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "experiments/scalability_sweep.py", line 590, in <module>
+    main()
+  File "experiments/scalability_sweep.py", line 574, in main
+    summary = run_sweep(quick=args.quick, dataset=args.dataset,
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "experiments/scalability_sweep.py", line 234, in run_sweep
+    pool_splits = loader.split_for_orgs(
+                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/repo/db_boa_framework/data/amlsim_loader.py", line 214, in split_for_orgs
+    return proxy.split_for_orgs(X_train, y_train, org_splits=org_splits,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/repo/db_boa_framework/data/data_loader.py", line 250, in split_for_orgs
+    X_org, remaining_X, y_org, remaining_y = tts(
+                                             ^^^^
+  File "/usr/local/lib/python3.12/dist-packages/sklearn/utils/_param_validation.py", line 218, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/sklearn/model_selection/_split.py", line 2945, in train_test_split
+    train, test = next(cv.split(X=arrays[0], y=stratify))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/sklearn/model_selection/_split.py", line 1928, in split
+    for train, test in self._iter_indices(X, y, groups):
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/sklearn/model_selection/_split.py", line 2360, in _iter_indices
+    raise ValueError(
+ValueError: The test_size = 1 should be greater or equal to the number of classes = 2

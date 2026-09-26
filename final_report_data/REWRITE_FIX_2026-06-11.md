@@ -1,3 +1,19 @@
+> **SUPERSEDED 2026-08-31 by OBJ-2** — this file is kept as a historical record, not as a live source.
+>
+> It asserts that DB-BOA **loses** to the hand-set default (MCC 0.677 vs **0.785**).
+> That claim is **withdrawn**. Over 5 seeds the tuned config scores 0.753 ± 0.055 and the
+> default 0.706 ± 0.076 — a difference of **+0.047, p=0.34**: no measured gain *and no
+> measured loss*. It also quotes **MCC 0.313**, which is withdrawn outright: it is not reproducible under any condition tested, and the lowest tuned MCC in 7 runs is 0.6598.
+>
+> **Live sources:** `final_report_data/OBJ2_detector_multiseed.md` ·
+> `FINAL YEAR THESIS REPORT/chapters/chapter_6.tex` §`sec:dbboa-hpo` ·
+> `db_boa_framework/results/detector_multiseed.json`.
+>
+> The numbers below are **not corrected on purpose** — they record what was believed
+> before the 13-run multi-seed sweep. Do not quote them.
+
+---
+
 # Fix batch — final audit corrections (2026-06-11)
 
 Applied directly to the `.tex` with user approval ("do the full"). Substantive rewrites summarised here; all numbers below verified against code/JSON/CSV.

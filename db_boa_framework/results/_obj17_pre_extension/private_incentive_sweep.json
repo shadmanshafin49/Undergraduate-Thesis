@@ -1,0 +1,112 @@
+{
+  "task": "B1 \u2014 private incentive mechanism (weight vs output channel)",
+  "org_names": [
+    "BankA",
+    "BankB",
+    "BankC"
+  ],
+  "n_orgs": 3,
+  "d_weights": 111874,
+  "n_repeats": 100,
+  "epoch_count": 12,
+  "federation_pool": 20,
+  "ground_truth": {
+    "weights": [
+      0.619,
+      0.25,
+      0.131
+    ],
+    "tokens": [
+      12.379999999999999,
+      5.0,
+      2.62
+    ]
+  },
+  "theory_budget_gain": 193.1096407053085,
+  "epsilon_star_weight": 3000.0,
+  "epsilon_star_output": 50.0,
+  "sweep": [
+    {
+      "epsilon": 1.0,
+      "weight_inversion_rate": 0.75,
+      "output_inversion_rate": 0.67,
+      "weight_token_err": 19.22546145905605,
+      "output_token_err": 20.48565330007466,
+      "weight_spearman": 0.06464101615137754,
+      "output_spearman": 0.1506217782649107
+    },
+    {
+      "epsilon": 5.0,
+      "weight_inversion_rate": 0.78,
+      "output_inversion_rate": 0.65,
+      "weight_token_err": 20.040945854886115,
+      "output_token_err": 15.533307737493951,
+      "weight_spearman": 0.012320508075688772,
+      "output_spearman": 0.3199038105676658
+    },
+    {
+      "epsilon": 10.0,
+      "weight_inversion_rate": 0.78,
+      "output_inversion_rate": 0.54,
+      "weight_token_err": 21.039887275755827,
+      "output_token_err": 10.903997906060619,
+      "weight_spearman": -0.05098076211353316,
+      "output_spearman": 0.5502627944162883
+    },
+    {
+      "epsilon": 30.0,
+      "weight_inversion_rate": 0.84,
+      "output_inversion_rate": 0.21,
+      "weight_token_err": 25.417784726343708,
+      "output_token_err": 4.624338026574706,
+      "weight_spearman": -0.25284609690826526,
+      "output_spearman": 0.895
+    },
+    {
+      "epsilon": 50.0,
+      "weight_inversion_rate": 0.81,
+      "output_inversion_rate": 0.1,
+      "weight_token_err": 26.70585828648884,
+      "output_token_err": 2.885713947997269,
+      "weight_spearman": -0.28846787517317596,
+      "output_spearman": 0.95
+    },
+    {
+      "epsilon": 100.0,
+      "weight_inversion_rate": 0.82,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 24.834316737402062,
+      "output_token_err": 1.4304925846383705,
+      "weight_spearman": -0.27150635094610964,
+      "output_spearman": 1.0
+    },
+    {
+      "epsilon": 300.0,
+      "weight_inversion_rate": 0.65,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 12.202054735932814,
+      "output_token_err": 0.47525881144208987,
+      "weight_spearman": 0.6468653347947321,
+      "output_spearman": 1.0
+    },
+    {
+      "epsilon": 1000.0,
+      "weight_inversion_rate": 0.57,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 8.36939754818192,
+      "output_token_err": 0.14251766045181807,
+      "weight_spearman": 0.715,
+      "output_spearman": 1.0
+    },
+    {
+      "epsilon": 3000.0,
+      "weight_inversion_rate": 0.2,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 3.199333333333334,
+      "output_token_err": 0.04750350112734139,
+      "weight_spearman": 0.8986602540378443,
+      "output_spearman": 1.0
+    }
+  ],
+  "elapsed_sec": 954.7
+}

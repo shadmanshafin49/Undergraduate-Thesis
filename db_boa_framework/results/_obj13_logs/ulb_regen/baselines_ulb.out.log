@@ -1,0 +1,108 @@
+Loading data … (ULB Credit Card (284,807 tx, 0.17 % fraud, no customer IDs))
+Running DB-BOA hyperparameter search (shared across all runs) ...
+  Optimal params: {'hidden_neurons': 117, 'epoch_count': 30, 'steps_per_epoch': 203}
+
+─── FedAvg ────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — FedAvg
+═══════════════════════════════════════════════════════
+  Accuracy                99.38731 %
+  Precision               20.47059 %
+  Sensitivity             88.77551 %
+  Specificity             99.40560 %
+  NPV                     99.98054 %
+  FPR                      0.59440 %
+  FNR                     11.22449 %
+  FDR                     79.52941 %
+  F1-Score                33.26960 %
+  MCC                      0.42466 
+  TP                            87
+  TN                         56526
+  FP                           338
+  FN                            11
+═══════════════════════════════════════════════════════
+
+─── FedAvg+Krum ────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — FedAvg+Krum
+═══════════════════════════════════════════════════════
+  Accuracy                99.90871 %
+  Precision               70.90909 %
+  Sensitivity             79.59184 %
+  Specificity             99.94373 %
+  NPV                     99.96482 %
+  FPR                      0.05627 %
+  FNR                     20.40816 %
+  FDR                     29.09091 %
+  F1-Score                75.00000 %
+  MCC                      0.75080 
+  TP                            78
+  TN                         56832
+  FP                            32
+  FN                            20
+═══════════════════════════════════════════════════════
+
+─── FedAvg+DP ────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — FedAvg+DP
+═══════════════════════════════════════════════════════
+  Accuracy                24.31094 %
+  Precision                0.16913 %
+  Sensitivity             74.48980 %
+  Specificity             24.22447 %
+  NPV                     99.81884 %
+  FPR                     75.77553 %
+  FNR                     25.51020 %
+  FDR                     99.83087 %
+  F1-Score                 0.33749 %
+  MCC                     -0.00124 
+  TP                            73
+  TN                         13775
+  FP                         43089
+  FN                            25
+═══════════════════════════════════════════════════════
+
+─── DB-BOA-ADTCN ────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════
+  Performance Metrics — DB-BOA-ADTCN
+═══════════════════════════════════════════════════════
+  Accuracy                 3.18633 %
+  Precision                0.17559 %
+  Sensitivity             98.97959 %
+  Specificity              3.02124 %
+  NPV                     99.94183 %
+  FPR                     96.97876 %
+  FNR                      1.02041 %
+  FDR                     99.82441 %
+  F1-Score                 0.35055 %
+  MCC                      0.00485 
+  TP                            97
+  TN                          1718
+  FP                         55146
+  FN                             1
+═══════════════════════════════════════════════════════
+
+Saved ablation artifact -> D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\baselines.json
+
+──────────────────────────────────────────────────────────────────────
+DP ACCURACY COST  (ε=1.0, δ=1e-5, basic Gaussian mechanism)
+  FedAvg (no DP)  Accuracy=99.38731%  MCC=0.42466
+  FedAvg+DP       Accuracy=24.31094%  MCC=-0.00124
+  DP cost:  Accuracy ▼75.07637%  MCC ▼0.42591
+----------------------------------------------------------------------
+
+
+======================================================================
+PASTE THE FOLLOWING INTO baseline_metrics() in utils/metrics.py
+======================================================================
+    algo_results = {
+        "FedAvg": {"Accuracy": 99.38731, "Precision": 20.47059, "Sensitivity": 88.77551, "Specificity": 99.4056, "NPV": 99.98054, "FPR": 0.5944, "FNR": 11.22449, "FDR": 79.52941, "F1_Score": 33.2696, "MCC": 0.42466},
+        "FedAvg+Krum": {"Accuracy": 99.90871, "Precision": 70.90909, "Sensitivity": 79.59184, "Specificity": 99.94373, "NPV": 99.96482, "FPR": 0.05627, "FNR": 20.40816, "FDR": 29.09091, "F1_Score": 75.0, "MCC": 0.7508},
+        "FedAvg+DP": {"Accuracy": 24.31094, "Precision": 0.16913, "Sensitivity": 74.4898, "Specificity": 24.22447, "NPV": 99.81884, "FPR": 75.77553, "FNR": 25.5102, "FDR": 99.83087, "F1_Score": 0.33749, "MCC": -0.00124},
+        "DB-BOA-ADTCN": {"Accuracy": 3.18633, "Precision": 0.17559, "Sensitivity": 98.97959, "Specificity": 3.02124, "NPV": 99.94183, "FPR": 96.97876, "FNR": 1.02041, "FDR": 99.82441, "F1_Score": 0.35055, "MCC": 0.00485},
+    }
+======================================================================

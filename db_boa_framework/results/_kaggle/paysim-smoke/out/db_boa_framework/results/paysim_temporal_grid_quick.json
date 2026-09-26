@@ -1,0 +1,116 @@
+{
+  "objective": "entity temporal grid \u2014 PaySim TRANSFER+CASH_OUT (2,770,409 tx, 0.30 % fraud, no bank IDs, senders do not repeat)",
+  "protocol": {
+    "dataset": "paysim",
+    "orderings": [
+      "global",
+      "receiver"
+    ],
+    "split": "temporal; train val_step<323, test split_step>=354",
+    "seq_len": 10,
+    "epochs": 2,
+    "n_filters": 16,
+    "seeds": [
+      42
+    ],
+    "batch_size": 2048,
+    "n_features": 39,
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "entity_derived_row_features": false,
+    "quick": true
+  },
+  "archs": [
+    "cnn"
+  ],
+  "complete": true,
+  "caveat": "the global arm is NOT a no-signal control on PaySim: time order carries a 151.6x fraud-clustering artefact (data/paysim_loader.py, design decision 4)",
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "written": "2026-09-11 12:22:39",
+  "seconds_this_process": 78.6,
+  "conditional_fraud_probability": {
+    "global": 0.4493424257184608,
+    "receiver": 0.5862142552283397,
+    "base_rate": 0.002964544224336551
+  },
+  "reference_per_transaction_no_window": {
+    "MCC": 0.3989620012913893,
+    "MCC_std": 0.0,
+    "Precision": 17.07236570674141,
+    "Precision_std": 0.0,
+    "Sensitivity": 96.90866510538415,
+    "Sensitivity_std": 0.0,
+    "Accuracy": 96.45956994064282,
+    "Accuracy_std": 0.0,
+    "Specificity": 96.45618897504521,
+    "Specificity_std": 0.0,
+    "FPR": 3.543811024954776,
+    "FPR_std": 0.0,
+    "TP": 4138.0,
+    "FP": 20100.0,
+    "FN": 132.0,
+    "TN": 547086.0,
+    "train_seconds": 12.436438083648682,
+    "n_params": 3522,
+    "seeds": 1,
+    "MCC_runs": [
+      0.3989620012913893
+    ]
+  },
+  "cells": {
+    "cnn|global": {
+      "MCC": 0.3692809878874239,
+      "MCC_std": 0.0,
+      "Precision": 14.905632879108014,
+      "Precision_std": 0.0,
+      "Sensitivity": 95.80796252927176,
+      "Sensitivity_std": 0.0,
+      "Accuracy": 95.88174767611153,
+      "Accuracy_std": 0.0,
+      "Specificity": 95.88230315981,
+      "Specificity_std": 0.0,
+      "FPR": 4.11769684018999,
+      "FPR_std": 0.0,
+      "TP": 4091.0,
+      "FP": 23355.0,
+      "FN": 179.0,
+      "TN": 543831.0,
+      "train_seconds": 29.49630093574524,
+      "n_params": 3522,
+      "seeds": 1,
+      "MCC_runs": [
+        0.3692809878874239
+      ]
+    },
+    "cnn|receiver": {
+      "MCC": 0.331284304045089,
+      "MCC_std": 0.0,
+      "Precision": 12.819240439327734,
+      "Precision_std": 0.0,
+      "Sensitivity": 90.74941451990419,
+      "Sensitivity_std": 0.0,
+      "Accuracy": 95.3193246724157,
+      "Accuracy_std": 0.0,
+      "Specificity": 95.35372875917245,
+      "Specificity_std": 0.0,
+      "FPR": 4.646271240827523,
+      "FPR_std": 0.0,
+      "TP": 3875.0,
+      "FP": 26353.0,
+      "FN": 395.0,
+      "TN": 540833.0,
+      "train_seconds": 29.114102602005005,
+      "n_params": 3522,
+      "seeds": 1,
+      "MCC_runs": [
+        0.331284304045089
+      ]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+    hand_set_default seed 42 @ 2t  weights IDENTICAL  MCC stored 0.6461 now 0.6461  (delta +0.0000)
+         dbboa_tuned seed 42 @ 2t  weights IDENTICAL  MCC stored 0.7465 now 0.7465  (delta +0.0000)
+  verdict: REPRODUCED — the stored detector runs are valid in today's environment, so new arms may be paired against them
+[SAVE] D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\detector_repro_check.json

@@ -21,7 +21,7 @@ the mechanism: the privacy--utility decoupling of accuracy versus reward fidelit
 isolation of a colluding majority; statistical Byzantine fault tolerance; and the cost and
 fidelity limits of Shapley attribution as the federation grows. The supporting substrate is a
 Dynamic Butterfly--Billiards Optimisation Algorithm (DB-BOA) that automates ADTCN
-hyperparameter tuning (without manual search, though it does not exceed a hand-tuned default) and
+hyperparameter tuning (without manual search, and with no measured accuracy gain over a hand-tuned default: $+0.047$ MCC at $p=0.34$ over five seeds) and
 consensus leader selection, together with a deliberately minimal reinforcement-learning (linear
 Q-learning) policy for \emph{sequential} leader rotation that, in simulation, matches the
 optimiser on reward while adapting to nodes whose reliability degrades at runtime. The framework

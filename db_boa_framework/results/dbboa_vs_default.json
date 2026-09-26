@@ -13,7 +13,7 @@
   },
   "architecture": "cnn",
   "epoch_count": 30,
-  "note": "Reproduces the comparison main.py prints (Phase 4) but does not persist. Tuned row cross-checks db_boa_results.json (MCC 0.677).",
+  "note": "SUPERSEDED 2026-08-31 (OBJ-2). The original note claimed this file's tuned row cross-checks db_boa_results.json (MCC 0.677). It does not, and the claim is withdrawn. Neither row regenerates on the current environment: re-running seed 42 at this script's own thread count (torch.set_num_threads(os.cpu_count())=8) gives MCC 0.8004 for the tuned row and 0.6461 for the default row, not 0.3133 and 0.7849. The tuned figure of 0.3133 in particular lies far outside the range observed across 7 runs of that configuration ([0.6598, 0.8004]) and should not be quoted. Metrics below are left exactly as the June 2026 run produced them, as a record of that run. Use results/detector_multiseed.json for the reportable numbers: DB-BOA-tuned MCC 0.753 +/- 0.055 vs hand-set default 0.706 +/- 0.076 over 5 seeds, a difference that is not significant (paired p=0.34).",
   "hand_set_default": {
     "hidden_neurons": 128,
     "steps_per_epoch": 150,
@@ -54,5 +54,12 @@
       "FN": 11.0
     }
   },
-  "mcc_gap_default_minus_tuned": 0.4716
+  "mcc_gap_default_minus_tuned": 0.4716,
+  "superseded_by": "results/detector_multiseed.json",
+  "reproducibility": {
+    "deterministic_at_fixed_thread_count": true,
+    "this_script_thread_count": 8,
+    "main_py_thread_count": 4,
+    "note": "ADTCN training is bitwise reproducible only for a fixed (seed, torch version, thread count) triple; this script and main.py differed in the last of those, so the two files were never running the same arithmetic."
+  }
 }

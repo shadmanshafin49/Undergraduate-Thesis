@@ -128,8 +128,9 @@ class FederatedADTCN(ADTCN):
         Return a bounded quality score for federated aggregation / Shapley
         contribution attribution: balanced accuracy = (Sens + Spec)/2 ∈ [0,1].
 
-        (Previously returned obf2_value(), whose unbounded 1/FPR term made
-        Shapley coalition values degenerate (~1e8); see coalition_score docstring.)
+        (Previously returned the search objective Obf2 in the paper's original
+        Eq.11 form, whose unbounded 1/FPR term made Shapley coalition values
+        degenerate (~1e8); see the coalition_score docstring.)
         """
         y_pred = self.predict(X_val)
         m      = compute_all_metrics(y_val, y_pred)

@@ -1,0 +1,80 @@
+{
+  "task": "federated ablation (FedAvg / +Krum / +DP / proposed) on the banksim test set",
+  "dataset": "BankSim (594,643 tx, 1.21 % fraud, 4,112 customer IDs)",
+  "partition": "customer",
+  "detector_width_source": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+  "epoch_count": 30,
+  "dp_epsilon": 1.0,
+  "dp_delta": 1e-05,
+  "optimal_params": {
+    "hidden_neurons": 32,
+    "epoch_count": 30,
+    "steps_per_epoch": 150
+  },
+  "results": {
+    "FedAvg": {
+      "Accuracy": 99.57801076236109,
+      "Precision": 74.81481481481019,
+      "Sensitivity": 91.81818181817486,
+      "Specificity": 99.6626928355296,
+      "NPV": 99.91049080873204,
+      "FPR": 0.3373071644703117,
+      "FNR": 8.181818181817562,
+      "FDR": 25.18518518518363,
+      "F1_Score": 82.44897959183393,
+      "MCC": 0.8267972131791435,
+      "TP": 1212.0,
+      "TN": 120550.0,
+      "FP": 408.0,
+      "FN": 108.0
+    },
+    "FedAvg+Krum": {
+      "Accuracy": 99.50113675395403,
+      "Precision": 72.04968944098931,
+      "Sensitivity": 87.87878787878122,
+      "Specificity": 99.62797003918708,
+      "NPV": 99.8674047800576,
+      "FPR": 0.37202996081284384,
+      "FNR": 12.121212121211203,
+      "FDR": 27.950310559004475,
+      "F1_Score": 79.18088737201094,
+      "MCC": 0.7932989193340523,
+      "TP": 1160.0,
+      "TN": 120508.0,
+      "FP": 450.0,
+      "FN": 160.0
+    },
+    "FedAvg+DP": {
+      "Accuracy": 2.028983136786665,
+      "Precision": 1.07935354402887,
+      "Sensitivity": 99.01515151514401,
+      "Specificity": 0.970584831098397,
+      "NPV": 98.90480202189562,
+      "FPR": 99.02941516890152,
+      "FNR": 0.9848484848484103,
+      "FDR": 98.92064645597105,
+      "F1_Score": 2.135429005563224,
+      "MCC": -0.00015033280460371605,
+      "TP": 1307.0,
+      "TN": 1174.0,
+      "FP": 119784.0,
+      "FN": 13.0
+    },
+    "DB-BOA-ADTCN": {
+      "Accuracy": 77.07273589689063,
+      "Precision": 1.2695633139980254,
+      "Sensitivity": 26.363636363634367,
+      "Specificity": 77.62611815671549,
+      "NPV": 98.97540767600947,
+      "FPR": 22.373881843284426,
+      "FNR": 73.63636363635806,
+      "FDR": 98.73043668600161,
+      "F1_Score": 2.4224705022449537,
+      "MCC": 0.009886223317009947,
+      "TP": 348.0,
+      "TN": 93895.0,
+      "FP": 27063.0,
+      "FN": 972.0
+    }
+  }
+}

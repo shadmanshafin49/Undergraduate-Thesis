@@ -1,0 +1,34 @@
+[2026-09-11 22:35:27] queue started: 28 job(s), max 5 at once
+amlsim-grid-dtcn: OK in 1034.4 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 22:41:39] amlsim-grid-dtcn: fetched
+paysim-grid-dtcn: OK in 8373.0 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 22:47:06] paysim-grid-dtcn: fetched
+pushed amlsim-grid-resnet                       -> shadmansakib1566/fl-adtcn-amlsim-grid-resnet  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-grid-resnet
+[2026-09-11 22:47:33] amlsim-grid-resnet: pushed
+paysim-grid-densenet: OK in 3656.6 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 23:01:13] paysim-grid-densenet: fetched
+amlsim-grid-resnet: OK in 530.1 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 23:01:42] amlsim-grid-resnet: fetched
+pushed amlsim-grid-densenet                     -> shadmansakib1566/fl-adtcn-amlsim-grid-densenet  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-grid-densenet
+[2026-09-11 23:01:50] amlsim-grid-densenet: pushed
+pushed amlsim-grid-efficientnet                 -> shadmansakib1566/fl-adtcn-amlsim-grid-efficientnet  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-grid-efficientnet
+[2026-09-11 23:01:57] amlsim-grid-efficientnet: pushed
+amlsim-grid-densenet: OK in 380.8 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 23:12:56] amlsim-grid-densenet: fetched
+pushed paysim-scalability-stratified            -> shadmansakib1566/fl-adtcn-paysim-scalability-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-paysim-scalability-stratified
+[2026-09-11 23:13:09] paysim-scalability-stratified: pushed
+paysim-all-baselines-stratified: OK in 17534.9 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 23:29:30] paysim-all-baselines-stratified: fetched
+amlsim-grid-efficientnet: OK in 1410.8 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-11 23:30:06] amlsim-grid-efficientnet: fetched
+pushed amlsim-scalability-stratified            -> shadmansakib1566/fl-adtcn-amlsim-scalability-stratified  Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/shadmansakib1566/fl-adtcn-amlsim-scalability-stratified
+[2026-09-11 23:30:20] amlsim-scalability-stratified: pushed
+amlsim-scalability-stratified: job FAILED (exit 1) — see db_boa_framework\results\_kaggle\amlsim-scalability-stratified\out\job.log; nothing imported
+[2026-09-11 23:35:57] amlsim-scalability-stratified: FAILED failed
+paysim-grid-efficientnet: OK in 13150.3 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-12 01:37:53] paysim-grid-efficientnet: fetched
+paysim-scalability-stratified: OK in 12729.8 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 4 file(s)
+[2026-09-12 02:51:57] paysim-scalability-stratified: fetched
+amlsim-grid-dilated-attn: OK in 522.8 s on Intel(R) Xeon(R) CPU @ 2.20GHz; imported 1 file(s)
+[2026-09-12 03:12:34] amlsim-grid-dilated-attn: fetched
+[2026-09-12 03:12:34] queue finished: paysim-byzantine-robustness-stratified=fetched, paysim-economic-byzantine-stratified=fetched, paysim-private-incentive-stratified=fetched, paysim-baselines-stratified=fetched, paysim-all-baselines-stratified=fetched, amlsim-baselines-stratified=fetched, amlsim-baselines-bank=fetched, amlsim-economic-byzantine-bank=fetched, amlsim-private-incentive-bank=fetched, amlsim-byzantine-robustness-stratified=fetched, amlsim-economic-byzantine-stratified=fetched, amlsim-private-incentive-stratified=fetched, paysim-grid-cnn=fetched, paysim-grid-lstm=fetched, paysim-grid-dtcn=fetched, paysim-grid-dilated-attn=fetched, paysim-grid-resnet=fetched, paysim-grid-densenet=fetched, paysim-grid-efficientnet=fetched, amlsim-grid-cnn=fetched, amlsim-grid-lstm=fetched, amlsim-grid-dtcn=fetched, amlsim-grid-dilated-attn=fetched, amlsim-grid-resnet=fetched, amlsim-grid-densenet=fetched, amlsim-grid-efficientnet=fetched, paysim-scalability-stratified=fetched, amlsim-scalability-stratified=failed

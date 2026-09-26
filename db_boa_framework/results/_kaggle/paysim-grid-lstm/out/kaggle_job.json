@@ -1,0 +1,37 @@
+{
+  "job": "paysim-grid-lstm",
+  "cmd": [
+    "experiments/entity_temporal_grid.py",
+    "--dataset",
+    "paysim",
+    "--archs",
+    "lstm",
+    "--out",
+    "paysim_temporal_grid_lstm.json"
+  ],
+  "started": "2026-09-11 14:17:47",
+  "bundle_sha256": "1d3029e4a01f77e2b8dd278425642495d3b04d834ea46bac796157da70d586cd",
+  "pip": {
+    "torch_rc": 0,
+    "others_rc": 0,
+    "stderr_tail": ""
+  },
+  "returncode": 0,
+  "job_seconds": 5224.3,
+  "job_torch_threads": 4,
+  "imported_versions": "{\"python\": \"3.12.13\", \"torch\": \"2.12.0+cpu\", \"threads\": 2, \"numpy\": \"2.3.2\", \"scikit-learn\": \"1.8.0\", \"pandas\": \"3.0.2\", \"scipy\": \"1.17.1\", \"matplotlib\": \"3.10.8\"}",
+  "laptop_versions": {
+    "python": "3.13.7",
+    "torch": "2.12.0",
+    "numpy": "2.3.2",
+    "scikit-learn": "1.8.0",
+    "pandas": "3.0.2",
+    "scipy": "1.17.1",
+    "matplotlib": "3.10.8"
+  },
+  "bundle_commit": "6d8e41e8b19213128b54ad653defec1129f29aaf",
+  "cpu_model": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+  "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+  "finished": "2026-09-11 15:46:29",
+  "total_seconds": 5322.3
+}

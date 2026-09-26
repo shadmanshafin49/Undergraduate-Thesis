@@ -1,0 +1,112 @@
+{
+  "task": "B1 \u2014 private incentive mechanism (weight vs output channel)",
+  "dataset": "ulb",
+  "dataset_label": "ULB Credit Card (284,807 tx, 0.17 % fraud, no customer IDs)",
+  "partition": "stratified",
+  "raw_features": 33,
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.13.7",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "tag": "r1000",
+  "org_names": [
+    "BankA",
+    "BankB",
+    "BankC"
+  ],
+  "n_orgs": 3,
+  "d_weights": 111874,
+  "n_repeats": 1000,
+  "epoch_count": 12,
+  "eps_grid": [
+    50.0,
+    100.0,
+    3000.0,
+    10000.0
+  ],
+  "federation_pool": 20,
+  "ground_truth": {
+    "weights": [
+      0.5539999999999999,
+      0.336,
+      0.11
+    ],
+    "tokens": [
+      11.079999999999998,
+      6.720000000000001,
+      2.2
+    ]
+  },
+  "theory_budget_gain": 193.1096407053085,
+  "epsilon_star_weight": 3000.0,
+  "epsilon_star_output": 50.0,
+  "epsilon_star_weight_censored": false,
+  "epsilon_star_output_censored": false,
+  "budget_factor_is_lower_bound": false,
+  "top_epsilon": 10000.0,
+  "top_weight_inversions": 0,
+  "top_output_inversions": 0,
+  "epsilon_star_weight_draws": 7,
+  "epsilon_star_output_draws": 11,
+  "fragile_draws_threshold": 5,
+  "ordering_holds_at": 4,
+  "ordering_budgets": 4,
+  "sweep": [
+    {
+      "epsilon": 50.0,
+      "n_repeats": 1000,
+      "weight_inversions": 842,
+      "output_inversions": 11,
+      "weight_inversion_rate": 0.842,
+      "output_inversion_rate": 0.011,
+      "weight_token_err": 24.41383684809599,
+      "output_token_err": 2.638822265931227,
+      "weight_spearman": -0.1879589468389949,
+      "output_spearman": 0.9945,
+      "elapsed_sec": 589.6
+    },
+    {
+      "epsilon": 100.0,
+      "n_repeats": 1000,
+      "weight_inversions": 813,
+      "output_inversions": 0,
+      "weight_inversion_rate": 0.813,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 21.721565549241866,
+      "output_token_err": 1.3266024514762933,
+      "weight_spearman": -0.03227499074759311,
+      "output_spearman": 1.0,
+      "elapsed_sec": 599.7
+    },
+    {
+      "epsilon": 3000.0,
+      "n_repeats": 1000,
+      "weight_inversions": 7,
+      "output_inversions": 0,
+      "weight_inversion_rate": 0.007,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 2.5783778420095036,
+      "output_token_err": 0.044097200752981916,
+      "weight_spearman": 0.9965,
+      "output_spearman": 1.0,
+      "elapsed_sec": 663.0
+    },
+    {
+      "epsilon": 10000.0,
+      "n_repeats": 1000,
+      "weight_inversions": 0,
+      "output_inversions": 0,
+      "weight_inversion_rate": 0.0,
+      "output_inversion_rate": 0.0,
+      "weight_token_err": 0.8530666666666673,
+      "output_token_err": 0.013229274035695439,
+      "weight_spearman": 1.0,
+      "output_spearman": 1.0,
+      "elapsed_sec": 658.0
+    }
+  ],
+  "elapsed_sec": 3044.5
+}

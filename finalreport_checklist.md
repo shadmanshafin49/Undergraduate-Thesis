@@ -1,5 +1,14 @@
 # Final Report Update — Progress Checklist
 
+> **PARTIALLY SUPERSEDED 2026-08-31 by OBJ-2.** This is a dated progress tracker, kept as a
+> record of what was done and when — not a live statement of results. In particular the
+> `tab:dbboa_vs_default` entry below records the June disclosure route, which reported a
+> **0.47 paired MCC gap** built on **MCC 0.313**. Both are **withdrawn**: 0.313 is not
+> reproducible under any condition tested (lowest of 7 runs is 0.6598), and the tuned-vs-default
+> difference is **+0.047, p=0.34** — no measured gain and no measured loss.
+> Live source: `final_report_data/OBJ2_detector_multiseed.md` ·
+> `chapters/chapter_6.tex` §`sec:dbboa-hpo`. The entries are left unedited on purpose.
+
 _Tracks the work to bring the thesis report (`FINAL YEAR THESIS REPORT/`) in line with the
 upgraded, honest, real-data research. Last updated: 2026-06-08._
 

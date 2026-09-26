@@ -1,0 +1,30 @@
+{
+  "a1_t4": {
+    "threads": 4,
+    "MCC": 0.28452868501892453,
+    "TP": 87.0,
+    "FP": 849.0,
+    "FN": 11.0,
+    "weight_sha256_16": "6272587cd34429db"
+  },
+  "a2_t4_repeat": {
+    "threads": 4,
+    "MCC": 0.28452868501892453,
+    "TP": 87.0,
+    "FP": 849.0,
+    "FN": 11.0,
+    "weight_sha256_16": "6272587cd34429db"
+  },
+  "a3_t8": {
+    "threads": 8,
+    "MCC": 0.28452868501892453,
+    "TP": 87.0,
+    "FP": 849.0,
+    "FN": 11.0,
+    "weight_sha256_16": "2e7d2759f8b463a1"
+  },
+  "epochs": 2,
+  "deterministic_at_fixed_thread_count": true,
+  "thread_count_changes_weights": true,
+  "note": "Identical weight hashes across a repeat at the same thread count show training is bitwise-reproducible; a different hash at a different thread count shows the float reduction order \u2014 not the seed \u2014 differs between main.py (torch default threads) and the older experiments/dbboa_vs_default.py (torch.set_num_threads(cpu_count()))."
+}

@@ -1,0 +1,90 @@
+{
+  "task": "federated ablation (FedAvg / +Krum / +DP / proposed) on the paysim test set",
+  "dataset": "PaySim TRANSFER+CASH_OUT (2,770,409 tx, 0.30 % fraud, no bank IDs, senders do not repeat)",
+  "partition": "stratified",
+  "ordering": "receiver",
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "detector_width_source": "pinned (DB-BOA search skipped; see experiments/objective_noise_audit.py)",
+  "surrogate_eval_mode": null,
+  "surrogate_k": null,
+  "epoch_count": 30,
+  "dp_epsilon": 1.0,
+  "dp_delta": 1e-05,
+  "optimal_params": {
+    "hidden_neurons": 32,
+    "epoch_count": 30,
+    "steps_per_epoch": 150
+  },
+  "results": {
+    "FedAvg": {
+      "Accuracy": 97.53926811513045,
+      "Precision": 21.64369280667195,
+      "Sensitivity": 87.51756440280825,
+      "Specificity": 97.61471545489485,
+      "NPV": 99.90382359840486,
+      "FPR": 2.3852845451051325,
+      "FNR": 12.482435597189403,
+      "FDR": 78.35630719332748,
+      "F1_Score": 34.70468053491812,
+      "MCC": 0.4282976998345315,
+      "TP": 3737.0,
+      "TN": 553657.0,
+      "FP": 13529.0,
+      "FN": 533.0
+    },
+    "FedAvg+Krum": {
+      "Accuracy": 97.52141897188933,
+      "Precision": 21.049859550561678,
+      "Sensitivity": 84.23887587821817,
+      "Specificity": 97.62141519713109,
+      "NPV": 99.87860049642113,
+      "FPR": 2.3785848028689,
+      "FNR": 15.76112412177949,
+      "FDR": 78.95014044943775,
+      "F1_Score": 33.682929113212694,
+      "MCC": 0.413909389988302,
+      "TP": 3597.0,
+      "TN": 553695.0,
+      "FP": 13491.0,
+      "FN": 673.0
+    },
+    "FedAvg+DP": {
+      "Accuracy": 98.6970125433979,
+      "Precision": 2.0820760410379577,
+      "Sensitivity": 1.6159250585479714,
+      "Specificity": 99.42787727482693,
+      "NPV": 99.26057218089842,
+      "FPR": 0.5721227251730472,
+      "FNR": 98.38407494144968,
+      "FDR": 97.91792395895902,
+      "F1_Score": 1.819620253164533,
+      "MCC": 0.011838324826422946,
+      "TP": 69.0,
+      "TN": 563941.0,
+      "FP": 3245.0,
+      "FN": 4201.0
+    },
+    "DB-BOA-ADTCN": {
+      "Accuracy": 10.618140329264193,
+      "Precision": 0.7353112817759516,
+      "Sensitivity": 88.52459016393236,
+      "Specificity": 10.031629835715266,
+      "NPV": 99.14616296089757,
+      "FPR": 89.9683701642847,
+      "FNR": 11.475409836065305,
+      "FDR": 99.26468871822402,
+      "F1_Score": 1.458507769061886,
+      "MCC": -0.004136727184068161,
+      "TP": 3780.0,
+      "TN": 56898.0,
+      "FP": 510288.0,
+      "FN": 490.0
+    }
+  }
+}

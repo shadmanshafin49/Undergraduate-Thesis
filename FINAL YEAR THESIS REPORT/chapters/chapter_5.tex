@@ -62,7 +62,7 @@ Hyperledger Fabric provides the fundamental decentralised architecture required 
     \item \textit{Resilient Network Architecture:} By distributing the ledger across the consortium's peer nodes deployed via Docker, the system remains operational even if individual peers or local servers experience hardware failure or network disruption.
 \end{itemize}
 
-By utilising Hyperledger Fabric as the consortium infrastructure, the framework provides a permissioned, deterministically executable environment with certificate-based access control that balances the transparency of blockchain with the strict confidentiality and access-control requirements of regulated financial institutions. (Measured consensus latency on the single-host test deployment is $\approx 2.1$\,s per transaction; production-grade throughput would require a tuned multi-host network and is out of scope --- see Limitations.)
+By utilising Hyperledger Fabric as the consortium infrastructure, the framework provides a permissioned, deterministically executable environment with certificate-based access control that balances the transparency of blockchain with the strict confidentiality and access-control requirements of regulated financial institutions. (On the single-host test deployment, measured consensus latency is $2115.9$\,ms per transaction and measured peak goodput is $40.3$\,tps at client concurrency $10$; both are bounded by the orderer's default $2$\,s \texttt{BatchTimeout} and by Fabric's MVCC validation, so production-grade throughput would require a tuned multi-host network and is out of scope --- see Limitations.)
 
 \subsection*{4.1.3 DB-BOA: Dynamic Butterfly–Billiards Optimization Algorithm}
 
@@ -172,7 +172,7 @@ The Shapley weights $\mathbf{w}^\ast$ are written to the Fabric ledger, and \tex
 \subsection*{4.1.6 Objectives, Constraints, and Performance Goals}
 
 \paragraph{Performance objectives.}
-On the consensus path, DB-BOA-driven leader selection aims to reduce simulated block latency relative to random selection. On the learning side, the federated ADTCN aims for robust fraud-detection performance on the extremely imbalanced ULB data, measured by MCC and balanced accuracy rather than raw accuracy (which is uninformative at 0.17\% fraud). Reported throughput is computed by the consensus \emph{simulation} layer from node resource scores; the per-round latency was measured on a single-host, two-organisation Fabric deployment (mean $\approx 2.1$\,s), not on a live multi-host network. Both characterise relative behaviour rather than production performance (see Limitations).
+On the consensus path, DB-BOA-driven leader selection aims to reduce simulated block latency relative to random selection. On the learning side, the federated ADTCN aims for robust fraud-detection performance on the extremely imbalanced ULB data, measured by MCC and balanced accuracy rather than raw accuracy (which is uninformative at 0.17\% fraud). Per-round latency and sustained throughput are both measured on a real single-host, two-organisation Fabric deployment (mean $2115.9$\,ms; peak $40.3$\,tps), not on a live multi-host network; only the leader-\emph{selection frequencies} come from the simulation layer's node resource scores. They characterise relative behaviour rather than production performance (see Limitations).
 
 \paragraph{Security objectives.}
 Data privacy is enforced on two fronts: a federated learning protocol in which raw transaction records never leave institutional boundaries, and differential privacy applied to the shared statistics. Smart-contract integrity is maintained through immutable Raft-backed records of model updates, contribution weights, and incentive events, enabling non-repudiable audit trails. Byzantine resilience is provided by two complementary layers: Krum robust selection at the parameter level (in the $n\ge 2f+3$ regime) and an economic mechanism that isolates a colluding majority through the Shapley-weighted reward and reputation loop.
@@ -181,7 +181,7 @@ Data privacy is enforced on two fronts: a federated learning protocol in which r
 Scalability is intentionally scoped to a consortium environment in which validator roles are restricted to accredited financial entities (BankA, BankB, BankC). The learning pipeline is trained on the Kaggle ULB Credit Card Fraud Detection dataset; subsequent phases will extend to real-time blockchain-native financial data streams to capture production-scale heterogeneity and temporal dynamics.
 
 \paragraph{Improvement targets.}
-On the consensus path, the objective is to reduce simulated block latency relative to random leader selection through DB-BOA-driven leader scheduling. On the detection side, the goal is a working federated detector obtained without manual tuning; the verified detector reaches MCC $0.677$ at the weight-DP-off deployment operating point (Chapter~\ref{ch:results}). Note that this does not surpass a carefully hand-tuned default — DB-BOA's demonstrated contribution is automation and leader selection, not a detection-accuracy gain (reported honestly in Chapter~\ref{ch:results}).
+On the consensus path, the objective is to reduce simulated block latency relative to random leader selection through DB-BOA-driven leader scheduling. On the detection side, the goal is a working federated detector obtained without manual tuning; the verified detector averages MCC $0.753 \pm 0.055$ over five seeds at the weight-DP-off deployment operating point, the single deployment run itself scoring $0.677$ (Chapter~\ref{ch:results}). Note that this is not a measured improvement on a carefully hand-tuned default either: the difference between them is $+0.047$ MCC at $p=0.34$, i.e.\ indistinguishable from zero at five seeds. DB-BOA's demonstrated contribution is therefore automation and leader selection, not a detection-accuracy gain (reported honestly in Chapter~\ref{ch:results}).
 
 \subsection*{4.1.7 Methodology Process Flow}
 
@@ -309,7 +309,7 @@ Peers with higher reputation have a lower effective cost, making them more compe
 \end{equation}
 This creates a multi-round feedback loop: reliably performing nodes are progressively preferred for leadership, earn more leadership rewards, and maintain higher reputation — a self-reinforcing cycle of good behaviour.
 
-Leader selection runs over a ten-node simulated consortium, where DB-BOA minimises the reputation-discounted resource cost each round. The selection frequencies reported by this layer are computed from node resource scores in simulation (\texttt{leader\_block.py}); the per-round consensus latency is taken from a real single-host, two-organisation Fabric measurement (mean $\approx 2.1$\,s), not a live multi-host network. They characterise the relative behaviour of reputation-aware selection rather than production throughput, and are revisited in the Limitations.
+Leader selection runs over a ten-node simulated consortium, where DB-BOA minimises the reputation-discounted resource cost each round. The selection frequencies reported by this layer are computed from node resource scores in simulation (\texttt{leader\_block.py}); the per-round consensus latency and the throughput figure are taken from a real single-host, two-organisation Fabric measurement (mean $2115.9$\,ms; peak $40.3$\,tps at concurrency $10$), not from a live multi-host network. The frequencies therefore characterise the relative behaviour of reputation-aware selection, while the timing figures are measured but hardware- and configuration-bound; both are revisited in the Limitations.
 
 \subsection*{4.2.4 Exact Shapley Contribution Attribution — Detailed Design}
 
@@ -439,7 +439,7 @@ In the Hyperledger Fabric consortium environment, DB-BOA dynamically tunes the A
 
 This coupling allows adaptive control of the consensus layer — if a node's effective cost rises, DB-BOA re-selects the leader at the next round; re-tuning the detector remains a manual operation.
 
-At the weight-DP-off deployment operating point, the DB-BOA-tuned ADTCN reaches MCC $0.677$ on the held-out ULB test set (Chapter~\ref{ch:results}). These are honest numbers for a lightweight one-dimensional CNN on raw PCA features; they are not the base paper's 95.45\% nor an inflated 99.31\% — those are not produced by this implementation.
+At the weight-DP-off deployment operating point, the DB-BOA-tuned ADTCN averages MCC $0.753 \pm 0.055$ across five training seeds on the held-out ULB test set, with the single deployment run --- the one the reported confusion matrix and ROC curve come from --- scoring $0.677$ (Chapter~\ref{ch:results}). These are honest numbers for a lightweight one-dimensional CNN on raw PCA features; they are not the base paper's 95.45\% nor an inflated 99.31\% — those are not produced by this implementation.
 
 \paragraph{Practical Advantages and Behavioral Insights.}
 \begin{itemize}

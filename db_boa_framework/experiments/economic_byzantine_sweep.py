@@ -59,7 +59,8 @@ sys.path.insert(0, ROOT)
 
 from config                    import (RESULTS_DIR, ADTCN_CONFIG,
                                        FEDERATION_CONFIG, INCENTIVE_CONFIG)
-from data.data_loader          import FinancialDataLoader
+from experiments._dataset      import (redraft, add_dataset_args, resolve, provenance,
+                                       suffix, suffix_of, apply_to_model_cfg)
 from models.federated_adtcn    import FederatedADTCN
 from models.federation_manager import FederationManager
 from utils.metrics             import compute_all_metrics
@@ -175,7 +176,7 @@ def run_scenario(strategy, attacker_orgs, honest_models, attacker_models,
 
 # ─── driver ───────────────────────────────────────────────────────────────────
 
-def run_sweep(quick=False):
+def run_sweep(quick=False, dataset="ulb", partition=None):
     t0 = time.time()
     n_rounds  = 8 if quick else 12
     epoch_cnt = 4 if quick else 12
@@ -187,12 +188,13 @@ def run_sweep(quick=False):
           flush=True)
     print("=" * 70, flush=True)
 
-    loader = FinancialDataLoader()
+    loader = resolve(dataset, partition, verbose=False)
     # loader.load returns (X_train, X_val, X_test, y_train, y_val, y_test)
     Xtr, Xv, Xte, ytr, yv, yte = loader.load(verbose=False)
     org_splits = loader.split_for_orgs(Xtr, ytr)
 
     cfg_model = dict(ADTCN_CONFIG); cfg_model["epoch_count"] = epoch_cnt
+    apply_to_model_cfg(cfg_model, loader)
 
     honest_models = {}
     for nm, (X_org, y_org) in org_splits.items():
@@ -229,6 +231,7 @@ def run_sweep(quick=False):
 
     summary = {
         "task"        : "B — economic Byzantine tolerance",
+        **provenance(dataset, partition, loader),
         "org_names"   : org_names,
         "n_rounds"    : n_rounds,
         "epoch_count" : epoch_cnt,
@@ -287,7 +290,7 @@ def make_plots(summary):
     fig.suptitle("Task B — Economic isolation of Byzantine orgs "
                  "(Shapley → tokens → reputation)", y=1.02, fontsize=12)
     fig.tight_layout()
-    p1 = os.path.join(RESULTS_DIR, "economic_isolation_trajectory.png")
+    p1 = os.path.join(RESULTS_DIR, f"economic_isolation_trajectory{suffix_of(summary)}.png")
     fig.savefig(p1, dpi=130, bbox_inches="tight"); plt.close(fig)
     print(f"[B]  saved {p1}", flush=True)
 
@@ -313,7 +316,7 @@ def make_plots(summary):
                   "mechanism (f=0 Krum); protection peaks vs a coordinated majority")
     ax2.legend(); ax2.grid(axis="y", alpha=0.3)
     fig2.tight_layout()
-    p2 = os.path.join(RESULTS_DIR, "economic_accuracy_protection.png")
+    p2 = os.path.join(RESULTS_DIR, f"economic_accuracy_protection{suffix_of(summary)}.png")
     fig2.savefig(p2, dpi=130, bbox_inches="tight"); plt.close(fig2)
     print(f"[B]  saved {p2}", flush=True)
 
@@ -339,36 +342,91 @@ def write_report(summary):
                  f"{s['acc_with_incentive']:.2f}% | "
                  f"{s['acc_without_incentive']:.2f}% | {s['acc_gap']:+.2f}% |")
     L.append("")
-    L.append("Figures: `results/economic_isolation_trajectory.png` "
+    L.append(f"Figures: `results/economic_isolation_trajectory{suffix_of(summary)}.png` "
              "(token/reputation vs round), "
-             "`results/economic_accuracy_protection.png` (with vs without).\n")
+             f"`results/economic_accuracy_protection{suffix_of(summary)}.png` (with vs without).\n")
+    def _fmt_range(lo, hi, unit="%"):
+        """A range that collapses to one value when both ends agree."""
+        return (f"{lo:.1f}{unit}" if abs(hi - lo) < 0.05
+                else f"{lo:.1f}{unit}–{hi:.1f}{unit}")
+
+    # Coordinated-majority figures, computed from this run rather than quoted
+    # from ULB. The prose used to hardcode "~6%", "~92%" and "+43% to +86%".
+    _duo = [s for s in summary["scenarios"] if s["n_attackers"] == 2] or summary["scenarios"]
+    _duo_lo_without = min(s["acc_without_incentive"] for s in _duo)
+    _duo_hi_without = max(s["acc_without_incentive"] for s in _duo)
+    _duo_lo_with    = min(s["acc_with_incentive"]    for s in _duo)
+    _duo_hi_with    = max(s["acc_with_incentive"]    for s in _duo)
+    _duo_gap_lo     = min(s["acc_gap"] for s in _duo)
+    _duo_gap_hi     = max(s["acc_gap"] for s in _duo)
+    _rounds = [v for s in _duo for v in (s.get("isolation_round") or {}).values() if v]
+    _duo_iso_lo = min(_rounds) if _rounds else "n/a"
+    _duo_iso_hi = max(_rounds) if _rounds else "n/a"
+
     L.append("**Reading the result (non-obvious — it inverts the usual BFT "
              "intuition).** The economic mechanism is strongest exactly where "
              "vote-based BFT provably fails: against a *coordinated majority*. "
-             "With 2 of 3 orgs attacking, a naive equal-weight consensus is "
-             "dragged to 50% (always-fraud) or ~6% (label-flip) balanced accuracy, "
-             "whereas the Shapley→reputation loop drives both attackers to the 0.5 "
-             "reputation floor within ~3 rounds and, by dropping them from the "
-             "quorum, recovers the lone honest org's ~92% — a +43% to +86% swing. "
+             f"With 2 of 3 orgs attacking, a naive equal-weight consensus is "
+             f"dragged to {_fmt_range(_duo_lo_without, _duo_hi_without)} balanced "
+             f"accuracy, whereas the Shapley→reputation loop drives the attackers "
+             f"to the 0.5 reputation floor by round "
+             f"{_duo_iso_lo}{'' if _duo_iso_lo == _duo_iso_hi else f'–{_duo_iso_hi}'} "
+             f"and, by dropping them from the quorum, recovers "
+             f"{_fmt_range(_duo_lo_with, _duo_hi_with)} — a "
+             f"{_duo_gap_lo:+.1f} to {_duo_gap_hi:+.1f} pp swing. "
              "This is because Shapley scores each org against a *trusted "
              "validation set* (ground truth), not by counting votes, so a majority "
              "cannot out-vote the contribution signal (the trusted-aggregator "
              "assumption, see federation_manager docstring & Hsieh et al. 2020).\n")
-    L.append("**Honest limitations.** A *single minority* attacker is much harder "
-             "to neutralise: (i) on this 0.17%-fraud data, balanced-accuracy "
-             "scoring mildly *rewards* an always-fraud org for biasing coalitions "
-             "toward catching the rare positive class, so it is not isolated; "
-             "(ii) one label-flip org is out-voted by the two honest orgs, so it "
-             "barely dents consensus accuracy and isolates only slowly; (iii) a "
-             "passive free-rider that never flags evades isolation entirely — its "
-             "all-normal votes look 'accurate' on the majority class (the classic "
-             "free-rider problem, arXiv 2006.11901). The mechanism therefore "
-             "complements, rather than replaces, statistical BFT: it catches "
-             "coordinated manipulation that Krum (f=0 here) cannot, but does not "
-             "deter subtle minority free-riding.\n")
+    # ── the lone-attacker regime, read from THIS run ─────────────────────────
+    # The previous version of this paragraph asserted a fixed ULB narrative --
+    # "it is not isolated", "evades isolation entirely", "on this 0.17%-fraud
+    # data" -- no matter what had actually been measured.  On the first BankSim
+    # run every one of those claims was contradicted by the table printed
+    # directly above it.  Read the scenarios instead of assuming them.
+    solo = {s["strategy"]: s for s in summary["scenarios"] if s["n_attackers"] == 1}
+    bits = []
+    for st in ("always-fraud", "label-flip", "free-rider"):
+        s = solo.get(st)
+        if not s:
+            continue
+        iso = s.get("isolated_orgs") or []
+        ir  = s.get("isolation_round") or {}
+        when = ", ".join(f"r{ir[o]}" for o in iso if ir.get(o)) or "no round recorded"
+        state = f"isolated ({when})" if iso else "**never isolated**"
+        bits.append(f"**{st}** — {state}, consensus gap {s['acc_gap']:+.2f} pp")
+
+    L.append(f"**The lone-attacker regime, as measured on "
+             f"{summary.get("dataset_label", "this dataset")}"
+             + (f" ({summary["partition"]} partition)" if summary.get("partition") else "")
+             + ".** " + "; ".join(bits) + ".\n")
+
+    n_iso_solo = sum(1 for s in solo.values() if s.get("isolated_orgs"))
+    n_pos_solo = sum(1 for s in solo.values() if s.get("acc_gap", 0) > 0.01)
+    L.append(f"Isolation fired on **{n_iso_solo} of {len(solo)}** single-attacker "
+             f"scenarios, but improved consensus accuracy in **{n_pos_solo} of "
+             f"{len(solo)}**. *Firing and helping are different things, and this "
+             f"table separates them* — a defence that isolates an attacker and "
+             f"then scores worse has not protected anything.\n")
+
+    L.append("> ⚠ **Do not read a negative single-attacker gap as \"isolation is "
+             "harmful\" without accounting for the quorum arithmetic.** Consensus "
+             "here is `preds.sum() * 2 > n_voters`. With all three orgs voting "
+             "that is a majority rule (2 of 3); isolating exactly one leaves two "
+             "voters, where the same expression demands **unanimity**. That shift "
+             "suppresses positive predictions on its own, independently of whether "
+             "the isolation decision was correct, and it depresses balanced "
+             "accuracy on a rare-positive task. The even-voter case is a property "
+             "of the voting rule, not evidence about the defence.\n")
+
+    L.append("The mechanism therefore complements, rather than replaces, "
+             "statistical BFT: it addresses coordinated manipulation, which Krum "
+             "at f=0 cannot. Whether it deters a lone free-rider is a question "
+             "this table answers per dataset — not a settled result.\n")
     out = os.path.abspath(os.path.join(ROOT, "..", "final_report_data"))
-    md  = os.path.join(out, "TASKB_economic_byzantine_results.md")
-    with open(md, "w") as f:
+    md  = os.path.join(out, f"TASKB_economic_byzantine_results"
+                            f"{suffix_of(summary)}.md")
+    with open(md, "w", encoding="utf-8") as f:
         f.write("\n".join(L))
     print(f"[B]  wrote draft → {md}", flush=True)
 
@@ -377,12 +435,22 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--no-plots", action="store_true")
+    add_dataset_args(ap)
     args = ap.parse_args()
 
-    summary = run_sweep(quick=args.quick)
+    # Rebuild the draft/figures from the finished JSON, no compute.
+    if args.redraft:
+        redraft("economic_byzantine_sweep", args.dataset, args.partition,
+                make_plots, write_report, RESULTS_DIR, no_plots=args.no_plots)
+        return
 
-    json_path = os.path.join(RESULTS_DIR, "economic_byzantine_sweep.json")
-    with open(json_path, "w") as f:
+    summary = run_sweep(quick=args.quick, dataset=args.dataset,
+                        partition=args.partition)
+
+    json_path = os.path.join(
+        RESULTS_DIR,
+        f"economic_byzantine_sweep{suffix(args.dataset, args.partition)}.json")
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     print(f"[B]  saved {json_path}", flush=True)
 

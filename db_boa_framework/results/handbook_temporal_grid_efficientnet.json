@@ -1,0 +1,179 @@
+{
+  "objective": "OBJ-16 (d) \u2014 Fraud Detection Handbook entity-linked temporal grid",
+  "dataset": "Fraud Detection Handbook (1,754,155 tx, 0.84 % fraud, 4,990 customer IDs, 10,000 terminal IDs, 1 s resolution)",
+  "protocol": {
+    "split": "temporal past->future; train day<128, test day>=146",
+    "seq_len": 10,
+    "epochs": 10,
+    "n_filters": 32,
+    "seeds": [
+      42,
+      7,
+      123
+    ],
+    "batch_size": 2048,
+    "n_features": 35,
+    "orderings": [
+      "global",
+      "customer",
+      "terminal"
+    ],
+    "order_seed": 0,
+    "windows_built_on_full_stream_then_split": true,
+    "within_second_tie_break": "seeded shuffle (never raw file order)",
+    "entity_derived_row_features": false,
+    "quick": false
+  },
+  "archs": [
+    "efficientnet"
+  ],
+  "complete": true,
+  "written": "2026-09-12 09:02:59",
+  "wall_clock_seconds_so_far": 14734.482867002487,
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.12.13",
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35"
+  },
+  "conditional_fraud_probability": {
+    "global": 0.008446291124582794,
+    "customer": 0.11210547889055882,
+    "terminal": 0.6033821717102561,
+    "base_rate": 0.008369271814634397
+  },
+  "reference_per_transaction_no_window": null,
+  "cells": {
+    "efficientnet|global": {
+      "MCC": 0.09492040806527265,
+      "MCC_std": 0.01944588222770299,
+      "Precision": 4.439798971358395,
+      "Precision_std": 1.6244437281172404,
+      "Sensitivity": 31.287378029586677,
+      "Sensitivity_std": 2.7720539951278944,
+      "Accuracy": 92.71708920426077,
+      "Accuracy_std": 2.567297096929033,
+      "Specificity": 93.27236963651292,
+      "Specificity_std": 2.6155422797450063,
+      "FPR": 6.72763036348703,
+      "FPR_std": 2.615542279745007,
+      "TP": 994.0,
+      "FP": 23645.333333333332,
+      "FN": 2183.0,
+      "TN": 327820.6666666667,
+      "train_seconds": 1624.7175023555756,
+      "n_params": 14324,
+      "seeds": 3,
+      "MCC_runs": [
+        0.08664410156040199,
+        0.11713532536971052,
+        0.08098179726570542
+      ]
+    },
+    "efficientnet|customer": {
+      "MCC": 0.15173255392178012,
+      "MCC_std": 0.024987471789368044,
+      "Precision": 7.789036997114173,
+      "Precision_std": 2.1706679157867885,
+      "Sensitivity": 36.70129052565198,
+      "Sensitivity_std": 1.096259034766598,
+      "Accuracy": 95.2514688480152,
+      "Accuracy_std": 1.5486060553178487,
+      "Specificity": 95.78072037314182,
+      "Specificity_std": 1.5724969778492233,
+      "FPR": 4.219279626858168,
+      "FPR_std": 1.572496977849225,
+      "TP": 1166.0,
+      "FP": 14829.333333333334,
+      "FN": 2011.0,
+      "TN": 336636.6666666667,
+      "train_seconds": 1622.5788194338481,
+      "n_params": 14324,
+      "seeds": 3,
+      "MCC_runs": [
+        0.1722739703363593,
+        0.15900925022873724,
+        0.1239144412002438
+      ]
+    },
+    "efficientnet|terminal": {
+      "MCC": 0.05218364887256269,
+      "MCC_std": 0.0014170928418449382,
+      "Precision": 2.0408576038207578,
+      "Precision_std": 0.06462395712622777,
+      "Sensitivity": 35.50519357884685,
+      "Sensitivity_std": 0.8092515034423666,
+      "Accuracy": 84.13888520756552,
+      "Accuracy_std": 0.7948708322825359,
+      "Specificity": 84.57849882112824,
+      "Specificity_std": 0.808970209166157,
+      "FPR": 15.42150117887173,
+      "FPR_std": 0.8089702091661544,
+      "TP": 1128.0,
+      "FP": 54201.333333333336,
+      "FN": 2049.0,
+      "TN": 297264.6666666667,
+      "train_seconds": 1641.0142613252003,
+      "n_params": 14324,
+      "seeds": 3,
+      "MCC_runs": [
+        0.05139827577220945,
+        0.05381953449864763,
+        0.051333136346830975
+      ]
+    }
+  },
+  "verdict": {
+    "gains_mcc": {
+      "customer": {
+        "efficientnet": 0.05681214585650747
+      },
+      "terminal": {
+        "efficientnet": -0.04273675919270996
+      }
+    },
+    "n_architectures": 1,
+    "n_positive_gains": {
+      "customer": 1,
+      "terminal": 0
+    },
+    "gain_range": {
+      "customer": [
+        0.05681214585650747,
+        0.05681214585650747
+      ],
+      "terminal": [
+        -0.04273675919270996,
+        -0.04273675919270996
+      ]
+    },
+    "terminal_gain_exceeds_customer_gain": [],
+    "ranking": {
+      "global": [
+        [
+          "efficientnet",
+          0.09492040806527265
+        ]
+      ],
+      "customer": [
+        [
+          "efficientnet",
+          0.15173255392178012
+        ]
+      ],
+      "terminal": [
+        [
+          "efficientnet",
+          0.05218364887256269
+        ]
+      ]
+    },
+    "best": {
+      "global": "efficientnet",
+      "customer": "efficientnet",
+      "terminal": "efficientnet"
+    }
+  },
+  "wall_clock_seconds": 14734.482836723328
+}

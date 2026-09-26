@@ -1,0 +1,26 @@
+interpreter : C:\Users\Shadman\AppData\Local\Programs\Python\Python313\python.exe
+partition   : stratified
+preflight   : OK (torch + BankSim loader import cleanly)
+
+OBJ-15 - BankSim stratified, started 2026-09-01 20:20:16
+
+=== economic_byzantine_sweep  (20:20:16) ===
+    OK   -> results\economic_byzantine_sweep_banksim_stratified.json  (20:43:04)
+
+=== byzantine_robustness_sweep  (20:43:04) ===
+    OK   -> results\byzantine_robustness_sweep_banksim_stratified.json  (21:32:11)
+
+=== private_incentive_sweep  (21:32:12) ===
+    OK   -> results\private_incentive_sweep_banksim_stratified.json  (22:00:18)
+
+=== scalability_sweep  (22:00:18) ===
+    OK   -> results\scalability_sweep_banksim_stratified.json  (23:41:23)
+
+OBJ-15 finished 2026-09-01 23:41:23
+all four sweeps completed
+
+Compare against the ULB originals before reporting anything:
+  results\economic_byzantine_sweep.json  vs  results\economic_byzantine_sweep_banksim_stratified.json
+  results\byzantine_robustness_sweep.json  vs  results\byzantine_robustness_sweep_banksim_stratified.json
+  results\private_incentive_sweep.json  vs  results\private_incentive_sweep_banksim_stratified.json
+  results\scalability_sweep.json  vs  results\scalability_sweep_banksim_stratified.json

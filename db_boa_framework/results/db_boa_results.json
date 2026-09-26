@@ -1,34 +1,37 @@
 {
   "optimal_hyperparams": {
-    "hidden_neurons": 142,
+    "hidden_neurons": 117,
     "epoch_count": 30,
-    "steps_per_epoch": 76
+    "steps_per_epoch": 203
   },
   "metrics": {
-    "Accuracy": 99.85077771145659,
-    "Precision": 54.248366013036446,
-    "Sensitivity": 84.69387755093399,
-    "Specificity": 99.87689926842975,
-    "NPV": 99.97359573307028,
-    "FPR": 0.12310073157006168,
-    "FNR": 15.306122448963974,
-    "FDR": 45.751633986898206,
-    "F1_Score": 66.13545816730434,
-    "MCC": 0.6771700986861263,
-    "TP": 83.0,
-    "TN": 56794.0,
-    "FP": 70.0,
-    "FN": 15.0
+    "Accuracy": 99.864822162143,
+    "Precision": 57.14285714281827,
+    "Sensitivity": 85.71428571419825,
+    "Specificity": 99.88920934158676,
+    "NPV": 99.97535862008255,
+    "FPR": 0.1107906584130555,
+    "FNR": 14.285714285699708,
+    "FDR": 42.85714285711371,
+    "F1_Score": 68.57142857140059,
+    "MCC": 0.6992509492780894,
+    "TP": 84.0,
+    "TN": 56801.0,
+    "FP": 63.0,
+    "FN": 14.0
   },
   "db_boa_stats": {
-    "Min": -4.999999999993775,
-    "Max": -4.999999999991326,
-    "Mean": -4.99999999999301,
-    "Std": 8.941277784858236e-13,
-    "Median": -4.999999999993775,
-    "dboa_iters": 24,
-    "boa_iters": 6
+    "Min": -4.13883311891129,
+    "Max": -3.925568999258239,
+    "Mean": -4.11039790295755,
+    "Std": 0.0724958605106728,
+    "Median": -4.13883311891129,
+    "dboa_iters": 22,
+    "boa_iters": 8
   },
+  "surrogate_eval_mode": "deterministic",
+  "surrogate_k": 3,
+  "surrogate_rows": null,
   "leader_node": 7,
   "leader_cost": 0.8560605277878892,
   "leader_ct": 0.22554447458683766,
@@ -315,57 +318,101 @@
       ]
     }
   },
+  "default_comparison": {
+    "dbboa_params": {
+      "hidden_neurons": 117,
+      "epoch_count": 30,
+      "steps_per_epoch": 203
+    },
+    "default_params": {
+      "hidden_neurons": 128,
+      "epoch_count": 30,
+      "steps_per_epoch": 150
+    },
+    "dbboa_metrics": {
+      "Accuracy": 99.864822162143,
+      "Precision": 57.14285714281827,
+      "Sensitivity": 85.71428571419825,
+      "Specificity": 99.88920934158676,
+      "NPV": 99.97535862008255,
+      "FPR": 0.1107906584130555,
+      "FNR": 14.285714285699708,
+      "FDR": 42.85714285711371,
+      "F1_Score": 68.57142857140059,
+      "MCC": 0.6992509492780894,
+      "TP": 84.0,
+      "TN": 56801.0,
+      "FP": 63.0,
+      "FN": 14.0
+    },
+    "default_metrics": {
+      "Accuracy": 99.82444436641954,
+      "Precision": 49.4047619047325,
+      "Sensitivity": 84.69387755093399,
+      "Specificity": 99.85052054023618,
+      "NPV": 99.97358875937582,
+      "FPR": 0.14947945976364632,
+      "FNR": 15.306122448963974,
+      "FDR": 50.59523809520798,
+      "F1_Score": 62.406015037570526,
+      "MCC": 0.6461163158161654,
+      "TP": 83.0,
+      "TN": 56779.0,
+      "FP": 85.0,
+      "FN": 15.0
+    }
+  },
   "fed_rounds": [
     {
       "round_num": 1,
       "aggregation_weights": [
-        0.3360160965794769,
-        0.33199195171026163,
-        0.3319919517102616
+        0.3323313293253173,
+        0.3333333333333333,
+        0.3343353373413494
       ],
       "org_contributions": {
-        "BankA": 0.3360160965794769,
-        "BankB": 0.33199195171026163,
-        "BankC": 0.3319919517102616
+        "BankA": 0.3323313293253173,
+        "BankB": 0.3333333333333333,
+        "BankC": 0.3343353373413494
       },
       "shapley_values": {
-        "BankA": 0.1669999999999666,
-        "BankB": 0.164999999999967,
-        "BankC": 0.16499999999996698
+        "BankA": 0.16583333333330016,
+        "BankB": 0.16633333333330005,
+        "BankC": 0.16683333333329997
       },
       "coalition_values": {
         "[]": 0.0,
         "['BankA']": 0.4999999999999,
-        "['BankB']": 0.49899999999990025,
-        "['BankC']": 0.4979999999999004,
+        "['BankB']": 0.4999999999999,
+        "['BankC']": 0.4999999999999,
         "['BankA', 'BankB']": 0.4979999999999004,
         "['BankA', 'BankC']": 0.49899999999990025,
-        "['BankB', 'BankC']": 0.4959999999999008,
-        "['BankA', 'BankB', 'BankC']": 0.49699999999990063
+        "['BankB', 'BankC']": 0.4999999999999,
+        "['BankA', 'BankB', 'BankC']": 0.49899999999990025
       },
       "krum_scores": {
-        "BankA": 247.37425231933594,
-        "BankB": 275.32769775390625,
-        "BankC": 247.37425231933594
+        "BankA": 620.655029296875,
+        "BankB": 552.2476196289062,
+        "BankC": 552.2476196289062
       },
-      "krum_selected_org": "BankA",
+      "krum_selected_org": "BankB",
       "private_incentive": false,
       "incentive_epsilon": null,
       "clean_aggregation_weights": [
-        0.3360160965794769,
-        0.33199195171026163,
-        0.3319919517102616
+        0.3323313293253173,
+        0.3333333333333333,
+        0.3343353373413494
       ],
       "dp_enabled": false,
       "dp_epsilon": null,
       "dp_delta": null,
-      "timestamp": "2026-06-07T20:04:12.792293",
+      "timestamp": "2026-09-11T22:02:13.901758",
       "accuracy_deltas": {
-        "BankA": 0.0,
-        "BankB": 0.12815561251360919,
-        "BankC": 0.4564446473087287
+        "BankA": 0.04037779572345812,
+        "BankB": 0.0,
+        "BankC": -0.015800007022221507
       },
-      "global_weights_hash": "97c4ff7a14745204bd176cb0b4381c9c1a258fd54584281415e034a90cdb3b29"
+      "global_weights_hash": "b6c2e0dc37c5544822f3f9bbb9b98c2f8b05616400fb87edac9bcdf13af20416"
     },
     {
       "round_num": 2,
@@ -410,13 +457,13 @@
       "dp_enabled": false,
       "dp_epsilon": null,
       "dp_delta": null,
-      "timestamp": "2026-06-07T20:04:40.501256",
+      "timestamp": "2026-09-11T22:02:36.374668",
       "accuracy_deltas": {
         "BankA": 0.0,
         "BankB": 0.0,
         "BankC": 0.0
       },
-      "global_weights_hash": "97c4ff7a14745204bd176cb0b4381c9c1a258fd54584281415e034a90cdb3b29"
+      "global_weights_hash": "b6c2e0dc37c5544822f3f9bbb9b98c2f8b05616400fb87edac9bcdf13af20416"
     },
     {
       "round_num": 3,
@@ -461,13 +508,13 @@
       "dp_enabled": false,
       "dp_epsilon": null,
       "dp_delta": null,
-      "timestamp": "2026-06-07T20:05:08.579637",
+      "timestamp": "2026-09-11T22:02:58.657400",
       "accuracy_deltas": {
         "BankA": 0.0,
         "BankB": 0.0,
         "BankC": 0.0
       },
-      "global_weights_hash": "97c4ff7a14745204bd176cb0b4381c9c1a258fd54584281415e034a90cdb3b29"
+      "global_weights_hash": "b6c2e0dc37c5544822f3f9bbb9b98c2f8b05616400fb87edac9bcdf13af20416"
     }
   ],
   "attack_simulation": {

@@ -1,0 +1,11 @@
+﻿  [ulb] rows=  2000  fraud=  30  std=0.5225  range=1.3209  n2s=0.79  ceil=0/25  3.1 s/eval
+  [ulb] rows=  5000  fraud=  30  std=0.4820  range=1.7304  n2s=0.56  ceil=0/25  6.5 s/eval
+  [ulb] rows= 10000  fraud=  30  std=0.3512  range=1.8075  n2s=0.39  ceil=0/25  8.9 s/eval
+  [ulb] rows= 20000  fraud=  36  std=0.4377  range=1.3618  n2s=0.64  ceil=0/25  12.5 s/eval
+  [banksim] rows=  2000  fraud=  30  std=0.2563  range=1.0132  n2s=0.51  ceil=0/25  2.9 s/eval
+  [banksim] rows=  5000  fraud=  63  std=0.2947  range=0.8860  n2s=0.67  ceil=0/25  7.7 s/eval
+  [banksim] rows= 10000  fraud= 126  std=0.2465  range=1.3718  n2s=0.36  ceil=0/25  10.6 s/eval
+  [banksim] rows= 20000  fraud= 252  std=0.2553  range=0.7931  n2s=0.64  ceil=0/25  14.2 s/eval
+
+  wrote D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\objective_size_knee.json
+  wrote draft -> D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\final_report_data\OBJECTIVE_size_knee.md

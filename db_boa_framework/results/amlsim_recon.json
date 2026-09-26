@@ -1,0 +1,167 @@
+{
+  "task": "OBJ-12 AMLSim reconnaissance \u2014 measured before any loader decision; nothing here is compared with anything",
+  "data": "datasets/amlsim/10K_3banks",
+  "columns": [
+    "tran_id",
+    "orig_acct",
+    "bene_acct",
+    "tx_type",
+    "base_amt",
+    "tran_timestamp",
+    "is_sar",
+    "alert_id"
+  ],
+  "shape": {
+    "rows": 198015,
+    "positives": 685,
+    "rate": 0.0034593338888468045,
+    "tx_types": {
+      "TRANSFER": 198015
+    },
+    "days": [
+      0,
+      719
+    ],
+    "distinct_days": 720,
+    "amount_by_class": {
+      "sar": {
+        "min": 66.7,
+        "median": 561.85,
+        "max": 999.56
+      },
+      "normal": {
+        "min": 0.0,
+        "median": 546.42,
+        "max": 999.99
+      }
+    },
+    "share_in_100_200_band": {
+      "sar": 0.10948905109489052,
+      "normal": 0.11394111387016673
+    }
+  },
+  "label_aliases": {
+    "alert_id_ne_minus1_equals_is_sar": true,
+    "accounts_prior_sar_count_true": 749,
+    "share_sar_tx_sender_flagged": 1.0,
+    "share_normal_tx_sender_flagged": 0.0917093194141793
+  },
+  "banks": {
+    "per_sender_bank": {
+      "bank_a": {
+        "rows": 99192,
+        "positives": 242
+      },
+      "bank_b": {
+        "rows": 59359,
+        "positives": 220
+      },
+      "bank_c": {
+        "rows": 39464,
+        "positives": 223
+      }
+    },
+    "cross_bank_share": {
+      "all": 0.6178824836502285,
+      "sar": 0.7605839416058394,
+      "normal": 0.6173871180256423
+    }
+  },
+  "repeat_structure": {
+    "sender": {
+      "unique": 2118,
+      "share_rows_once": 0.002110951190566371,
+      "share_rows_ge10": 0.9978890488094336,
+      "median_tx": 103.0,
+      "max_tx": 310,
+      "share_positive_rows_once": 0.6102189781021898
+    },
+    "receiver": {
+      "unique": 4101,
+      "share_rows_once": 0.007479231371360756,
+      "share_rows_ge10": 0.9613312122818979,
+      "median_tx": 3.0,
+      "max_tx": 3550,
+      "share_positive_rows_once": 0.4642335766423358
+    }
+  },
+  "file_order_trap": {
+    "raw_file_order": {
+      "conditioning_rows": 685,
+      "adjacent_positive_pairs": 66,
+      "p_pos_given_prev_pos": 0.09635036496350365,
+      "lift_over_base": 27.852288347807555
+    },
+    "within_day_seeded_shuffle": {
+      "conditioning_rows": 685,
+      "adjacent_positive_pairs": 7,
+      "p_pos_given_prev_pos": 0.010218978102189781,
+      "lift_over_base": 2.9540305823432256
+    }
+  },
+  "entity_links": {
+    "global": {
+      "conditioning_rows": 685,
+      "adjacent_positive_pairs": 7,
+      "p_pos_given_prev_pos": 0.010218978102189781,
+      "lift_over_base": 2.9540305823432256
+    },
+    "sender_linked": {
+      "conditioning_rows": 267,
+      "adjacent_positive_pairs": 24,
+      "p_pos_given_prev_pos": 0.0898876404494382,
+      "lift_over_base": 25.984089231526283
+    },
+    "receiver_linked": {
+      "conditioning_rows": 341,
+      "adjacent_positive_pairs": 49,
+      "p_pos_given_prev_pos": 0.1436950146627566,
+      "lift_over_base": 41.538347924738325
+    }
+  },
+  "cuts": {
+    "val_day_q70": 438,
+    "split_day_q80": 522,
+    "train": {
+      "rows": 138514,
+      "positives": 542
+    },
+    "val": {
+      "rows": 19813,
+      "positives": 37
+    },
+    "test": {
+      "rows": 39688,
+      "positives": 106
+    }
+  },
+  "logistic_references": {
+    "split": "temporal: train day<522, test day>=522; class_weight=balanced; threshold 0.5",
+    "runs": [
+      {
+        "features": "row_only",
+        "n_features": 9,
+        "MCC": 7.635680083936235e-05,
+        "TP": 66,
+        "FP": 24617,
+        "FN": 40
+      },
+      {
+        "features": "row+banks",
+        "n_features": 16,
+        "MCC": -0.0011796321397734809,
+        "TP": 47,
+        "FP": 18001,
+        "FN": 59
+      }
+    ]
+  },
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "torch_threads": 4,
+    "numpy": "2.3.2",
+    "python": "3.13.7",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "wall_clock_seconds": 39.4
+}

@@ -1,0 +1,12 @@
+{
+  "dbboa_repaired_deterministic": {
+    "hidden_neurons": 137,
+    "steps_per_epoch": 111,
+    "source": "obj13_surrogate_repair_banksim.json \u2014 deterministic at the production seed 42; NOT selected on the yardstick"
+  },
+  "dbboa_repaired_averaged": {
+    "hidden_neurons": 137,
+    "steps_per_epoch": 109,
+    "source": "obj13_surrogate_repair_banksim.json \u2014 averaged at the production seed 42; NOT selected on the yardstick"
+  }
+}

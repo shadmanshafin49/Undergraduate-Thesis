@@ -1,0 +1,15 @@
+[kaggle_job] torch threads = 4
+==============================================================================
+  ENTITY TEMPORAL GRID — paysim   archs=['dilated_attn']   reference=False
+  epochs=10  filters=32  seeds=[42, 7, 123]  batch=2048  threads=4
+==============================================================================
+[PAYSIM] 2,770,409 transactions | types ['CASH_OUT', 'TRANSFER'] | steps 1-743 | receivers 509,565
+[PAYSIM] fraud 8,213 (0.296 %)
+  [  global] rows=2,770,409  features=39  P(fraud | prev row fraud)=0.4493  base=0.0030
+  [receiver] rows=2,770,409  features=39  P(fraud | prev row fraud)=0.5862  base=0.0030
+  integrity OK: every arm trains on 1,938,484 rows (3,633 fraud), tests on 571,456 (4,270 fraud)
+
+      ADTCN (ours) |   global-window  MCC=+0.3536 +/- 0.075  (928s/seed)
+      ADTCN (ours) | receiver-window  MCC=+0.4729 +/- 0.044  (924s/seed)
+
+  wrote /tmp/repo/db_boa_framework/results/paysim_temporal_grid_dilated_attn.json

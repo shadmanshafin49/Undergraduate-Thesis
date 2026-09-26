@@ -1,0 +1,34 @@
+[kaggle_job] torch threads = 4
+======================================================================
+  TASK D — STATISTICAL BYZANTINE FAULT TOLERANCE (Krum at f ≥ 1)
+  regimes=[(5, 1, 1), (7, 2, 2)]  attacks=['sign-flip', 'scaled', 'gaussian', 'label-flip']  epochs=12
+======================================================================
+
+[D]  ── regime n=5, f=1, attackers=1 (n≥2f+3 ⇒ 5 ≥ 5) ──
+[D]  n=5 trained honest Bank01  bal-acc=87.75%
+[D]  n=5 trained honest Bank02  bal-acc=89.50%
+[D]  n=5 trained honest Bank03  bal-acc=86.73%
+[D]  n=5 trained honest Bank04  bal-acc=77.99%
+[D]  n=5 trained honest Bank05  bal-acc=72.57%
+[D]  n=5 f=1  sign-flip  Krum→Bank03  attacker REJECTED ✓  krum=76.9%  fedavg=84.4%  Δ=-7.6%
+[D]  n=5 f=1  scaled     Krum→Bank03  attacker REJECTED ✓  krum=76.9%  fedavg=73.0%  Δ=+3.8%
+[D]  n=5 f=1  gaussian   Krum→Bank03  attacker REJECTED ✓  krum=76.9%  fedavg=61.4%  Δ=+15.4%
+[D]  n=5 f=1  label-flip Krum→Bank03  attacker REJECTED ✓  krum=76.9%  fedavg=84.4%  Δ=-7.5%
+
+[D]  ── regime n=7, f=2, attackers=2 (n≥2f+3 ⇒ 7 ≥ 7) ──
+[D]  n=7 trained honest Bank01  bal-acc=89.20%
+[D]  n=7 trained honest Bank02  bal-acc=87.62%
+[D]  n=7 trained honest Bank03  bal-acc=87.43%
+[D]  n=7 trained honest Bank04  bal-acc=86.28%
+[D]  n=7 trained honest Bank05  bal-acc=83.06%
+[D]  n=7 trained honest Bank06  bal-acc=86.13%
+[D]  n=7 trained honest Bank07  bal-acc=74.51%
+[D]  n=7 f=2  sign-flip  Krum→Bank02  attacker REJECTED ✓  krum=80.6%  fedavg=80.6%  Δ=+0.0%
+[D]  n=7 f=2  scaled     Krum→Bank02  attacker REJECTED ✓  krum=80.6%  fedavg=73.0%  Δ=+7.6%
+[D]  n=7 f=2  gaussian   Krum→Bank02  attacker REJECTED ✓  krum=80.6%  fedavg=61.4%  Δ=+19.2%
+[D]  n=7 f=2  label-flip Krum→Bank02  attacker REJECTED ✓  krum=80.6%  fedavg=80.6%  Δ=+0.0%
+
+[D]  done in 6674.2s
+[D]  saved /tmp/repo/db_boa_framework/results/byzantine_robustness_sweep_paysim_stratified.json
+[D]  saved /tmp/repo/db_boa_framework/results/byzantine_robustness_krum_vs_fedavg_paysim_stratified.png
+[D]  wrote draft → /tmp/repo/final_report_data/TASKD_byzantine_robustness_results_paysim_stratified.md

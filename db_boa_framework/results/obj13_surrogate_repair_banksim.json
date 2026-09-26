@@ -1,0 +1,302 @@
+{
+  "task": "OBJ-13 side-by-side: does repairing the DB-BOA surrogate change which configuration the search returns?",
+  "dataset": "banksim",
+  "architecture": "cnn",
+  "split_note": "temporal past->future, train step<132, test step>=147; customer windows",
+  "search_space": {
+    "filters": [
+      5,
+      255
+    ],
+    "steps_per_epoch": [
+      50,
+      250
+    ],
+    "population": 20,
+    "iterations": 30
+  },
+  "surrogate_rows": 2000,
+  "search_pool_rows": 19999,
+  "search_pool_fraud": 252,
+  "seeds": [
+    42,
+    7,
+    123
+  ],
+  "modes": [
+    "legacy",
+    "deterministic",
+    "averaged"
+  ],
+  "k": 3,
+  "yardstick": {
+    "seed": 20260904,
+    "k": 7,
+    "rows": 2000,
+    "fraud_rows": 30,
+    "pool_rows": 20001,
+    "pool_fraud": 253,
+    "note": "an `averaged` objective drawn from a ROW-DISJOINT pool at a random_state no search used, so neither its rows nor its draws were ever seen by a search. A different seed on a shared pool would not have been enough \u2014 the subsamples would still overlap by chance. THIS is the only column comparable across modes: each mode's own best-Obf2 is a different statistic (legacy's is a best-of-N over noisy draws and is biased upward by construction), so putting those in one column would hand legacy a win it did not earn."
+  },
+  "environment": {
+    "torch": "2.12.0+cpu",
+    "threads": 2,
+    "python": "3.13.7",
+    "numpy": "2.3.2"
+  },
+  "runs": [
+    {
+      "eval_mode": "legacy",
+      "search_seed": 42,
+      "k": 1,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 81,
+      "chosen_spe": 70,
+      "own_best_obf2": 4.822526304025937,
+      "own_best_is_ceiling": false,
+      "n_evals": 806,
+      "search_seconds": 2177.1830360889435,
+      "yardstick_mean": 3.5170707294803782,
+      "yardstick_std": 0.3713703569130824,
+      "yardstick_draws": [
+        3.412452911439286,
+        3.6247590573381183,
+        3.841277018571397,
+        2.963861389859466,
+        3.299492385781528,
+        3.299492385781528,
+        4.178159957591328
+      ]
+    },
+    {
+      "eval_mode": "legacy",
+      "search_seed": 7,
+      "k": 1,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 69,
+      "chosen_spe": 50,
+      "own_best_obf2": 4.5372343814740805,
+      "own_best_is_ceiling": false,
+      "n_evals": 783,
+      "search_seconds": 2795.0931634902954,
+      "yardstick_mean": 3.606717991717878,
+      "yardstick_std": 0.20855112978035084,
+      "yardstick_draws": [
+        3.5526327008768366,
+        3.718197385298061,
+        3.8056257959409834,
+        3.412452911439286,
+        3.4617127433787918,
+        3.342154408310871,
+        3.954249996780316
+      ]
+    },
+    {
+      "eval_mode": "legacy",
+      "search_seed": 123,
+      "k": 1,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 135,
+      "chosen_spe": 97,
+      "own_best_obf2": 4.782451733682491,
+      "own_best_is_ceiling": false,
+      "n_evals": 807,
+      "search_seconds": 2433.2977907657623,
+      "yardstick_mean": 3.5417114578114446,
+      "yardstick_std": 0.33747730091125394,
+      "yardstick_draws": [
+        3.28685243922395,
+        3.8066530658405258,
+        3.841277018571397,
+        2.963861389859466,
+        3.299492385781528,
+        3.6395939086229325,
+        3.954249996780316
+      ]
+    },
+    {
+      "eval_mode": "deterministic",
+      "search_seed": 42,
+      "k": 1,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 137,
+      "chosen_spe": 111,
+      "own_best_obf2": 4.757484588587275,
+      "own_best_is_ceiling": false,
+      "n_evals": 867,
+      "search_seconds": 4579.912554740906,
+      "yardstick_mean": 3.5543169774871117,
+      "yardstick_std": 0.4461517523913023,
+      "yardstick_draws": [
+        3.5526327008768366,
+        3.7799235930818478,
+        3.9073637063653646,
+        2.963861389859466,
+        3.2060825962676205,
+        3.151015404973358,
+        4.319339450985288
+      ]
+    },
+    {
+      "eval_mode": "deterministic",
+      "search_seed": 7,
+      "k": 1,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 56,
+      "chosen_spe": 148,
+      "own_best_obf2": 4.13883311891129,
+      "own_best_is_ceiling": false,
+      "n_evals": 852,
+      "search_seconds": 4496.817120313644,
+      "yardstick_mean": 3.555011564820092,
+      "yardstick_std": 0.5159260334278889,
+      "yardstick_draws": [
+        3.5526327008768366,
+        4.623813716775016,
+        3.6395939086229325,
+        2.963861389859466,
+        3.6395939086229325,
+        2.9593908629401238,
+        3.5061944660433353
+      ]
+    },
+    {
+      "eval_mode": "deterministic",
+      "search_seed": 123,
+      "k": 1,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 62,
+      "chosen_spe": 160,
+      "own_best_obf2": 4.757484588587275,
+      "own_best_is_ceiling": false,
+      "n_evals": 900,
+      "search_seconds": 4144.08295917511,
+      "yardstick_mean": 3.6477860828183117,
+      "yardstick_std": 0.3276452318197184,
+      "yardstick_draws": [
+        3.7325061984076386,
+        4.319796954305741,
+        3.6247590573381183,
+        3.5526327008768366,
+        3.537980070615303,
+        3.1272336895616144,
+        3.6395939086229325
+      ]
+    },
+    {
+      "eval_mode": "averaged",
+      "search_seed": 42,
+      "k": 3,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 137,
+      "chosen_spe": 109,
+      "own_best_obf2": 4.542738945879347,
+      "own_best_is_ceiling": false,
+      "n_evals": 852,
+      "search_seconds": 10794.396505832672,
+      "yardstick_mean": 3.5543169774871117,
+      "yardstick_std": 0.4461517523913023,
+      "yardstick_draws": [
+        3.5526327008768366,
+        3.7799235930818478,
+        3.9073637063653646,
+        2.963861389859466,
+        3.2060825962676205,
+        3.151015404973358,
+        4.319339450985288
+      ]
+    },
+    {
+      "eval_mode": "averaged",
+      "search_seed": 7,
+      "k": 3,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 146,
+      "chosen_spe": 134,
+      "own_best_obf2": 4.010071182347404,
+      "own_best_is_ceiling": false,
+      "n_evals": 851,
+      "search_seconds": 12766.794019699097,
+      "yardstick_mean": 3.368568016157357,
+      "yardstick_std": 0.46005180330923384,
+      "yardstick_draws": [
+        2.458825170018722,
+        3.639725257222975,
+        3.4688976097002104,
+        3.000634080164857,
+        3.412452911439286,
+        3.6247590573381183,
+        3.9746820272173293
+      ]
+    },
+    {
+      "eval_mode": "averaged",
+      "search_seed": 123,
+      "k": 3,
+      "surrogate_rows": 2000,
+      "surrogate_fraud_rows": 30,
+      "chosen_filters": 149,
+      "chosen_spe": 76,
+      "own_best_obf2": 4.571808229116891,
+      "own_best_is_ceiling": false,
+      "n_evals": 881,
+      "search_seconds": 14225.496851921082,
+      "yardstick_mean": 3.348141632758853,
+      "yardstick_std": 0.3307360160586514,
+      "yardstick_draws": [
+        2.963861389859466,
+        3.8066530658405258,
+        3.299492385781528,
+        2.963861389859466,
+        3.1011113663295893,
+        3.7325061984076386,
+        3.569505633233757
+      ]
+    }
+  ],
+  "references": {
+    "hand_set_default": {
+      "yardstick_mean": 3.7197422324548026,
+      "yardstick_std": 0.4212300262247285,
+      "yardstick_draws": [
+        3.6395939086229325,
+        3.979695431464337,
+        3.954249996780316,
+        3.1034489535790533,
+        3.4688976097002104,
+        3.4133396776550717,
+        4.478970049381699
+      ],
+      "filters": 128,
+      "spe": 150
+    },
+    "shipped_dbboa": {
+      "yardstick_mean": 3.529757544526908,
+      "yardstick_std": 0.582857109308323,
+      "yardstick_draws": [
+        2.5482688030264073,
+        3.979695431464337,
+        4.189968355392612,
+        2.963861389859466,
+        3.5061944660433353,
+        3.342154408310871,
+        4.178159957591328
+      ],
+      "filters": 142,
+      "spe": 76
+    }
+  },
+  "checkpoint": {
+    "complete": true,
+    "written": "13:13:18"
+  },
+  "wall_clock_seconds": 58676.47782969475
+}

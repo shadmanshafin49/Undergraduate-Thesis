@@ -1,0 +1,17 @@
+[kaggle_job] torch threads = 4
+==============================================================================
+  ENTITY TEMPORAL GRID — amlsim   archs=['resnet']   reference=False
+  epochs=10  filters=32  seeds=[42, 7, 123]  batch=2048  threads=4
+==============================================================================
+[AMLSIM] 198,015 transactions | days 0-719 | senders 2,118 | receivers 4,101
+[AMLSIM] laundering (is_sar) 685 (0.346 %)
+  [  global] rows=198,015  features=9  P(fraud | prev row fraud)=0.0102  base=0.0035
+  [  sender] rows=198,015  features=9  P(fraud | prev row fraud)=0.6473  base=0.0035
+  [receiver] rows=198,015  features=9  P(fraud | prev row fraud)=0.6148  base=0.0035
+  integrity OK: every arm trains on 138,514 rows (542 fraud), tests on 39,688 (106 fraud)
+
+         ResNet-1D |   global-window  MCC=-0.0046 +/- 0.005  (58s/seed)
+         ResNet-1D |   sender-window  MCC=+0.3621 +/- 0.115  (57s/seed)
+         ResNet-1D | receiver-window  MCC=+0.2173 +/- 0.011  (57s/seed)
+
+  wrote /tmp/repo/db_boa_framework/results/amlsim_temporal_grid_resnet.json

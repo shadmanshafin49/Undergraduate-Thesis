@@ -1,0 +1,36 @@
+{
+  "job": "handbook-grid-densenet",
+  "cmd": [
+    "experiments/handbook_temporal_grid.py",
+    "--archs",
+    "densenet",
+    "--out",
+    "handbook_temporal_grid_densenet.json",
+    "--skip-reference"
+  ],
+  "started": "2026-09-12 04:55:45",
+  "bundle_sha256": "53e62e9bb69a65e5f6fa181753085e95acdaca89035d79180fac60555a1f2ed6",
+  "pip": {
+    "torch_rc": 0,
+    "others_rc": 0,
+    "stderr_tail": ""
+  },
+  "returncode": 0,
+  "job_seconds": 3562.6,
+  "job_torch_threads": 4,
+  "imported_versions": "{\"python\": \"3.12.13\", \"torch\": \"2.12.0+cpu\", \"threads\": 2, \"numpy\": \"2.3.2\", \"scikit-learn\": \"1.8.0\", \"pandas\": \"3.0.2\", \"scipy\": \"1.17.1\", \"matplotlib\": \"3.10.8\"}",
+  "laptop_versions": {
+    "python": "3.13.7",
+    "torch": "2.12.0",
+    "numpy": "2.3.2",
+    "scikit-learn": "1.8.0",
+    "pandas": "3.0.2",
+    "scipy": "1.17.1",
+    "matplotlib": "3.10.8"
+  },
+  "bundle_commit": "6d8e41e8b19213128b54ad653defec1129f29aaf",
+  "cpu_model": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+  "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+  "finished": "2026-09-12 05:56:55",
+  "total_seconds": 3669.9
+}

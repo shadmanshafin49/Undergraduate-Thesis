@@ -1,0 +1,26 @@
+[kaggle_job] torch threads = 4
+==============================================================================
+  OBJ-16 (d) — HANDBOOK ENTITY-LINKED TEMPORAL GRID
+  ordering x architecture   |  epochs=10  filters=32  seeds=[42, 7, 123]  batch=2048  threads=4
+==============================================================================
+[HANDBOOK] 1,754,155 transactions | 4,990 customers | 10,000 terminals | days 0-182
+[HANDBOOK] fraud 14,681 (0.837 %)
+  [  global] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.0084  base=0.0084
+  [customer] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.1121  base=0.0084
+  [terminal] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.6034  base=0.0084
+  integrity OK: all three arms train on 1,226,990 rows (9,991 fraud) and test on 354,643 rows (3,177 fraud)
+
+      reference: skipped (--skip-reference; another part carries it)
+
+      ADTCN (ours) |   global-window  MCC=+0.0962 +/- 0.019  Prec=  4.5  Rec= 31.0  FP=22699  (498s/seed)
+      ADTCN (ours) | customer-window  MCC=+0.0885 +/- 0.009  Prec=  3.2  Rec= 41.9  FP=41014  (492s/seed)
+      ADTCN (ours) | terminal-window  MCC=+0.0488 +/- 0.003  Prec=  1.9  Rec= 36.7  FP=60304  (494s/seed)
+
+------------------------------------------------------------------------------
+  customer-linked beats global for 0 of 1 architectures  (gain -0.0077 to -0.0077)
+  terminal-linked beats global for 0 of 1 architectures  (gain -0.0474 to -0.0474)
+  terminal gain > customer gain for 0 of 1
+  ADTCN rank  global/customer/terminal: 1/1/1 of 1
+------------------------------------------------------------------------------
+
+  wrote /tmp/repo/db_boa_framework/results/handbook_temporal_grid_dilated_attn.json

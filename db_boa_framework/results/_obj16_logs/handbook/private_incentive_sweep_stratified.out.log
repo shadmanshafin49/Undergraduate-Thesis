@@ -1,0 +1,35 @@
+==============================================================================
+  CONTRIBUTION 1 (B1) — weight-channel  vs  output-channel incentive DP
+  ε sweep=['1', '5', '10', '30', '50', '100', '300', '1000', '3000', '10000', '30000']
+  repeats=100  epochs=12
+==============================================================================
+[B1]  trained BankA  (613,495 samples, noise=0%)
+[B1]  trained BankB  (368,097 samples, noise=10%)
+[B1]  trained BankC  (245,398 samples, noise=25%)
+
+[B1]  GROUND TRUTH  w=[0.243, 0.332, 0.425]  tokens=[4.86, 6.64, 8.5]
+[B1]  d_weights=112642  n_orgs=3  theory budget gain ≈ √(d/n) ≈ 194×
+
+        ε |   WEIGHT inv  tok_err      ρ |   OUTPUT inv  tok_err      ρ |     s
+  ------------------------------------------------------------------------------
+        1 |    88/100        5.43  -0.09 |    89/100       19.77  +0.14 |    61
+        5 |    90/100        5.67  -0.09 |    80/100       16.16  +0.16 |    60
+       10 |    82/100        5.46  -0.10 |    67/100       11.20  +0.28 |    64
+       30 |    87/100        5.32  -0.06 |    49/100        3.68  +0.68 |    62
+       50 |    86/100        4.80  +0.06 |    31/100        2.17  +0.83 |    63
+      100 |    89/100        4.68  +0.15 |     0/100        1.08  +1.00 |    65
+      300 |    83/100        5.17  -0.01 |     0/100        0.36  +1.00 |    62
+     1000 |    81/100        6.27  -0.04 |     0/100        0.11  +1.00 |    63
+     3000 |    58/100        4.32  +0.59 |     0/100        0.04  +1.00 |    62
+    10000 |    13/100        2.24  +0.94 |     0/100        0.01  +1.00 |    54
+    30000 |     0/100        0.84  +1.00 |     0/100        0.00  +1.00 |    53
+
+[B1]  ε* (largest unfair ε):  WEIGHT=10000.0   OUTPUT=50.0   → 200× budget improvement
+[B1]    weight ε*=10000 decided by 13/100 draws (95 % CI 0.0711–0.2120)
+[B1]    output ε*=50 decided by 31/100 draws (95 % CI 0.2213–0.4103)
+[B1]  ordering (output ≤ weight inversions) holds at 10/11 budgets
+[B1]  done in 4137.7s
+==============================================================================
+[B1]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\private_incentive_sweep_handbook_stratified.json
+[B1]  saved D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\db_boa_framework\results\private_incentive_channel_handbook_stratified.png
+[B1]  wrote draft → D:\THESIS\FINAL PROJECT\DB-BOA-FEL-ADTCN-Hyperledger-Fabric-main\final_report_data\TASKB1_private_incentive_results_handbook_stratified.md

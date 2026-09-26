@@ -1,0 +1,25 @@
+interpreter : C:\Users\Shadman\AppData\Local\Programs\Python\Python313\python.exe
+preflight   : OK (torch + BankSim loader import cleanly)
+
+OBJ-15 - BankSim entity-disjoint, started 2026-09-01 13:05:29
+
+=== economic_byzantine_sweep  (13:05:29) ===
+    OK   -> results\economic_byzantine_sweep_banksim_customer.json  (13:28:32)
+
+=== byzantine_robustness_sweep  (13:28:32) ===
+    OK   -> results\byzantine_robustness_sweep_banksim_customer.json  (14:17:00)
+
+=== private_incentive_sweep  (14:17:00) ===
+    OK   -> results\private_incentive_sweep_banksim_customer.json  (14:42:51)
+
+=== scalability_sweep  (14:42:51) ===
+    OK   -> results\scalability_sweep_banksim_customer.json  (16:20:32)
+
+OBJ-15 finished 2026-09-01 16:20:32
+all four sweeps completed
+
+Compare against the ULB originals before reporting anything:
+  results\economic_byzantine_sweep.json  vs  results\economic_byzantine_sweep_banksim_customer.json
+  results\byzantine_robustness_sweep.json  vs  results\byzantine_robustness_sweep_banksim_customer.json
+  results\private_incentive_sweep.json  vs  results\private_incentive_sweep_banksim_customer.json
+  results\scalability_sweep.json  vs  results\scalability_sweep_banksim_customer.json

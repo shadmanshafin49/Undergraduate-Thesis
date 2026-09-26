@@ -1,0 +1,25 @@
+[kaggle_job] torch threads = 4
+==============================================================================
+  OBJ-16 (d) — HANDBOOK ENTITY-LINKED TEMPORAL GRID
+  ordering x architecture   |  epochs=10  filters=32  seeds=[42, 7, 123]  batch=2048  threads=4
+==============================================================================
+[HANDBOOK] 1,754,155 transactions | 4,990 customers | 10,000 terminals | days 0-182
+[HANDBOOK] fraud 14,681 (0.837 %)
+  [  global] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.0084  base=0.0084
+  [customer] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.1121  base=0.0084
+  [terminal] rows=1,754,155  features=35  P(fraud | prev row fraud)=0.6034  base=0.0084
+  integrity OK: all three arms train on 1,226,990 rows (9,991 fraud) and test on 354,643 rows (3,177 fraud)
+
+      reference: skipped (--skip-reference; another part carries it)
+
+         ResNet-1D |   global-window  MCC=+0.0833 +/- 0.019  Prec=  3.6  Rec= 33.0  FP=31766  (535s/seed)
+         ResNet-1D | customer-window  MCC=+0.0710 +/- 0.004  Prec=  2.4  Rec= 43.6  FP=56052  (533s/seed)
+         ResNet-1D | terminal-window  MCC=+0.0764 +/- 0.012  Prec=  3.3  Rec= 31.1  FP=30284  (532s/seed)
+
+------------------------------------------------------------------------------
+  customer-linked beats global for 0 of 1 architectures  (gain -0.0123 to -0.0123)
+  terminal-linked beats global for 0 of 1 architectures  (gain -0.0069 to -0.0069)
+  terminal gain > customer gain for 1 of 1
+------------------------------------------------------------------------------
+
+  wrote /tmp/repo/db_boa_framework/results/handbook_temporal_grid_resnet.json

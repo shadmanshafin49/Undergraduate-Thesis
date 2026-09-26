@@ -54,7 +54,8 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
 from config                    import RESULTS_DIR, ADTCN_CONFIG, FEDERATION_CONFIG
-from data.data_loader          import FinancialDataLoader
+from experiments._dataset      import (redraft, add_dataset_args, resolve, provenance,
+                                       suffix, suffix_of)
 from models.federated_adtcn    import FederatedADTCN
 from models.federation_manager import FederationManager
 from utils.metrics             import compute_all_metrics
@@ -106,7 +107,8 @@ def _org_feature_noise(i: int) -> float:
     return (i % 4) / 3.0 * NOISE_MAX
 
 
-def _train_org(X_org, y_org, epoch_cnt, feature_noise=0.0, noise_seed=0):
+def _train_org(X_org, y_org, epoch_cnt, feature_noise=0.0, noise_seed=0,
+               n_raw_features=None):
     """Train one FederatedADTCN org from the SHARED init seed, optionally on
     feature-noise-degraded inputs (the org's data-quality level)."""
     if feature_noise > 0.0:
@@ -115,6 +117,8 @@ def _train_org(X_org, y_org, epoch_cnt, feature_noise=0.0, noise_seed=0):
     cfg = dict(ADTCN_CONFIG)
     cfg["epoch_count"]  = epoch_cnt
     cfg["random_state"] = INIT_SEED           # SHARED across all orgs (averageable)
+    if n_raw_features:                        # BankSim's 79 would else be cut to 33
+        cfg["n_raw_features"] = n_raw_features
     m = FederatedADTCN(cfg=cfg)
     m.optimal_params = {
         "hidden_neurons" : cfg["hidden_neurons"],
@@ -181,7 +185,7 @@ def _mc_cfg(quick):
 
 # ─── core sweep ───────────────────────────────────────────────────────────────
 
-def run_sweep(quick=False):
+def run_sweep(quick=False, dataset="ulb", partition=None, fit_pool=False):
     t0 = time.time()
 
     if quick:
@@ -214,9 +218,39 @@ def run_sweep(quick=False):
           flush=True)
     print("=" * 70, flush=True)
 
-    loader = FinancialDataLoader()
+    loader = resolve(dataset, partition, verbose=False)
+    n_raw  = loader.raw_feature_count
     Xtr, Xv, Xte, ytr, yv, yte = loader.load(verbose=False)
     Xvs, yvs = _balanced_val(Xv, yv, n_val, seed=INIT_SEED)
+
+    # ── does the training pool hold max_n equal shards? ────────────────────────
+    # split_for_orgs cuts each shard from what the earlier orgs left, and its
+    # stratified split needs >= 2 rows over, so the pool holds this many full
+    # shards.  ULB, BankSim and the Handbook hold all 20; AMLSim's 138,514
+    # training rows hold 17 (Kaggle, 2026-09-11: org 18 got the 2,513-row
+    # remainder and the split refused the single row left after it).
+    capacity = (len(ytr) - 2) // samples_per_org
+    pool_fit = None
+    if max(mc_ns) > capacity:
+        if not fit_pool:
+            raise SystemExit(
+                f"[C]  the training pool ({len(ytr)} rows) holds {capacity} shards of "
+                f"{samples_per_org}; the MC range needs {max(mc_ns)}.  Re-run with "
+                f"--fit-pool to stop the range at the largest n that fits (recorded "
+                f"in the output as a deviation).")
+        # Shards are cut in org order with seed random_state + i, and org i's noise
+        # tier is i % 4, so org i is the same org whether the pool stops at 16 or
+        # at 20: every runtime row kept is the one the full protocol computes.
+        pool_fit = {"train_pool_rows": int(len(ytr)), "pool_capacity_orgs": int(capacity),
+                    "mc_ns_preregistered": list(mc_ns),
+                    "exact_ns_preregistered": list(exact_ns)}
+        mc_ns    = [n for n in mc_ns if n <= capacity]
+        exact_ns = [n for n in exact_ns if n <= capacity]
+        max_n    = max(mc_ns)
+        print(f"[C]  DEVIATION (--fit-pool): the pool of {len(ytr)} rows holds {capacity} "
+              f"shards of {samples_per_org} — MC range stops at n={max_n}, exact at "
+              f"n={max(exact_ns)}; shard size, seeds and noise tiers unchanged",
+              flush=True)
     print(f"[C]  shared val set: {len(yvs)} samples, {int(yvs.sum())} fraud "
           f"({yvs.mean()*100:.1f}%) — fraud-stratified for meaningful Shapley",
           flush=True)
@@ -235,7 +269,8 @@ def run_sweep(quick=False):
     for i, (nm, (X_org, y_org)) in enumerate(pool_splits.items()):
         noise = _org_feature_noise(i)                       # data-quality gradient
         m     = _train_org(X_org, y_org, epoch_cnt,
-                           feature_noise=noise, noise_seed=i)
+                           feature_noise=noise, noise_seed=i,
+                           n_raw_features=n_raw)
         bal   = _bal_acc(yte, m.predict(Xte))
         pool_models[nm] = m
         if (i + 1) % max(1, max_n // 6) == 0 or i == 0:
@@ -305,7 +340,8 @@ def run_sweep(quick=False):
         for i, (nm, (X_org, y_org)) in enumerate(splits.items()):
             # dilution stays CLEAN (no feature noise) to isolate the data-shrink
             # effect; shared init keeps the weighted-average global model valid.
-            d_models[nm] = _train_org(X_org, y_org, epoch_cnt, feature_noise=0.0)
+            d_models[nm] = _train_org(X_org, y_org, epoch_cnt, feature_noise=0.0,
+                                      n_raw_features=n_raw)
         d_weights = [m.extract_weights() for m in d_models.values()]
         fm = FederationManager(n_orgs=n, cfg=mc_cfg, seed=42)
         w_d, _, _ = fm._shapley_weights_mc(
@@ -323,6 +359,7 @@ def run_sweep(quick=False):
 
     summary = {
         "task"            : "C — scalability of contribution attribution",
+        **provenance(dataset, partition, loader),
         "metric"          : "balanced accuracy (Sens+Spec)/2; wall-clock seconds",
         "samples_per_org" : samples_per_org,
         "epoch_count"     : epoch_cnt,
@@ -333,6 +370,7 @@ def run_sweep(quick=False):
         "heterogeneity"   : f"graded feature noise σ∈{{0,.5,1.0,1.5}} (NOISE_MAX={NOISE_MAX})",
         "exact_ns"        : exact_ns,
         "mc_ns"           : mc_ns,
+        **({"pool_fit": pool_fit} if pool_fit else {}),
         "runtime"         : runtime_rows,
         "dilution"        : dilution_rows,
         "elapsed_sec"     : round(time.time() - t0, 1),
@@ -385,7 +423,7 @@ def make_plots(summary):
     fig.suptitle("Task C — Scalable contribution attribution "
                  "(real wall-clock; single-process)", y=1.02, fontsize=12)
     fig.tight_layout()
-    p1 = os.path.join(RESULTS_DIR, "scalability_shapley_runtime.png")
+    p1 = os.path.join(RESULTS_DIR, f"scalability_shapley_runtime{suffix_of(summary)}.png")
     fig.savefig(p1, dpi=130, bbox_inches="tight"); plt.close(fig)
     print(f"[C]  saved {p1}", flush=True)
 
@@ -413,7 +451,7 @@ def make_plots(summary):
     fig2.suptitle("Task C — Reward fidelity & accuracy under federation scaling",
                   y=1.02, fontsize=12)
     fig2.tight_layout()
-    p2 = os.path.join(RESULTS_DIR, "scalability_fidelity_accuracy.png")
+    p2 = os.path.join(RESULTS_DIR, f"scalability_fidelity_accuracy{suffix_of(summary)}.png")
     fig2.savefig(p2, dpi=130, bbox_inches="tight"); plt.close(fig2)
     print(f"[C]  saved {p2}", flush=True)
 
@@ -468,6 +506,14 @@ def write_report(summary):
             L.append(f"| {r['n_orgs']} | {2**r['n_orgs']-1} (infeasible) | — | "
                      f"{r['mc_coalitions']} | {r['mc_time_sec']:.3f} | — | — | — | — |")
     L.append("")
+    pf = summary.get("pool_fit")
+    if pf:
+        L.append(f"**Deviation, recorded before the run (`--fit-pool`).** The training pool "
+                 f"({pf['train_pool_rows']:,} rows) holds {pf['pool_capacity_orgs']} equal "
+                 f"shards of {summary['samples_per_org']:,}, so the MC range stops at "
+                 f"n={max_mc_n} instead of the pre-registered "
+                 f"n={max(pf['mc_ns_preregistered'])}. Shard size, seeds and noise tiers "
+                 f"are unchanged: every row above is the one the full protocol computes.\n")
 
     L.append("## 2. Accuracy under scaling — confound controlled vs realistic\n")
     L.append("| n_orgs | equal-shard bal-acc (per-org data FIXED) | "
@@ -481,8 +527,8 @@ def write_report(summary):
                      f"{d['balacc_fixed_pool']:.2f}% | {d['avg_samples_per_org']} |")
     L.append("")
 
-    L.append(f"Figures: `results/scalability_shapley_runtime.png` (runtime & "
-             f"coalition-count vs n), `results/scalability_fidelity_accuracy.png` "
+    L.append(f"Figures: `results/scalability_shapley_runtime{suffix_of(summary)}.png` (runtime & "
+             f"coalition-count vs n), `results/scalability_fidelity_accuracy{suffix_of(summary)}.png` "
              f"(MC-vs-exact fidelity + accuracy regimes).\n")
 
     L.append("## 3. Reading the result\n")
@@ -530,10 +576,11 @@ def write_report(summary):
              f"reported. *Equal-shard* holds each org's data volume fixed as n grows "
              f"({es_first:.1f}%→{es_last:.1f}% bal-acc), isolating the effect of more "
              f"orgs; *fixed-pool* splits one dataset n ways so each org's data — and its "
-             f"few fraud positives — shrink, which on this 0.17%-fraud set drives a "
-             f"sharp drop as n grows. The gap is the dilution effect (a data-budget "
-             f"limitation of the ULB set), NOT a failure of the attribution scaling, "
-             f"and is disclosed rather than hidden.\n")
+             f"few fraud positives — shrink, which on a heavily imbalanced set drives "
+             f"a sharp drop as n grows. The gap is the dilution effect (a data-budget "
+             f"limitation of "
+             f"{summary.get('dataset_label', 'the dataset used here')}), NOT a failure "
+             f"of the attribution scaling, and is disclosed rather than hidden.\n")
     L.append("**Honest scope.** This is *algorithmic* scalability of contribution "
              "attribution on a single machine. It does not measure blockchain "
              "throughput/latency (leader_block.py is simulated) nor distributed "
@@ -543,8 +590,8 @@ def write_report(summary):
 
     out = os.path.abspath(os.path.join(ROOT, "..", "final_report_data"))
     os.makedirs(out, exist_ok=True)
-    md = os.path.join(out, "TASKC_scalability_results.md")
-    with open(md, "w") as f:
+    md = os.path.join(out, f"TASKC_scalability_results{suffix_of(summary)}.md")
+    with open(md, "w", encoding="utf-8") as f:
         f.write("\n".join(L))
     print(f"[C]  wrote draft → {md}", flush=True)
 
@@ -553,12 +600,26 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--no-plots", action="store_true")
+    ap.add_argument("--fit-pool", action="store_true",
+                    help="if the training pool cannot hold the MC range's equal shards, "
+                         "stop the range at the largest n that fits and record it as a "
+                         "deviation (AMLSim); without it such a pool refuses to run")
+    add_dataset_args(ap)
     args = ap.parse_args()
 
-    summary = run_sweep(quick=args.quick)
+    # Rebuild the draft/figures from the finished JSON, no compute.
+    if args.redraft:
+        redraft("scalability_sweep", args.dataset, args.partition,
+                make_plots, write_report, RESULTS_DIR, no_plots=args.no_plots)
+        return
 
-    json_path = os.path.join(RESULTS_DIR, "scalability_sweep.json")
-    with open(json_path, "w") as f:
+    summary = run_sweep(quick=args.quick, dataset=args.dataset,
+                        partition=args.partition, fit_pool=args.fit_pool)
+
+    json_path = os.path.join(
+        RESULTS_DIR,
+        f"scalability_sweep{suffix(args.dataset, args.partition)}.json")
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     print(f"[C]  saved {json_path}", flush=True)
 

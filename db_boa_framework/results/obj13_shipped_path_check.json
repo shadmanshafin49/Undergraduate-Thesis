@@ -1,0 +1,109 @@
+{
+  "note": "No training. Replays _ADTCNObjective.__init__'s fraud-selection arithmetic on the pool each caller actually supplies.",
+  "min_fraud_rows": 30,
+  "surrogate_rows": 2000,
+  "datasets": {
+    "ulb": [
+      {
+        "pool_label": "ULB shipped: loader.get_eval_subset -> eval_subset=36000",
+        "pool_rows": 36000,
+        "pool_fraud_unique": 62,
+        "pool_fraud_rate": 0.0017222222222222222,
+        "surrogate_n_f": 30,
+        "samples_with_replacement": false,
+        "expected_distinct_fraud_in_surrogate": 30.0,
+        "duplication_factor": 1.0,
+        "approx_val_fraud_rows": 9
+      },
+      {
+        "pool_label": "ULB audit: basepaper _eval_subset(n=6000)",
+        "pool_rows": 6000,
+        "pool_fraud_unique": 30,
+        "pool_fraud_rate": 0.005,
+        "surrogate_n_f": 30,
+        "samples_with_replacement": false,
+        "expected_distinct_fraud_in_surrogate": 30.0,
+        "duplication_factor": 1.0,
+        "approx_val_fraud_rows": 9
+      }
+    ],
+    "banksim": [
+      {
+        "pool_label": "BankSim shipped: loader.get_eval_subset -> eval_subset=36000",
+        "pool_rows": 36000,
+        "pool_fraud_unique": 455,
+        "pool_fraud_rate": 0.012638888888888889,
+        "surrogate_n_f": 30,
+        "samples_with_replacement": false,
+        "expected_distinct_fraud_in_surrogate": 30.0,
+        "duplication_factor": 1.0,
+        "approx_val_fraud_rows": 9
+      },
+      {
+        "pool_label": "BankSim audit: basepaper _eval_subset(n=6000)",
+        "pool_rows": 6000,
+        "pool_fraud_unique": 75,
+        "pool_fraud_rate": 0.0125,
+        "surrogate_n_f": 30,
+        "samples_with_replacement": false,
+        "expected_distinct_fraud_in_surrogate": 30.0,
+        "duplication_factor": 1.0,
+        "approx_val_fraud_rows": 9
+      }
+    ]
+  },
+  "leak_check": [
+    {
+      "pool_label": "ULB shipped: loader.get_eval_subset -> eval_subset=36000",
+      "eval_mode": "legacy",
+      "replay_verified_bitwise": true,
+      "surrogate_fraud_rows": 30,
+      "unique_fraud_transactions": 30,
+      "train_fraud_rows": 19,
+      "val_fraud_rows": 11,
+      "val_fraud_unique": 11,
+      "val_fraud_rows_also_in_train": 0,
+      "leak_fraction": 0.0,
+      "dataset": "ulb"
+    },
+    {
+      "pool_label": "ULB shipped: loader.get_eval_subset -> eval_subset=36000",
+      "eval_mode": "deterministic",
+      "replay_verified_bitwise": true,
+      "surrogate_fraud_rows": 30,
+      "unique_fraud_transactions": 30,
+      "train_fraud_rows": 21,
+      "val_fraud_rows": 9,
+      "val_fraud_unique": 9,
+      "val_fraud_rows_also_in_train": 0,
+      "leak_fraction": 0.0,
+      "dataset": "ulb"
+    },
+    {
+      "pool_label": "BankSim shipped: loader.get_eval_subset -> eval_subset=36000",
+      "eval_mode": "legacy",
+      "replay_verified_bitwise": true,
+      "surrogate_fraud_rows": 30,
+      "unique_fraud_transactions": 30,
+      "train_fraud_rows": 23,
+      "val_fraud_rows": 7,
+      "val_fraud_unique": 7,
+      "val_fraud_rows_also_in_train": 0,
+      "leak_fraction": 0.0,
+      "dataset": "banksim"
+    },
+    {
+      "pool_label": "BankSim shipped: loader.get_eval_subset -> eval_subset=36000",
+      "eval_mode": "deterministic",
+      "replay_verified_bitwise": true,
+      "surrogate_fraud_rows": 30,
+      "unique_fraud_transactions": 30,
+      "train_fraud_rows": 21,
+      "val_fraud_rows": 9,
+      "val_fraud_unique": 9,
+      "val_fraud_rows_also_in_train": 0,
+      "leak_fraction": 0.0,
+      "dataset": "banksim"
+    }
+  ]
+}
